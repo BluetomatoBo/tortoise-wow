@@ -300,7 +300,11 @@ bool GossipHello_npc_dying_archaeologist(Player* pPlayer, Creature* pCreature)
         return false; /// everything is ok
 
     pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid(), QUEST_RISE_OBSIDION);
-    pPlayer->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, pCreature->GetObjectGuid());
+    // Ask the creature for its own greeting. Passing DEFAULT_GOSSIP_MESSAGE here
+    // sent the client after an npc_text id that does not exist, and
+    // HandleNpcTextQueryOpcode answers such a query with a hardcoded
+    // "Greetings $N", so this window always showed English.
+    pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
     return true;
 }
 
