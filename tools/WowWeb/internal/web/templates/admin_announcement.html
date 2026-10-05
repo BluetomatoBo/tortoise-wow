@@ -47,6 +47,9 @@
     {{.T "ann.endpoint"}}
     <a href="/alert" target="_blank" rel="noreferrer"><code>{{.Endpoint}}</code></a>
   </p>
+  {{if .TooLong}}
+    <p class="warn">{{.T "ann.tooLong"}} ({{.RenderedSize}} / {{.Capacity}})</p>
+  {{end}}
   {{if .HasBody}}
     <pre>{{.Announcement.Body}}</pre>
   {{else}}

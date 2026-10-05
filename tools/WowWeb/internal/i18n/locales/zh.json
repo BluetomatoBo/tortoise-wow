@@ -486,5 +486,6 @@
   "ann.howDisabled": "在这里改动会在下一个登录界面生效。不需要重启服务端，也不需要改客户端补丁。",
   "flash.ok.announcementSaved": "公告已保存。",
   "home.signInForStatus": "登录后可见服务器状态与连接信息。",
-  "flash.err.tooManyAttempts": "尝试次数过多，请等待几分钟后再试。"
+  "flash.err.tooManyAttempts": "尝试次数过多，请等待几分钟后再试。",
+  "ann.tooLong": "公告超出游戏客户端能显示的长度，末尾会被截断，请精简。"
 }

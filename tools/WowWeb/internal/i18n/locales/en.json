@@ -486,5 +486,6 @@
   "ann.howDisabled": "Editing here takes effect on the next login screen. No server restart and no client patch are needed.",
   "flash.ok.announcementSaved": "Announcement saved.",
   "home.signInForStatus": "Sign in to see the realm's status and how to connect.",
-  "flash.err.tooManyAttempts": "Too many attempts from here. Please wait a few minutes and try again."
+  "flash.err.tooManyAttempts": "Too many attempts from here. Please wait a few minutes and try again.",
+  "ann.tooLong": "This announcement is longer than the game client can display; the end will be cut off. Shorten it."
 }

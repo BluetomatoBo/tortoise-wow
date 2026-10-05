@@ -20,25 +20,73 @@ import (
 // it is not a browser. The body is therefore stored as plain text and escaped
 // here, never rendered as markup the admin supplied.
 
-// alertDocument wraps escaped body text in the minimal document the client's
-// SimpleHTML widget expects.
+// The game client is strict about the shape of this response and gives no sign
+// when it dislikes it: the 1.12 client's ServerAlertService parses the body,
+// looks for this prefix at the very start, and discards the whole response if it
+// is missing. The panel then simply never appears.
+//
+//	constexpr std::string_view kServerAlertPrefix = "SERVERALERT:";
+//	if (StartsWithIgnoreCaseAscii(response_body, kServerAlertPrefix)) {
+//	    return kServerAlertPrefix.size();   // everything after it is the alert
+//	}
+//	return npos;                            // -> no alert at all
+//
+// The prefix may be preceded by a UTF-8 BOM, and is matched case-insensitively;
+// sending it directly is the simple case.
+const serverAlertPrefix = "SERVERALERT:"
+
+// serverAlertCapacity is the client's buffer for this response, so the payload
+// has to fit inside it. Anything longer is silently truncated by the client,
+// which can cut the trailing HTML tags off.
+//
+//	constexpr std::size_t kServerAlertBufferCapacity = 2047;
+const serverAlertCapacity = 2047
+
+// alertDocument turns the stored plain text into what the client renders.
+//
+// Two rules, both learned the hard way:
+//
+//  1. The body must start with the SERVERALERT: prefix or the client discards
+//     the whole response and the panel never appears.
+//
+//  2. The markup is parsed **line by line**. Tags packed onto one line with the
+//     text are not recognised, and the client renders them literally - an
+//     announcement written as "<html><body><p>text</p></body></html>" shows up
+//     as exactly that, tags and all. Every tag gets its own line here, which is
+//     how the client's own HTML files are written (see its
+//     Interface\GlueXML\connection-help.html, loaded into the same
+//     SimpleHTML widget) and how the pages that worked in the wild were
+//     written too.
+//
+// One paragraph per input line, and a <br/> on its own line for a blank one.
 func alertDocument(body string) string {
-	body = strings.ReplaceAll(body, "\r\n", "\n")
-	body = strings.ReplaceAll(body, "\r", "\n")
-	body = strings.TrimSpace(body)
-	if body == "" {
-		return "<html><body></body></html>"
+	var b strings.Builder
+	b.WriteString(serverAlertPrefix)
+	b.WriteString("<html>\n<body>\n")
+
+	text := strings.ReplaceAll(body, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\r", "\n")
+
+	wrote := false
+	for _, line := range strings.Split(text, "\n") {
+		line = strings.TrimRight(line, " \t")
+		if strings.TrimSpace(line) == "" {
+			// A blank line reads as spacing between paragraphs. Skipped
+			// before the first paragraph so the panel does not open with a
+			// gap.
+			if wrote {
+				b.WriteString("<br/>\n")
+			}
+			continue
+		}
+		b.WriteString("<p>")
+		b.WriteString(html.EscapeString(line))
+		b.WriteString("</p>\n")
+		wrote = true
 	}
 
-	paragraphs := strings.Split(body, "\n\n")
-	for i, p := range paragraphs {
-		lines := strings.Split(strings.Trim(p, "\n"), "\n")
-		for j, line := range lines {
-			lines[j] = html.EscapeString(strings.TrimRight(line, " \t"))
-		}
-		paragraphs[i] = "<p>" + strings.Join(lines, "<br/>") + "</p>"
-	}
-	return "<html><body>" + strings.Join(paragraphs, "") + "</body></html>"
+	b.WriteString("</body>\n</html>\n")
+	return b.String()
 }
 
 // handleAnnouncement serves the login-screen notice.
@@ -61,6 +109,17 @@ func (s *Server) handleAnnouncement(w http.ResponseWriter, r *http.Request) {
 		body = ann.Body
 	}
 
+	// Log who fetched it. This endpoint is hit by the game client rather than a
+	// browser, so when the login-screen panel stays empty the only way to tell
+	// "the client never asked" from "the client asked and disliked the answer"
+	// is to see whether a request arrived at all - and from where.
+	s.log.Info("announcement fetched",
+		"ip", s.clientIP(r),
+		"ua", r.UserAgent(),
+		"proto", r.Proto,
+		"enabled", ann.Enabled,
+		"bytes", len(body))
+
 	// The client caches what it fetched; ask it not to, so an edit shows up on
 	// the next login rather than whenever the cache happens to expire.
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -78,6 +137,14 @@ type adminAnnouncementView struct {
 	Announcement store.Announcement
 	Endpoint     string
 	HasBody      bool
+
+	// RenderedSize is what the client would actually receive, and Capacity is
+	// the client's buffer. The panel is only ever a few lines tall, and the
+	// client truncates silently, so the admin needs to see when the text has
+	// outgrown what can be delivered.
+	RenderedSize int
+	Capacity     int
+	TooLong      bool
 }
 
 func (s *Server) handleAdminAnnouncement(w http.ResponseWriter, r *http.Request, page *PageData) {
@@ -87,6 +154,8 @@ func (s *Server) handleAdminAnnouncement(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	rendered := len(alertDocument(ann.Body))
+
 	page.Title = page.T("ann.title")
 	page.Active = "admin-announcement"
 	s.rend.Render(w, http.StatusOK, "admin_announcement", adminAnnouncementView{
@@ -94,6 +163,9 @@ func (s *Server) handleAdminAnnouncement(w http.ResponseWriter, r *http.Request,
 		Announcement: ann,
 		Endpoint:     strings.TrimRight(s.cfg.BaseURL, "/") + "/alert",
 		HasBody:      strings.TrimSpace(ann.Body) != "",
+		RenderedSize: rendered,
+		Capacity:     serverAlertCapacity,
+		TooLong:      rendered > serverAlertCapacity,
 	})
 }
 

@@ -132,6 +132,21 @@ wowweb:
 - 返回时带 `Cache-Control: no-store`，改完下次登录界面就是新的
 - **改公告既不用重启服务端，也不用改客户端**
 
+#### 客户端对响应格式的两条硬要求
+
+这两条都是**踩坑踩出来的**，而且**违反了不会有任何报错** —— 面板直接不出现，或把标签当文本画出来：
+
+1. **正文必须以 `SERVERALERT:` 开头**。客户端的告警下载回调会找这个前缀
+   （可带 UTF-8 BOM、大小写不敏感），找不到就**整份丢弃**。
+   那个前缀正是 `WoW.exe` 里的 `SERVERALERT:` 字面量。
+2. **每个标签必须独占一行**。`SimpleHTML` 是**按行解析**的：
+   写成 `<html><body><p>文本</p></body></html>` 会把这串**原样当文本显示**。
+   客户端自带的 `Interface\GlueXML\connection-help.html`（同一个控件渲染）
+   和各家私服真实的告警页，都是每行一个标签。
+
+另外**客户端缓冲区上限 2047 字节**，超出会被静默截断（可能切断 HTML 尾部），
+所以后台在超过时会给出警告。
+
 ### 安全说明（要点）
 
 - **游戏密码哈希本身是无盐 SHA-1** —— 这是核心的限制，本站改不了（客户端必须能用同一列认证）。
@@ -514,6 +529,25 @@ Things worth knowing about that endpoint:
   screen rather than whenever the client's cache expires;
 * switching the announcement off serves an empty document, which is the
   closest the panel gets to "hidden".
+
+#### Two hard requirements of the response format
+
+Both were learned the hard way, and **breaking either produces no error at all** -
+the panel simply does not appear, or the markup is drawn as text:
+
+1. **The body must begin with `SERVERALERT:`.** The client's alert download
+   callback looks for that prefix (case-insensitively, optionally after a UTF-8
+   BOM) and **discards the entire response** when it is missing. The prefix is
+   the `SERVERALERT:` literal in `WoW.exe`.
+2. **Each tag must sit on its own line.** `SimpleHTML` parses **line by line**:
+   writing `<html><body><p>text</p></body></html>` makes the client render that
+   string verbatim. The client's own
+   `Interface\GlueXML\connection-help.html` - rendered by the same widget -
+   and the alert pages real servers shipped both put one tag per line.
+
+The client's buffer for this response is **2047 bytes** and it truncates
+silently, which can cut the closing tags off, so the admin page warns when the
+rendered document outgrows it.
 
 Editing needs neither a server restart nor a client patch. Only moving the site
 itself means regenerating `patch-Z.mpq`.
