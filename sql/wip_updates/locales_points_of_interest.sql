@@ -1,6 +1,6 @@
 -- 兴趣点名称（locales_points_of_interest）
 --
--- 共 5 条，全部只写 zhCN 列（*_loc4），不触碰其他语言列。
+-- 共 30 条，全部只写 zhCN 列（*_loc4），不触碰其他语言列。
 -- 本项目 sql/base/tw_world_locales_points_of_interest.sql 里这些列原本是空串或英文占位符
 -- （原文被直接填进 _loc4）；本文件把它们替换为中文。
 -- 已逐条比对上游 base 数据：0 条覆盖上游已有的中文翻译。
@@ -26,8 +26,33 @@
 SET NAMES utf8mb4;
 
 -- ------------------------------------------------------------------------
--- icon_name_loc4：5 条
+-- icon_name_loc4：30 条
 -- ------------------------------------------------------------------------
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (70, '暴风城军营') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (90, '护体皮甲') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (93, '廉姆·火轴') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (412, '谜之大厅') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (413, '武器大厅') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (416, '铁炉堡邮箱') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (426, '铁炉堡术士训练师') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (427, '铁炉堡盗贼训练师') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (465, '达纳苏斯银行') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (527, '暴风城拍卖行') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (535, '暴风城狮鹫管理员') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (652, '札尔迪玛·维夫希尔特') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (654, '密雪儿·贝莉') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (655, '汤马斯') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (660, '维尔海姆修士') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (663, '炼金术士玛洛瑞') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (665, '阿札尔·战锤') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (666, '马克萨恩') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (667, '兰尼斯·快斧') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (670, '格雷姆罗克') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (672, '托格努斯') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (677, '吉姆瑞兹') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (747, '帕克斯顿·冈特') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (1427, '珊娜·费勒') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (1693, '达纳苏斯拍卖行') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- 
 INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (2000, '铁炉堡珠宝商公会金库') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- Ironforge Jewelers Guild
 INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (2001, '幽暗城珠宝加工训练师') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- Undercity Jewelcrafting Trainer
 INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (2002, '剑客家族宝石') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- Fencer Family Jewels
