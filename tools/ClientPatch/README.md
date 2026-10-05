@@ -4,10 +4,17 @@
 当前用它覆盖登录界面「系统公告」的读取地址，内容由 [WowWeb](../WowWeb/) 的
 `/admin/announcement` 管理。
 
+另附 `patch_urllist.py`：把 `WoW.exe` 里写死的**可信 URL 白名单**等长覆盖成自己的域名，
+让公告里的链接变成可点击（见下文「让公告里的链接可点击」）。
+
 Writes **configuration values** into a client patch, `patch-Z.mpq`, that loads last and
 therefore overrides whatever a translation pack or Blizzard's own files contain. Today it
 points the login screen's "Server Alert" panel at [WowWeb](../WowWeb/)'s
 `/admin/announcement`.
+
+Bundled with it, `patch_urllist.py` rewrites the **trusted-URL whitelist baked into
+`WoW.exe`** (same-length overwrite) so links inside the announcement become clickable —
+see "Making the links clickable" below.
 
 ---
 
@@ -42,20 +49,30 @@ points the login screen's "Server Alert" panel at [WowWeb](../WowWeb/)'s
 
 自建的 `patch-A.mpq` 之类**盖不住** `patch-Z`，改 `patch-9` 等也一样无效。
 
-## 为什么改 `GlueLocalization.lua` 而不是 `GlueStrings.lua`
+## 为什么必须改 `GlueStrings.lua`
 
-`Interface\GlueXML\GlueXML.toc` 的加载顺序是：
+这是**实测踩过的坑**：`SERVER_ALERT_URL` 必须写在 `GlueStrings.lua` 里。
 
-```
-GlueConstants.lua → GlueStrings.lua → GlueFonts.xml → GlueLocalization.xml(→ .lua) → …
-```
+| 文件 | 谁加载 | 能否生效 |
+|---|---|---|
+| **`GlueStrings.lua`** | 客户端 **C++ 直接加载**（不被任何 XML 的 `<Script>` 引用） | 能 |
+| `GlueLocalization.lua` | 由 `GlueLocalization.xml` 的 `<Script file=...>` 加载 | 不能，太晚 |
 
-而 `AccountLogin.xml`（创建 `ServerAlertFrame` 的地方）排在 `GlueLocalization.xml` **之后**，
-所以写在 `GlueLocalization.lua` 里的赋值一定生效。
+只把值写进 `GlueLocalization.lua` 时，客户端仍然使用汉化包 `GlueStrings.lua` 里的旧值
+（一个已经无法解析的站点），登录界面公告面板**一片空白**。
 
-关键是：**整份替换 `GlueStrings.lua` 会把汉化包里几千条界面字符串一起冲掉**
-（补丁是按文件整体覆盖的）。所以在 `GlueLocalization.lua` 里追加几行赋值是
-唯一既生效又不误伤的做法。
+旁证：所有能用的实现都把这几个键放在 `GlueStrings.lua` ——
+暴雪原版、乌龟服自己的 `patch-3/4/6/7/8/9`、以及中文汉化包，无一例外。
+
+### 代价与注意事项
+
+要在 `GlueStrings.lua` 里覆盖，patch-Z 就必须**整份容纳**该文件
+（补丁是按文件整体覆盖的）。工具的做法是读**当前生效的那一份**（汉化包里的），
+只改目标行，再写进 patch-Z —— 所以除被覆盖的行外与汉化包**逐字相同**，界面字符串不会丢。
+每次生成后工具都会把这份差异打印出来供核对。
+
+> ⚠️ **汉化包更新后请重跑本工具。** patch-Z 里那份 `GlueStrings.lua` 是汉化包某个版本的
+> 快照，会盖住更新后的版本；重跑即可从新版重新生成。
 
 ## 用法
 
@@ -104,6 +121,61 @@ python3 gen_patchz.py /path/to/other.json
 | 和游戏客户端同一台机器 | `http://127.0.0.1:8080/alert` |
 | 局域网里的服务器 | `http://<服务器地址>:8080/alert` |
 | 走 nginx 反代的域名 | `http://你的域名/alert` |
+
+## 让公告里的链接可点击：`patch_urllist.py`
+
+公告正文里写成 `<a href="...">` 的链接，点下去走客户端的 `LaunchURL`，而它对目标主机有一份
+**写死在 `WoW.exe` 里的白名单**：官方的 `*.worldofwarcraft.com`、`*.battle.net` 等，
+乌龟服额外加了 `*.turtlecraft.gg`，中文客户端加了 `*.wuguifu.com`。不在名单里的域名**点不动**，
+服务端也没有任何配置项可以放宽。
+
+`patch_urllist.py` 把某个槽位**等长覆盖**成你自己的域名：
+
+```bash
+# 看有哪些槽位（带可用长度，保护中的会标出来）
+python3 patch_urllist.py --list
+
+# 换一项（长度不能超过原值），先 dry-run 看校验结果
+python3 patch_urllist.py --set '*.wowtaiwan.com.tw=*.mydomain.net' --dry-run
+python3 patch_urllist.py --set '*.wowtaiwan.com.tw=*.mydomain.net'
+
+# 从备份还原
+python3 patch_urllist.py --restore
+```
+
+白名单是 `.data` 段里的 `const char*` 数组，字符串紧跟在数组后面连续存放 —— 所以
+**换短不换长**就不需要动指针、不需要改文件长度、也不需要重定位：整个 4.9 MB 的 exe 里
+只有被替换的那几十个字节会变（工具落盘前会逐字节核对这一点，不符就中止且不写文件）。
+
+表是**结构化定位**的：连续 ≥3 个 DWORD 都等于 `ImageBase+RVA`、且指向主机名样式的
+NUL 结尾字符串，遇空指针收尾。**不硬编码任何域名**，所以换客户端版本也适用。
+`--list` 会列出这样找到的全部三张表：MPQ 归档名、可信 URL 白名单、
+以及 `ChecksumExecutables` 要校验的文件清单（`WoW.exe` + `unicows/dbghelp/ijl15/fmod.dll`）。
+
+### 不需要额外处理 `ChecksumExecutables`
+
+那张文件清单只是**算哈希**：客户端里**没有任何期望值**（没有清单文件、没有内嵌常量），
+所以本地无法自我拒绝。服务端一侧也全都不校验：
+
+| 可能的校验点 | 结论 |
+|---|---|
+| `realmd` 版本哈希（`RealmList.cpp:37`） | 哈希表是空的 → `VerifyVersion` 直接 `return true` |
+| Warden | 默认全关（`WinEnabled=0` / `OSXEnabled=0`） |
+| 世界服 digest（`WorldSocket.cpp:286`） | 是会话密钥证明 `SHA1(账号‖0‖clientSeed‖serverSeed‖K)`，与文件字节无关 |
+| `AddonHandler` 插件指纹 | 只在插件块**格式错**时踢人，且不涉及 exe |
+
+**所以改 exe 只需要这一处补丁。**
+
+> ⚠️ **必须改乌龟服客户端那份 `WoW.exe`。** 官方 1.12.1/1.12.3 客户端会走另一条
+> **独立的** `GlueXML` 签名检查（`SSignature`）—— 混用官方客户端时那条会提示「登录页面
+> 已被修改，请重新下载客户端」，与上面的校验和无关。
+
+> ℹ️ 白名单只认 `*.域名` 形式，**纯 IP（如 `http://172.18.1.6:8080/alert`）能否通过尚未实测**；
+> 想让它可点击，建议用域名而不是 IP。完全不想动 exe 也行：公告里把地址当**纯文本**显示，
+> 用户手输即可。
+
+被保护的主机（含 `blizzard` / `battle.net` / `turtlecraft` 等）要显式加 `--force` 才允许替换 ——
+它们是客户端门户/补丁服务还在用的地址，换掉可能连带破坏其它功能。
 
 ## 改动生效
 
@@ -162,21 +234,35 @@ The Chinese pack used to own `Z`; it has been renamed to **`patch-X.mpq`** (`X` 
 A `patch-A.mpq` of your own **cannot** override `patch-Z`, and neither can edits to
 `patch-9` and friends: they all load earlier.
 
-## Why `GlueLocalization.lua` and not `GlueStrings.lua`
+## Why `GlueStrings.lua` is the file to change
 
-`Interface\GlueXML\GlueXML.toc` loads in this order:
+This is a trap that was hit in practice: `SERVER_ALERT_URL` has to live in
+`GlueStrings.lua`.
 
-```
-GlueConstants.lua → GlueStrings.lua → GlueFonts.xml → GlueLocalization.xml(→ .lua) → …
-```
+| File | Loaded by | Works? |
+| --- | --- | --- |
+| **`GlueStrings.lua`** | the client's **C++ directly** (no XML `<Script>` references it) | yes |
+| `GlueLocalization.lua` | `<Script file=...>` inside `GlueLocalization.xml` | no, too late |
 
-and `AccountLogin.xml` (which creates `ServerAlertFrame`) comes **after**
-`GlueLocalization.xml`. An assignment in `GlueLocalization.lua` therefore always takes effect.
+With the value in `GlueLocalization.lua` only, the client kept using the old one
+from the translation pack's `GlueStrings.lua` (a site that no longer resolves)
+and the login-screen panel stayed empty.
 
-The important part: **replacing `GlueStrings.lua` wholesale would wipe the several thousand
-UI strings a translation pack puts there**, because a patch overrides a file as a whole.
-Appending a few assignments to `GlueLocalization.lua` is the only way to take effect without
-that collateral damage.
+Corroboration: every working implementation keeps these keys in
+`GlueStrings.lua` - Blizzard's own files, Turtle's `patch-3/4/6/7/8/9`, and the
+Chinese translation pack alike.
+
+### The cost, and what to remember
+
+Overriding inside `GlueStrings.lua` means patch-Z has to carry a whole copy of
+it, because a patch overrides a file as a whole. The tool reads the **currently
+effective copy** (the translation pack's), changes only the target lines and
+writes the result into patch-Z, so apart from those lines it is byte-identical
+to the pack and no UI string is lost. Each run prints that diff for inspection.
+
+> **Re-run this tool after updating the translation pack.** The copy inside
+> patch-Z is a snapshot of its `GlueStrings.lua` and would otherwise shadow the
+> newer one.
 
 ## Usage
 
@@ -227,6 +313,67 @@ Fill in an address reachable **from the machine the game client runs on**:
 | the same machine as the client | `http://127.0.0.1:8080/alert` |
 | a machine on the LAN | `http://<server host>:8080/alert` |
 | behind an nginx reverse proxy | `http://your-domain/alert` |
+
+## Making the links clickable: `patch_urllist.py`
+
+A link written as `<a href="...">` in the announcement body goes through the client's
+`LaunchURL`, which checks the target host against a **whitelist baked into `WoW.exe`**:
+Blizzard's `*.worldofwarcraft.com`, `*.battle.net`, etc., plus `*.turtlecraft.gg` on the
+Turtle client and `*.wuguifu.com` on the Chinese one. A host outside that list simply
+**does nothing when clicked**, and no server-side setting can relax it.
+
+`patch_urllist.py` overwrites one slot with your own domain, **same length or shorter**:
+
+```bash
+# list the slots (with usable length; protected ones are marked)
+python3 patch_urllist.py --list
+
+# replace one entry (may not be longer than the original), dry-run first
+python3 patch_urllist.py --set '*.wowtaiwan.com.tw=*.mydomain.net' --dry-run
+python3 patch_urllist.py --set '*.wowtaiwan.com.tw=*.mydomain.net'
+
+# restore from the backup
+python3 patch_urllist.py --restore
+```
+
+The whitelist is a `const char*` array in `.data` with the strings stored right behind it, so
+a **shorter or equal replacement** needs no pointer fixups, no size change and no relocation:
+out of the whole 4.9 MB executable only those few dozen bytes change. The tool verifies that
+byte for byte before writing, and aborts without touching the file if anything is off.
+
+Tables are found **structurally** — a run of ≥3 consecutive DWORDs, each equal to
+`ImageBase+RVA` and pointing at a hostname-shaped, NUL-terminated string, terminated by a null
+pointer. No domain name is hardcoded, so this keeps working across client versions.
+`--list` also shows two similarly-shaped tables: the MPQ archive names, and the file list
+`ChecksumExecutables` hashes (`WoW.exe` + `unicows/dbghelp/ijl15/fmod.dll`).
+
+### `ChecksumExecutables` needs no extra work
+
+That file list only *computes* hashes: there is **no expected value anywhere in the client**
+(no manifest, no embedded constants), so it cannot reject itself locally. Nothing on the
+server checks it either:
+
+| possible check | verdict |
+|---|---|
+| `realmd` version hashes (`RealmList.cpp:37`) | the hash table is empty → `VerifyVersion` just `return true` |
+| Warden | off by default (`WinEnabled=0` / `OSXEnabled=0`) |
+| world-server digest (`WorldSocket.cpp:286`) | it is the session-key proof `SHA1(account‖0‖clientSeed‖serverSeed‖K)`, unrelated to file bytes |
+| `AddonHandler` fingerprinting | only kicks on **malformed** addon data, and never looks at the exe |
+
+**So one patch is all it takes.**
+
+> ⚠️ **Patch the Turtle client's `WoW.exe`.** The official 1.12.1/1.12.3 client goes through
+> a separate `GlueXML` signature check (`SSignature`), which is what reports "your login
+> screen has been modified, please download the client again" when you mix it with a
+> modified interface. That check is unrelated to the checksums above.
+
+> ℹ️ The whitelist only holds `*.domain` patterns; whether a **bare IP** (such as
+> `http://172.18.1.6:8080/alert`) passes **is not yet tested**. Use a domain if you want it
+> clickable. Or skip the executable entirely: show the address as **plain text** and let
+> people type it.
+
+Entries matching `blizzard`, `battle.net`, `turtlecraft` and friends are protected and need an
+explicit `--force` — the client's portal/patch services still use them.
 
 ## What takes effect when
 

@@ -13,11 +13,17 @@
   3. 按需替换/追加 `KEY = "value"` 行
   4. 把结果写进 patch-Z.mpq
 
-为什么默认改 GlueLocalization.lua 而不是 GlueStrings.lua
-  GlueXML.toc 的顺序是 GlueStrings.lua → GlueFonts.xml → GlueLocalization.xml(→ .lua)，
-  且 AccountLogin.xml（创建 ServerAlertFrame 的地方）在 GlueLocalization.xml 之后。
-  所以写在 GlueLocalization.lua 的赋值一定生效；
-  而整份替换 GlueStrings.lua 会连带冲掉中文包里几千条界面字符串。
+为什么目标通常是 GlueStrings.lua
+  SERVER_ALERT_URL 这类键必须写在 GlueStrings.lua 里：它由客户端 C++ 直接加载，
+  而 GlueLocalization.lua 要等 GlueLocalization.xml 的 <Script> 才执行，太晚 -
+  实测只写 GlueLocalization.lua 时客户端仍用汉化包里的旧值，公告面板空白。
+  暴雪原版、乌龟服的 patch-3/4/6/7/8/9、以及中文汉化包都把这几个键放在 GlueStrings.lua。
+
+  代价是 patch-Z 要整份容纳 GlueStrings.lua（补丁按文件整体覆盖）。
+  本工具读「当前生效的那一份」并按需只改目标行，所以除被覆盖的行外内容逐字不变，
+  界面字符串不会丢；每次运行都会把差异打印出来。
+
+  注意：汉化包更新后要重跑本工具，否则 patch-Z 里的旧快照会盖住新版。
 """
 import ctypes
 import glob
