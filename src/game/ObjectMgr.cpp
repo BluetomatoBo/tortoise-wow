@@ -6176,6 +6176,17 @@ uint32 ObjectMgr::GetXPForLevel(uint32 level) const
 
 void ObjectMgr::LoadPetNames()
 {
+    // Clear first, like LoadGossipMenu does with m_GossipMenusMap. Without this
+    // a reload appends the new syllables to the ones already in memory instead
+    // of replacing them: with `reload pet_name_generation` an entry ends up
+    // holding both the old and the new word for the same slot, so GeneratePetName
+    // (which picks half0 + half1 at random) silently mixes them - after
+    // translating the table a freshly summoned demon still gets an English name
+    // about half the time. Duplicated words also skew the distribution, and
+    // deleted rows can never be removed.
+    m_PetHalfNameMap0.clear();
+    m_PetHalfNameMap1.clear();
+
     std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT `word`, `entry`, `half` FROM `pet_name_generation`"));
 
     if (!result)
