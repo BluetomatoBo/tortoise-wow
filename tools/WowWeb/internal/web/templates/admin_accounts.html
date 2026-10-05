@@ -1,0 +1,60 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.T "acct.title"}} <span class="muted">({{.Total}})</span></h1>
+  <a class="btn" href="/admin/accounts/new">{{.T "acct.create"}}</a>
+</div>
+
+<section class="card">
+  <form method="get" action="/admin/accounts" class="filters">
+    <input name="q" value="{{.Filter.Search}}" placeholder="{{.T "acct.placeholder"}}">
+    <select name="state">
+      <option value="">{{.T "acct.anyState"}}</option>
+      <option value="online"   {{if isTrue .Filter.Online}}selected{{end}}>{{.T "acct.online"}}</option>
+      <option value="offline"  {{if isFalse .Filter.Online}}selected{{end}}>{{.T "acct.offline"}}</option>
+      <option value="banned"   {{if isTrue .Filter.Banned}}selected{{end}}>{{.T "acct.banned"}}</option>
+      <option value="disabled" {{if isFalse .Filter.Active}}selected{{end}}>{{.T "acct.disabled"}}</option>
+    </select>
+    <select name="rank">
+      <option value="">{{.T "acct.anyRank"}}</option>
+      <option value="0" {{if and (isSet .Filter.Rank) (eq (deref .Filter.Rank) 0)}}selected{{end}}>{{.RankName 0}}</option>
+      <option value="1" {{if and (isSet .Filter.Rank) (eq (deref .Filter.Rank) 1)}}selected{{end}}>{{.RankName 1}}</option>
+      <option value="2" {{if and (isSet .Filter.Rank) (eq (deref .Filter.Rank) 2)}}selected{{end}}>{{.RankName 2}}</option>
+      <option value="3" {{if and (isSet .Filter.Rank) (eq (deref .Filter.Rank) 3)}}selected{{end}}>{{.RankName 3}}</option>
+      <option value="4" {{if and (isSet .Filter.Rank) (eq (deref .Filter.Rank) 4)}}selected{{end}}>{{.RankName 4}}</option>
+      <option value="5" {{if and (isSet .Filter.Rank) (eq (deref .Filter.Rank) 5)}}selected{{end}}>{{.RankName 5}}</option>
+    </select>
+    <button class="btn" type="submit">{{.T "common.filter"}}</button>
+    <a class="btn btn-ghost" href="/admin/accounts">{{.T "common.reset"}}</a>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr><th>{{.T "admin.id"}}</th><th>{{.T "acct.account"}}</th><th>{{.T "panel.rank"}}</th><th>{{.T "admin.state"}}</th><th>{{.T "acct.joined"}}</th><th>{{.T "acct.lastLogin"}}</th><th>{{.T "acct.lastIP"}}</th><th></th></tr>
+    </thead>
+    <tbody>
+    {{range .Accounts}}
+      <tr>
+        <td>{{.ID}}</td>
+        <td>
+          <a href="/admin/accounts/{{.ID}}">{{.Username}}</a>
+          {{if .Security}}<span class="pill" title="{{$.T "acct.twoFaBadge"}}">2FA</span>{{end}}
+        </td>
+        <td>{{template "badge" $.RankBadge .Rank}}</td>
+        <td>
+          {{template "badge" $.AccountState .}}
+          {{with index $.Bans .ID}}<span class="pill pill-danger" title="{{.Reason}}">{{$.T "acct.banned"}}</span>{{end}}
+        </td>
+        <td>{{timeFmt .JoinDate}}</td>
+        <td>{{timeFmt .LastLogin}}</td>
+        <td><code>{{.LastIP}}</code></td>
+        <td class="right"><a class="btn btn-ghost btn-sm" href="/admin/accounts/{{.ID}}">{{$.T "common.manage"}}</a></td>
+      </tr>
+    {{else}}
+      <tr><td colspan="8" class="muted center">{{.T "acct.noneMatch"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+
+  {{template "pagination" .}}
+</section>
+{{end}}

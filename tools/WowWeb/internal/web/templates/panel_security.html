@@ -1,0 +1,95 @@
+{{define "content"}}
+<h1>{{.T "sec.title"}}</h1>
+
+<div class="grid">
+  <div class="card">
+    <h2>{{.T "sec.status"}}</h2>
+    <p>
+      {{if .Enabled}}
+        <span class="pill pill-ok">{{.T "common.enabled"}}</span>
+      {{else}}
+        <span class="pill">{{.T "common.disabled"}}</span>
+      {{end}}
+    </p>
+    <p class="muted">{{.T "sec.statusHint"}}</p>
+  </div>
+
+  {{if .Pending}}
+    <div class="card">
+      <h2>{{.T "sec.finishSetup"}}</h2>
+      <p>{{.T "sec.step1"}}</p>
+      <p><code class="secret">{{.Secret}}</code></p>
+      <p class="muted">
+        {{.T "sec.orOpen"}}<br>
+        <a href="{{.OTPAuthURI}}">otpauth://&hellip;</a>
+      </p>
+      <p>{{.T "sec.step2"}}</p>
+      <form method="post" action="/panel/security/confirm">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <label>{{.T "sec.code"}}
+          <input name="code" inputmode="numeric" pattern="[0-9]{4,10}"
+                 autocomplete="one-time-code" required autofocus>
+        </label>
+        <button class="btn" type="submit">{{.T "sec.activate"}}</button>
+      </form>
+      <form method="post" action="/panel/security/enable" class="inline">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <button class="btn btn-ghost btn-sm" type="submit">{{.T "sec.regenerate"}}</button>
+      </form>
+    </div>
+  {{else if .Enabled}}
+    <div class="card">
+      <h2>{{.T "sec.turnOff"}}</h2>
+      <p class="muted">{{.T "sec.confirmWithCode"}}</p>
+      <form method="post" action="/panel/security/disable"
+            onsubmit="return confirm('{{.T "sec.confirmDisable"}}');">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <label>{{.T "sec.code"}}
+          <input name="code" inputmode="numeric" pattern="[0-9]{4,10}"
+                 autocomplete="one-time-code" required>
+        </label>
+        <button class="btn btn-danger" type="submit">{{.T "sec.disable"}}</button>
+      </form>
+    </div>
+  {{else}}
+    <div class="card">
+      <h2>{{.T "sec.turnOn"}}</h2>
+      <p class="muted">{{.T "sec.turnOnHint"}}</p>
+      <form method="post" action="/panel/security/enable">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <button class="btn" type="submit">{{.T "sec.setUp"}}</button>
+      </form>
+    </div>
+  {{end}}
+</div>
+
+{{if .Enabled}}
+<section class="card">
+  <h2>{{.T "sec.trustedAddresses"}}</h2>
+  {{if .Allowances}}
+    <table class="table">
+      <thead><tr><th>{{.T "sec.address"}}</th><th>{{.T "sec.trustedUntil"}}</th><th></th></tr></thead>
+      <tbody>
+      {{range .Allowances}}
+        <tr>
+          <td><code>{{.IP}}</code></td>
+          <td>{{timeFmtShort .ExpiresAt}}</td>
+          <td class="right">
+            <form method="post" action="/panel/security/revoke" class="inline">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <input type="hidden" name="allowance_id" value="{{.ID}}">
+              <button class="btn btn-ghost btn-sm" type="submit">{{$.T "common.remove"}}</button>
+            </form>
+          </td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+  {{else}}
+    <p class="muted">{{.T "sec.noTrusted"}}</p>
+  {{end}}
+</section>
+{{end}}
+
+<p class="muted"><a href="/panel">&larr; {{.T "passwd.back"}}</a></p>
+{{end}}

@@ -1,0 +1,49 @@
+{{define "content"}}
+<h1>{{.T "chars.title"}}</h1>
+
+<section class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "chars.name"}}</th><th>{{.T "chars.level"}}</th><th>{{.T "chars.race"}}</th>
+        <th>{{.T "chars.class"}}</th><th>{{.T "chars.guild"}}</th>
+        <th class="right">{{.T "chars.money"}}</th><th class="right">{{.T "chars.played"}}</th>
+        <th>{{.T "chars.lastSeen"}}</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Characters}}
+      <tr>
+        <td>
+          <strong>{{.Name}}</strong>
+          {{if .Online}}{{template "badge" $.CharacterState true}}{{end}}
+          {{with $.AtLoginLabels .AtLogin}}<span class="pill pill-warn">{{list .}}</span>{{end}}
+        </td>
+        <td>{{.Level}}</td>
+        <td>{{$.RaceName .Race}}</td>
+        <td>{{$.ClassName .Class}}</td>
+        <td>{{if .GuildName}}{{.GuildName}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        <td class="right">{{coins .Money}}</td>
+        <td class="right">{{playtime .TotalTime}}</td>
+        <td>{{unixTime .LogoutTime}}</td>
+        <td class="right">
+          {{if .Online}}
+            <span class="muted" title="{{$.T "chars.logOutFirst"}}">{{$.T "chars.unstick"}}</span>
+          {{else}}
+            <form method="post" action="/panel/characters/{{.GUID}}/unstick" class="inline"
+                  onsubmit="return confirm('{{printf ($.T "chars.confirmUnstick") .Name}}');">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <button class="btn btn-ghost btn-sm" type="submit">{{$.T "chars.unstick"}}</button>
+            </form>
+          {{end}}
+        </td>
+      </tr>
+    {{else}}
+      <tr><td colspan="9" class="muted center">{{.T "chars.none"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+
+  <p class="muted">{{.T "chars.unstickHelp"}}</p>
+</section>
+{{end}}

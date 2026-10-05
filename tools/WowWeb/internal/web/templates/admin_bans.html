@@ -1,0 +1,83 @@
+{{define "content"}}
+<h1>{{.T "bans.title"}}</h1>
+
+<section class="card">
+  <h2>{{.T "bans.accountBans"}} <span class="muted">({{.Total}})</span></h2>
+
+  <form method="get" action="/admin/bans" class="filters">
+    <input name="q" value="{{.Filter.Search}}" placeholder="{{.T "bans.placeholder"}}">
+    <select name="only">
+      <option value="active"  {{if eq .Filter.Only "active"}}selected{{end}}>{{.T "bans.activeOnly"}}</option>
+      <option value="expired" {{if eq .Filter.Only "expired"}}selected{{end}}>{{.T "bans.expiredOnly"}}</option>
+      <option value="all"     {{if eq .Filter.Only "all"}}selected{{end}}>{{.T "bans.all"}}</option>
+    </select>
+    <button class="btn" type="submit">{{.T "common.filter"}}</button>
+    <a class="btn btn-ghost" href="/admin/bans">{{.T "common.reset"}}</a>
+  </form>
+
+  <table class="table">
+    <thead><tr><th>{{.T "acct.account"}}</th><th>{{.T "bans.issued"}}</th><th>{{.T "bans.until"}}</th><th>{{.T "bans.by"}}</th><th>{{.T "bans.reason"}}</th><th>{{.T "bans.state"}}</th><th></th></tr></thead>
+    <tbody>
+    {{range .Bans}}
+      <tr>
+        <td>{{if .Username}}<a href="/admin/accounts/{{.AccountID}}">{{.Username}}</a>{{else}}#{{.AccountID}}{{end}}</td>
+        <td>{{timeFmtShort .BanDate}}</td>
+        <td>{{if .Permanent}}<strong>{{$.T "common.perm"}}</strong>{{else}}{{timeFmtShort .UnbanDate}}{{end}}</td>
+        <td>{{.BannedBy}}</td>
+        <td class="muted">{{.Reason}}</td>
+        <td>
+          {{if .StillValid}}<span class="pill pill-danger">{{$.T "acct.banActive"}}</span>
+          {{else}}<span class="pill">{{$.T "acct.banExpired"}}</span>{{end}}
+        </td>
+        <td class="right">
+          <a class="btn btn-ghost btn-sm" href="/admin/accounts/{{.AccountID}}">{{$.T "common.manage"}}</a>
+        </td>
+      </tr>
+    {{else}}
+      <tr><td colspan="7" class="muted center">{{.T "bans.none"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+
+  {{template "pagination" .}}
+</section>
+
+<section class="card">
+  <h2>{{.T "bans.ipBans"}} <span class="muted">({{len .IPBans}})</span></h2>
+
+  {{if .IPBans}}
+    <table class="table">
+      <thead><tr><th>{{.T "sess.address"}}</th><th>{{.T "bans.issued"}}</th><th>{{.T "bans.until"}}</th><th>{{.T "bans.by"}}</th><th>{{.T "bans.reason"}}</th><th></th></tr></thead>
+      <tbody>
+      {{range .IPBans}}
+        <tr>
+          <td><code>{{.IP}}</code></td>
+          <td>{{timeFmtShort .BanDate}}</td>
+          <td>{{if .Permanent}}<strong>{{$.T "common.perm"}}</strong>{{else}}{{timeFmtShort .UnbanDate}}{{end}}</td>
+          <td>{{.BannedBy}}</td>
+          <td class="muted">{{.Reason}}</td>
+          <td class="right">
+            <form method="post" action="/admin/bans/ip/remove" class="inline">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <input type="hidden" name="ip" value="{{.IP}}">
+              <button class="btn btn-ghost btn-sm" type="submit">{{$.T "common.remove"}}</button>
+            </form>
+          </td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+  {{else}}
+    <p class="muted">{{.T "bans.noneIP"}}</p>
+  {{end}}
+
+  <form method="post" action="/admin/bans/ip" class="filters">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    <input name="ip" placeholder="{{.T "bans.ipPlaceholder"}}" required>
+    <input name="duration" value="24" inputmode="numeric" style="width:7rem" title="{{.T "bans.hoursTitle"}}">
+    <input name="reason" placeholder="{{.T "bans.reason"}}">
+    <button class="btn btn-danger" type="submit">{{.T "bans.banIP"}}</button>
+  </form>
+  <p class="muted">{{.T "bans.ipNote"}}</p>
+</section>
+{{end}}

@@ -1,0 +1,29 @@
+{{define "content"}}
+<section class="card narrow">
+  <h1>{{.T "reg.title"}}</h1>
+
+  <form method="post" action="/register">
+    <label>{{.T "reg.accountName"}}
+      <input name="username" value="{{.Form.Username}}" autocomplete="username"
+             pattern="[A-Za-z0-9_-]{3,16}" required autofocus>
+      <small class="muted">{{.T "reg.accountHint"}}</small>
+    </label>
+    <label>{{.T "reg.password"}}
+      <input type="password" name="password" autocomplete="new-password"
+             minlength="{{.Config.PasswordMinLen}}" maxlength="16" required>
+      <small class="muted">{{printf (.T "reg.passwordHint") .Config.PasswordMinLen}}</small>
+    </label>
+    <label>{{.T "reg.password2"}}
+      <input type="password" name="password2" autocomplete="new-password"
+             minlength="{{.Config.PasswordMinLen}}" maxlength="16" required>
+    </label>
+    <label>{{.T "reg.email"}} {{if not .Config.RequireEmail}}<span class="muted">{{.T "common.optional"}}</span>{{end}}
+      <input type="email" name="email" value="{{.Form.Email}}" autocomplete="email"
+             {{if .Config.RequireEmail}}required{{end}}>
+    </label>
+    <button class="btn" type="submit">{{.T "reg.title"}}</button>
+  </form>
+
+  <p class="muted">{{.T "reg.alreadyRegistered"}} <a href="/login">{{.T "nav.signIn"}}</a>.</p>
+</section>
+{{end}}

@@ -1,0 +1,86 @@
+{{define "content"}}
+<h1>{{.T "realm.title"}}</h1>
+
+<p class="muted">{{.T "realm.intro"}}</p>
+
+{{range .Realms}}
+<section class="card">
+  <h2>{{$.T "realm.heading"}} {{.ID}} &mdash; {{.Name}}</h2>
+
+  <div class="grid">
+    <div>
+      <h3>{{$.T "realm.connection"}}</h3>
+      <form method="post" action="/admin/realms/{{.ID}}">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <label>{{$.T "realm.name"}}
+          <input name="name" value="{{.Name}}" maxlength="32" required>
+        </label>
+        <label>{{$.T "realm.address"}}
+          <input name="address" value="{{.Address}}" maxlength="32" required>
+          <small class="muted">{{$.T "realm.addressHint"}}</small>
+        </label>
+        <label>{{$.T "realm.port"}}
+          <input name="port" value="{{.Port}}" inputmode="numeric" required>
+        </label>
+        <button class="btn" type="submit">{{$.T "realm.save"}}</button>
+      </form>
+    </div>
+
+    <div>
+      <h3>{{$.T "realm.listFlags"}}</h3>
+      <form method="post" action="/admin/realms/{{.ID}}/flags">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        {{$flags := .Flags}}
+        {{range $.RealmFlagOptions}}
+          <label class="check">
+            <input type="checkbox" name="flag_{{.Bit}}" value="1"
+                   {{if has $flags .Bit}}checked{{end}}>
+            {{.Name}}
+          </label>
+          <p class="muted hint">{{.Help}}</p>
+        {{end}}
+        <button class="btn" type="submit">{{$.T "realm.saveFlags"}}</button>
+        <p class="muted">
+          {{$.T "realm.current"}} <span class="pill">{{list ($.RealmFlagLabels .Flags)}}</span>
+        </p>
+      </form>
+      <p class="muted">{{$.T "realm.offlineNote"}}</p>
+
+      <h3>{{$.T "realm.access"}}</h3>
+      <form method="post" action="/admin/realms/{{.ID}}/security">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <label>{{$.T "realm.minRank"}}
+          <select name="level">
+            <option value="0" {{if eq .AllowedSecurityLevel 0}}selected{{end}}>0 &mdash; {{$.T "realm.everyone"}}</option>
+            <option value="1" {{if eq .AllowedSecurityLevel 1}}selected{{end}}>1 &mdash; {{$.RankName 1}}</option>
+            <option value="2" {{if eq .AllowedSecurityLevel 2}}selected{{end}}>2 &mdash; {{$.RankName 2}}</option>
+            <option value="3" {{if eq .AllowedSecurityLevel 3}}selected{{end}}>3 &mdash; {{$.RankName 3}}</option>
+            <option value="4" {{if eq .AllowedSecurityLevel 4}}selected{{end}}>4 &mdash; {{$.RankName 4}}</option>
+          </select>
+        </label>
+        <button class="btn" type="submit">{{$.T "realm.saveAccess"}}</button>
+      </form>
+      <p class="muted">{{$.T "realm.accessNote"}}</p>
+    </div>
+  </div>
+
+  <h3>{{$.T "realm.runtime"}}</h3>
+  <table class="kv">
+    <tr><th>{{$.T "realm.iconType"}}</th><td>{{.Icon}} <span class="muted">{{$.T "realm.iconNote"}}</span></td></tr>
+    <tr><th>{{$.T "realm.timezone"}}</th><td>{{.Timezone}} <span class="muted">{{$.T "realm.timezoneNote"}}</span></td></tr>
+    <tr><th>{{$.T "realm.population"}}</th><td>{{percent .Population}} <span class="muted">{{$.T "realm.populationNote"}}</span></td></tr>
+    <tr><th>{{$.T "realm.builds"}}</th><td><code>{{.RealmBuilds}}</code> <span class="muted">{{$.T "realm.buildsNote"}}</span></td></tr>
+    <tr><th>{{$.T "realm.rawFlags"}}</th><td><code>0x{{printf "%02X" .Flags}}</code></td></tr>
+  </table>
+</section>
+{{else}}
+<section class="card">
+  <p class="muted">{{.T "realm.empty"}}</p>
+  <pre>REPLACE INTO `tw_logon`.`realmlist`
+  (`id`,`name`,`address`,`port`,`icon`,`realmflags`,`timezone`,
+   `allowedSecurityLevel`,`population`,`realmbuilds`)
+VALUES (1, '{{.Config.RealmName}}', 'your-domain.example', {{.Config.WorldPort}},
+        0, 0, 1, 0, 0, '7272');</pre>
+</section>
+{{end}}
+{{end}}

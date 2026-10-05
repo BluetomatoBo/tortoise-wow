@@ -1,0 +1,49 @@
+{{define "content"}}
+<h1>{{.T "achar.title"}} <span class="muted">({{.Total}})</span></h1>
+
+<section class="card">
+  <form method="get" action="/admin/characters" class="filters">
+    <input name="q" value="{{.Filter.Search}}" placeholder="{{.T "achar.placeholder"}}">
+    <input name="minlevel" value="{{if .Filter.MinLevel}}{{deref .Filter.MinLevel}}{{end}}"
+           placeholder="{{.T "achar.minLevel"}}" inputmode="numeric" style="width:7rem">
+    <label class="check">
+      <input type="checkbox" name="online" value="1" {{if isTrue .Filter.Online}}checked{{end}}> {{.T "achar.onlineOnly"}}
+    </label>
+    <button class="btn" type="submit">{{.T "common.filter"}}</button>
+    <a class="btn btn-ghost" href="/admin/characters">{{.T "common.reset"}}</a>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "chars.name"}}</th><th>{{.T "achar.account"}}</th><th>{{.T "chars.level"}}</th>
+        <th>{{.T "chars.race"}}</th><th>{{.T "chars.class"}}</th>
+        <th>{{.T "chars.guild"}}</th><th class="right">{{.T "chars.played"}}</th>
+        <th>{{.T "chars.lastSeen"}}</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Characters}}
+      <tr>
+        <td>
+          <a href="/admin/characters/{{.GUID}}">{{.Name}}</a>
+          {{if .Online}}{{template "badge" $.CharacterState true}}{{end}}
+        </td>
+        <td><a href="/admin/accounts/{{.AccountID}}">{{.AccountName}}</a></td>
+        <td>{{.Level}}</td>
+        <td>{{$.RaceName .Race}}</td>
+        <td>{{$.ClassName .Class}}</td>
+        <td>{{if .GuildName}}{{.GuildName}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        <td class="right">{{playtime .TotalTime}}</td>
+        <td>{{unixTime .LogoutTime}}</td>
+        <td class="right"><a class="btn btn-ghost btn-sm" href="/admin/characters/{{.GUID}}">{{$.T "common.open"}}</a></td>
+      </tr>
+    {{else}}
+      <tr><td colspan="9" class="muted center">{{.T "achar.noneMatch"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+
+  {{template "pagination" .}}
+</section>
+{{end}}

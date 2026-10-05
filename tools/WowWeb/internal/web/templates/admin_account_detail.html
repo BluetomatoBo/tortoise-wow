@@ -1,0 +1,184 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.T "acct.account"}} <code>{{.Account.Username}}</code></h1>
+  <a class="btn btn-ghost" href="/admin/accounts">&larr; {{.T "acct.backToAccounts"}}</a>
+</div>
+
+{{if .IsSelf}}<div class="flash flash-info">{{.T "acct.selfNote"}}</div>{{end}}
+{{with .Account}}
+  {{if not .Active}}<div class="flash flash-error">{{$.T "acct.disabledNote"}}</div>{{end}}
+{{end}}
+
+<div class="grid">
+  <div class="card">
+    <h2>{{.T "acct.overview"}}</h2>
+    <table class="kv">
+      <tr><th>{{.T "admin.id"}}</th><td>{{.Account.ID}}</td></tr>
+      <tr><th>{{.T "panel.rank"}}</th><td>{{template "badge" .RankBadge .Account.Rank}}</td></tr>
+      <tr><th>{{.T "panel.email"}}</th><td>{{if .Account.Email}}{{.Account.Email}}{{else}}<span class="muted">{{.T "common.notSet"}}</span>{{end}}</td></tr>
+      <tr><th>{{.T "panel.joined"}}</th><td>{{timeFmt .Account.JoinDate}}</td></tr>
+      <tr><th>{{.T "panel.lastLogin"}}</th><td>{{timeFmt .Account.LastLogin}}</td></tr>
+      <tr><th>{{.T "panel.lastIP"}}</th><td><code>{{.Account.LastIP}}</code></td></tr>
+      <tr><th>{{.T "panel.failedLogins"}}</th><td>{{.Account.FailedLogins}}</td></tr>
+      <tr><th>{{.T "acct.webSessions"}}</th><td>{{.Sessions}}</td></tr>
+      <tr><th>{{.T "acct.muted"}}</th><td>{{if gt .Account.MuteTime 0}}{{unixTime .Account.MuteTime}}{{else}}<span class="muted">{{.T "common.no"}}</span>{{end}}</td></tr>
+      <tr><th>2FA</th><td>{{if .Account.Security}}<span class="pill pill-ok">{{.T "common.enabled"}}</span>{{else}}<span class="pill">{{.T "common.disabled"}}</span>{{end}}</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>{{.T "acct.access"}}</h2>
+
+    <form method="post" action="/admin/accounts/{{.Account.ID}}/rank">
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <label>{{.T "panel.rank"}}
+        <select name="rank">
+          {{range $.RankChoices}}
+            <option value="{{.}}" {{if eq . $.Account.Rank}}selected{{end}}>{{$.RankName .}}</option>
+          {{end}}
+        </select>
+      </label>
+      <button class="btn" type="submit" {{if .IsSelf}}disabled{{end}}>{{.T "acct.setRank"}}</button>
+    </form>
+
+    <hr>
+
+    <form method="post" action="/admin/accounts/{{.Account.ID}}/active">
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      {{if .Account.Active}}
+        <input type="hidden" name="active" value="0">
+        <button class="btn btn-danger" type="submit" {{if .IsSelf}}disabled{{end}}>{{.T "acct.disableAccount"}}</button>
+      {{else}}
+        <input type="hidden" name="active" value="1">
+        <button class="btn" type="submit">{{.T "acct.enableAccount"}}</button>
+      {{end}}
+    </form>
+    <p class="muted">{{.T "acct.disableNote"}}</p>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>{{.T "acct.ban"}}</h2>
+    {{if .Bans}}
+      <table class="table">
+        <thead><tr><th>{{.T "acct.banDate"}}</th><th>{{.T "acct.banUntil"}}</th><th>{{.T "acct.banBy"}}</th><th>{{.T "acct.banReason"}}</th><th>{{.T "acct.banState"}}</th><th></th></tr></thead>
+        <tbody>
+        {{range .Bans}}
+          <tr>
+            <td>{{timeFmtShort .BanDate}}</td>
+            <td>{{if .Permanent}}<strong>{{$.T "common.perm"}}</strong>{{else}}{{timeFmtShort .UnbanDate}}{{end}}</td>
+            <td>{{.BannedBy}}</td>
+            <td class="muted">{{.Reason}}</td>
+            <td>{{if .StillValid}}<span class="pill pill-danger">{{$.T "acct.banActive"}}</span>{{else}}<span class="pill">{{$.T "acct.banExpired"}}</span>{{end}}</td>
+            <td></td>
+          </tr>
+        {{end}}
+        </tbody>
+      </table>
+    {{else}}
+      <p class="muted">{{.T "acct.noBans"}}</p>
+    {{end}}
+
+    <form method="post" action="/admin/accounts/{{.Account.ID}}/ban">
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <label>{{.T "acct.duration"}}
+        <input name="duration" value="24" inputmode="numeric">
+        <small class="muted">{{.T "acct.durationHint"}}</small>
+      </label>
+      <label>{{.T "acct.banReason"}}
+        <input name="reason" placeholder="{{.T "acct.reasonPlaceholder"}}">
+      </label>
+      <button class="btn btn-danger" type="submit" {{if .IsSelf}}disabled{{end}}>{{.T "acct.ban"}}</button>
+    </form>
+
+    <form method="post" action="/admin/accounts/{{.Account.ID}}/unban" class="inline">
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <button class="btn btn-ghost" type="submit">{{.T "acct.unban"}}</button>
+    </form>
+
+    <p class="muted">{{.T "acct.banNote"}}</p>
+  </div>
+
+  <div class="card">
+    <h2>{{.T "acct.muteAndPassword"}}</h2>
+
+    <form method="post" action="/admin/accounts/{{.Account.ID}}/mute">
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <label>{{.T "acct.muteFor"}}
+        <input name="hours" value="24" inputmode="numeric">
+        <small class="muted">{{.T "acct.hours"}}</small>
+      </label>
+      <label>{{.T "acct.reasonPlaceholder"}}
+        <input name="reason" placeholder="{{.T "acct.muteReasonPlaceholder"}}">
+      </label>
+      <button class="btn" type="submit">{{.T "acct.mute"}}</button>
+    </form>
+    <form method="post" action="/admin/accounts/{{.Account.ID}}/unmute" class="inline">
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <button class="btn btn-ghost" type="submit">{{.T "acct.unmute"}}</button>
+    </form>
+
+    <hr>
+
+    <form method="post" action="/admin/accounts/{{.Account.ID}}/password"
+          onsubmit="return confirm('{{printf ($.T "acct.confirmResetPassword") .Account.Username}}');">
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <label>{{.T "acct.newPassword"}}
+        <input type="password" name="password" minlength="{{$.Config.PasswordMinLen}}" maxlength="16" required>
+      </label>
+      <button class="btn" type="submit">{{.T "acct.resetPassword"}}</button>
+    </form>
+
+    <hr>
+
+    <form method="post" action="/admin/accounts/{{.Account.ID}}/email">
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <label>{{.T "acct.email"}}
+        <input type="email" name="email" value="{{.Account.Email}}">
+      </label>
+      <button class="btn btn-ghost" type="submit">{{.T "acct.saveEmail"}}</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>{{.T "acct.twoFaRecovery"}}</h2>
+    <p class="muted">{{.T "acct.twoFaRecoveryHint"}}</p>
+    {{if .Allowances}}
+      <table class="table">
+        <thead><tr><th>{{.T "acct.trustedAddress"}}</th><th>{{.T "acct.until"}}</th></tr></thead>
+        <tbody>
+        {{range .Allowances}}
+          <tr><td><code>{{.IP}}</code></td><td>{{timeFmtShort .ExpiresAt}}</td></tr>
+        {{end}}
+        </tbody>
+      </table>
+    {{end}}
+    <form method="post" action="/admin/accounts/{{.Account.ID}}/reset-2fa"
+          onsubmit="return confirm('{{printf ($.T "acct.confirmReset2fa") .Account.Username}}');">
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <button class="btn btn-danger" type="submit">{{.T "acct.reset2fa"}}</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>{{.T "acct.delete"}}</h2>
+    <p class="muted">{{.T "acct.deleteNote"}}</p>
+    <form method="post" action="/admin/accounts/{{.Account.ID}}/delete"
+          onsubmit="return confirm('{{.T "acct.confirmDeleteText"}}');">
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <label>{{printf (.T "acct.typeToConfirm") .Account.Username}}
+        <input name="confirm" autocomplete="off">
+      </label>
+      <button class="btn btn-danger" type="submit" {{if .IsSelf}}disabled{{end}}>{{.T "acct.deleteAccount"}}</button>
+    </form>
+  </div>
+</div>
+
+<section class="card">
+  <h2>{{.T "panel.characters"}} ({{len .Characters}})</h2>
+  {{template "charactertable" .}}
+</section>
+{{end}}

@@ -1,0 +1,46 @@
+{{define "pagination"}}
+{{if gt .Pages 1}}
+<nav class="pager">
+  {{if gt .Page 1}}<a class="btn btn-ghost" href="?{{.QueryString}}page={{sub .Page 1}}">{{.T "common.prev"}}</a>{{end}}
+  <span class="muted">{{printf (.T "common.pageOf") .Page .Pages}}</span>
+  {{if lt .Page .Pages}}<a class="btn btn-ghost" href="?{{.QueryString}}page={{add .Page 1}}">{{.T "common.next"}}</a>{{end}}
+</nav>
+{{end}}
+{{end}}
+
+{{/* "badge" renders a status pill from a web.Badge (label + css class). */}}
+{{define "badge"}}<span class="{{badge .}}">{{.Label}}</span>{{end}}
+
+{{define "charactertable"}}
+<table class="table">
+  <thead>
+    <tr>
+      <th>{{.T "chars.name"}}</th><th>{{.T "chars.level"}}</th><th>{{.T "chars.race"}}</th>
+      <th>{{.T "chars.class"}}</th><th>{{.T "chars.guild"}}</th>
+      <th class="right">{{.T "chars.money"}}</th><th class="right">{{.T "chars.played"}}</th>
+      <th>{{.T "chars.lastSeen"}}</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {{range .Characters}}
+    <tr>
+      <td>
+        <strong>{{.Name}}</strong>
+        {{if .Online}}{{template "badge" $.CharacterState true}}{{end}}
+        {{with $.AtLoginLabels .AtLogin}}<span class="pill pill-warn">{{list .}}</span>{{end}}
+      </td>
+      <td>{{.Level}}</td>
+      <td>{{$.RaceName .Race}}</td>
+      <td>{{$.ClassName .Class}}</td>
+      <td>{{if .GuildName}}{{.GuildName}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+      <td class="right">{{coins .Money}}</td>
+      <td class="right">{{playtime .TotalTime}}</td>
+      <td>{{unixTime .LogoutTime}}</td>
+      <td class="right"><a class="btn btn-ghost btn-sm" href="/admin/characters/{{.GUID}}">{{$.T "common.open"}}</a></td>
+    </tr>
+  {{else}}
+    <tr><td colspan="9" class="muted center">{{.T "achar.noneMatch"}}</td></tr>
+  {{end}}
+  </tbody>
+</table>
+{{end}}

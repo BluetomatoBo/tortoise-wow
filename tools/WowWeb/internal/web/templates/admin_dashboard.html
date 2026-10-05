@@ -1,0 +1,107 @@
+{{define "content"}}
+<h1>{{.T "admin.title"}}</h1>
+
+<div class="grid">
+  <div class="card">
+    <h2>{{.T "admin.playersOnline"}}</h2>
+    <p class="stat">{{.Stats.OnlineChars}}</p>
+    <p class="muted">{{.Stats.OnlineAccs}} {{.Tn "admin.accountsInGame" .Stats.OnlineAccs}}</p>
+  </div>
+  <div class="card">
+    <h2>{{.T "home.accounts"}}</h2>
+    <p class="stat">{{.Stats.Accounts}}</p>
+    <p class="muted">{{.Stats.NewToday}} {{.T "admin.today"}}</p>
+  </div>
+  <div class="card">
+    <h2>{{.T "home.characters"}}</h2>
+    <p class="stat">{{.Stats.Characters}}</p>
+    <p class="muted">{{.Stats.Guilds}} {{.Tn "home.guilds" .Stats.Guilds}}</p>
+  </div>
+  <div class="card">
+    <h2>{{.T "admin.activeBans"}}</h2>
+    <p class="stat">{{.Stats.ActiveBans}}</p>
+    <p class="muted"><a href="/admin/bans">{{.T "common.manage"}}</a></p>
+  </div>
+</div>
+
+<section class="card">
+  <h2>{{.T "admin.realms"}}</h2>
+  <table class="table">
+    <thead><tr><th>{{.T "admin.id"}}</th><th>{{.T "admin.name"}}</th><th>{{.T "admin.address"}}</th><th>{{.T "admin.flags"}}</th><th>{{.T "admin.load"}}</th><th>{{.T "admin.minRank"}}</th></tr></thead>
+    <tbody>
+    {{range .Realms}}
+      <tr>
+        <td>{{.ID}}</td>
+        <td>{{.Name}}</td>
+        <td><code>{{.Address}}:{{.Port}}</code></td>
+        <td>
+          {{if .Flags}}<span class="muted">{{list ($.RealmFlagLabels .Flags)}}</span>{{else}}<span class="muted">&mdash;</span>{{end}}
+        </td>
+        <td>{{percent .Population}}</td>
+        <td>{{$.RankName .AllowedSecurityLevel}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  <p class="muted">{{.T "admin.realmNote"}}</p>
+</section>
+
+<section class="card">
+  <h2>{{.T "admin.onlineNow"}}</h2>
+  <table class="table">
+    <thead><tr><th>{{.T "chars.name"}}</th><th>{{.T "chars.level"}}</th><th>{{.T "acct.account"}}</th><th>{{.T "admin.zone"}}</th><th>{{.T "chars.guild"}}</th></tr></thead>
+    <tbody>
+    {{range .Online}}
+      <tr>
+        <td><a href="/admin/characters/{{.GUID}}">{{.Name}}</a></td>
+        <td>{{.Level}} {{$.ClassName .Class}}</td>
+        <td><a href="/admin/accounts/{{.AccountID}}">{{.AccountName}}</a></td>
+        <td>#{{.Zone}}</td>
+        <td>{{if .GuildName}}{{.GuildName}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+      </tr>
+    {{else}}
+      <tr><td colspan="5" class="muted center">{{.T "admin.nobodyOnline"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h2>{{.T "admin.newestAccounts"}}</h2>
+  <table class="table">
+    <thead><tr><th>{{.T "admin.id"}}</th><th>{{.T "admin.name"}}</th><th>{{.T "panel.rank"}}</th><th>{{.T "acct.joined"}}</th><th>{{.T "admin.state"}}</th></tr></thead>
+    <tbody>
+    {{range .Recent}}
+      <tr>
+        <td>{{.ID}}</td>
+        <td><a href="/admin/accounts/{{.ID}}">{{.Username}}</a></td>
+        <td>{{template "badge" $.RankBadge .Rank}}</td>
+        <td>{{timeFmt .JoinDate}}</td>
+        <td>{{template "badge" $.AccountState .}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+
+{{if .Audit}}
+<section class="card">
+  <h2>{{.T "admin.recentActions"}}</h2>
+  <table class="table">
+    <thead><tr><th>{{.T "admin.when"}}</th><th>{{.T "admin.who"}}</th><th>{{.T "admin.action"}}</th><th>{{.T "admin.target"}}</th><th>{{.T "admin.detail"}}</th></tr></thead>
+    <tbody>
+    {{range .Audit}}
+      <tr>
+        <td>{{timeFmtShort .At}}</td>
+        <td>{{.Actor}}</td>
+        <td><code>{{.Action}}</code></td>
+        <td>{{.Target}}</td>
+        <td class="muted">{{.Detail}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  <p><a class="btn btn-ghost" href="/admin/audit">{{.T "admin.fullAudit"}}</a></p>
+</section>
+{{end}}
+{{end}}

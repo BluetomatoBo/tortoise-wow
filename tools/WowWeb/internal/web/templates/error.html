@@ -1,0 +1,7 @@
+{{define "content"}}
+<section class="card narrow">
+  <h1>{{if .Title}}{{.Title}}{{else}}{{.T "err.title"}}{{end}}</h1>
+  <p class="muted">{{.T "err.hint"}}</p>
+  <p><a class="btn" href="/">{{.T "err.back"}}</a></p>
+</section>
+{{end}}

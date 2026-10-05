@@ -1,0 +1,97 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.Character.Name}}
+    {{if .Character.Online}}{{template "badge" .CharacterState true}}{{end}}
+  </h1>
+  <a class="btn btn-ghost" href="/admin/characters">&larr; {{.T "achar.detail.all"}}</a>
+</div>
+
+{{if .Ban}}<div class="flash flash-error">{{.T "achar.detail.accountBanned"}} {{.Ban.Reason}}</div>{{end}}
+
+<div class="grid">
+  <div class="card">
+    <h2>{{.T "acct.overview"}}</h2>
+    <table class="kv">
+      <tr><th>{{.T "achar.detail.guid"}}</th><td>{{.Character.GUID}}</td></tr>
+      <tr><th>{{.T "achar.account"}}</th><td><a href="/admin/accounts/{{.Character.AccountID}}">{{.Character.AccountName}}</a> ({{.Character.AccountID}})</td></tr>
+      <tr><th>{{.T "chars.level"}}</th><td>{{.Character.Level}}</td></tr>
+      <tr><th>{{.T "chars.race"}}</th><td>{{.RaceName .Character.Race}}</td></tr>
+      <tr><th>{{.T "chars.class"}}</th><td>{{.ClassName .Character.Class}}</td></tr>
+      <tr><th>{{.T "achar.detail.gender"}}</th><td>{{.GenderName .Character.Gender}}</td></tr>
+      <tr><th>{{.T "achar.detail.guild"}}</th><td>{{if .Character.GuildName}}{{.Character.GuildName}}{{else}}<span class="muted">{{.T "common.none"}}</span>{{end}}</td></tr>
+      <tr><th>{{.T "achar.detail.money"}}</th><td>{{coins .Character.Money}}</td></tr>
+      <tr><th>{{.T "achar.detail.totalPlayed"}}</th><td>{{playtime .Character.TotalTime}}</td></tr>
+      <tr><th>{{.T "achar.detail.playedAtLevel"}}</th><td>{{playtime .Character.LevelTime}}</td></tr>
+      <tr><th>{{.T "chars.lastSeen"}}</th><td>{{unixTime .Character.LogoutTime}}</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>{{.T "achar.detail.position"}}</h2>
+    <table class="kv">
+      <tr><th>{{.T "achar.detail.map"}}</th><td>{{.Character.Map}}</td></tr>
+      <tr><th>{{.T "admin.zone"}}</th><td>{{.Character.Zone}}</td></tr>
+      <tr><th>{{.T "achar.detail.xyx"}}</th><td><code>{{printf "%.2f" .Character.PosX}} {{printf "%.2f" .Character.PosY}} {{printf "%.2f" .Character.PosZ}}</code></td></tr>
+      <tr><th>{{.T "achar.detail.orientation"}}</th><td>{{printf "%.2f" .Character.Orientation}}</td></tr>
+      <tr><th>{{.T "achar.detail.pendingFlags"}}</th><td>{{if .Flags}}<span class="pill pill-warn">{{list .Flags}}</span>{{else}}<span class="muted">{{.T "common.none"}}</span>{{end}}</td></tr>
+    </table>
+
+    <p class="muted">{{.T "achar.detail.positionNote"}}</p>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>{{.T "achar.detail.actions"}}</h2>
+
+    <form method="post" action="/admin/characters/{{.Character.GUID}}/unstick"
+          onsubmit="return confirm('{{printf (.T "achar.detail.confirmUnstick") .Character.Name}}');">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <button class="btn" type="submit" {{if .Character.Online}}disabled{{end}}>{{.T "achar.detail.unstick"}}</button>
+    </form>
+    {{if .Character.Online}}<p class="muted">{{.T "achar.detail.disabledOnline"}}</p>{{end}}
+
+    <hr>
+
+    <form method="post" action="/admin/characters/{{.Character.GUID}}/rename"
+          onsubmit="return confirm('{{printf (.T "achar.detail.confirmRename") .Character.Name}}');">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <button class="btn" type="submit">{{.T "achar.detail.forceRename"}}</button>
+    </form>
+    <p class="muted">{{.T "achar.detail.renameNote"}}</p>
+  </div>
+
+  <div class="card">
+    <h2>{{.T "achar.detail.nextLogin"}}</h2>
+    <form method="post" action="/admin/characters/{{.Character.GUID}}/atlogin">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <label>{{.T "achar.detail.flag"}}
+        <select name="flag">
+          <option value="reset_spells">{{.T "achar.detail.flagResetSpells"}}</option>
+          <option value="reset_talents">{{.T "achar.detail.flagResetTalents"}}</option>
+          <option value="rename">{{.T "achar.detail.flagRename"}}</option>
+        </select>
+      </label>
+      <label>{{.T "achar.detail.action"}}
+        <select name="enabled">
+          <option value="1">{{.T "achar.detail.queue"}}</option>
+          <option value="0">{{.T "achar.detail.clear"}}</option>
+        </select>
+      </label>
+      <button class="btn" type="submit">{{.T "common.apply"}}</button>
+    </form>
+
+    <hr>
+
+    <form method="post" action="/admin/characters/{{.Character.GUID}}/level"
+          onsubmit="return confirm('{{printf (.T "achar.detail.confirmLevel") .Character.Name}}');">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <label>{{.T "chars.level"}}
+        <input name="level" value="{{.Character.Level}}" inputmode="numeric" min="1" max="60">
+      </label>
+      <button class="btn btn-danger" type="submit">{{.T "achar.detail.setLevel"}}</button>
+    </form>
+    <p class="muted">{{.T "achar.detail.levelNote"}}</p>
+  </div>
+</div>
+{{end}}

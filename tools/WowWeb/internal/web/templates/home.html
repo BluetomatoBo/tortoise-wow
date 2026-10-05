@@ -1,0 +1,64 @@
+{{define "content"}}
+<section class="hero">
+  <h1>{{.Config.SiteName}}</h1>
+  <p class="lead">
+    {{.T "home.lead"}}
+  </p>
+  <p>
+    {{if .Account}}
+      <a class="btn" href="/panel">{{.T "nav.account"}}</a>
+      <a class="btn btn-ghost" href="/panel/characters">{{.T "nav.characters"}}</a>
+    {{else}}
+      {{if .Config.AllowRegister}}<a class="btn" href="/register">{{.T "reg.title"}}</a>{{end}}
+      <a class="btn btn-ghost" href="/login">{{.T "nav.signIn"}}</a>
+    {{end}}
+  </p>
+</section>
+
+{{if .Account}}
+{{/* Server state and connection details are for people who already have an
+     account. An anonymous visitor gets the pitch and the two buttons above,
+     nothing that describes the realm's load or where it lives. */}}
+<div class="grid">
+  <div class="card">
+    <h2>{{.T "home.playersOnline"}}</h2>
+    <p class="stat">{{.Stats.OnlineChars}}</p>
+    <p class="muted">{{.Stats.OnlineAccs}} {{.Tn "home.accountsInGame" .Stats.OnlineAccs}}</p>
+  </div>
+  <div class="card">
+    <h2>{{.T "home.accounts"}}</h2>
+    <p class="stat">{{.Stats.Accounts}}</p>
+    <p class="muted">{{.Stats.NewToday}} {{.Tn "home.createdToday" .Stats.NewToday}}</p>
+  </div>
+  <div class="card">
+    <h2>{{.T "home.characters"}}</h2>
+    <p class="stat">{{.Stats.Characters}}</p>
+    <p class="muted">{{.Stats.Guilds}} {{.Tn "home.guilds" .Stats.Guilds}}</p>
+  </div>
+  <div class="card">
+    <h2>{{.T "home.activeBans"}}</h2>
+    <p class="stat">{{.Stats.ActiveBans}}</p>
+    <p class="muted">{{.T "home.inEffect"}}</p>
+  </div>
+</div>
+
+<section class="card">
+  <h2>{{.T "home.connect"}}</h2>
+  <table class="kv">
+    <tr><th>{{.T "home.realmlist"}}</th><td><code>{{.Config.WorldAddress}}:{{.Config.RealmPort}}</code></td></tr>
+    {{range .Realms}}
+      <tr>
+        <th>{{.Name}}</th>
+        <td>
+          <code>{{.Address}}:{{.Port}}</code>
+          {{if .Flags}}{{range $.RealmFlagLabels .Flags}}<span class="pill">{{.}}</span>{{end}}{{end}}
+          <span class="muted">{{$.T "home.load"}} {{percent .Population}}</span>
+        </td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{else}}
+<p class="muted">{{.T "home.signInForStatus"}}</p>
+{{end}}
+{{end}}

@@ -1,0 +1,20 @@
+# Build context for the account website.
+#
+# .env holds database credentials and must never end up in an image layer.
+.env
+.env.*
+!.env.example
+
+# Local build output and test artefacts
+wowweb
+*.test
+coverage.out
+
+# Editor / OS noise
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Documentation is not needed inside the image
+README.md

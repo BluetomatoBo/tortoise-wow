@@ -1,0 +1,63 @@
+{{define "content"}}
+<h1>{{.T "ann.title"}}</h1>
+
+<p class="muted">{{.T "ann.intro"}}</p>
+
+<section class="card">
+  <h2>{{.T "ann.editor"}}</h2>
+
+  <form method="post" action="/admin/announcement">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+
+    <label class="check">
+      <input type="checkbox" name="enabled" value="1" {{if .Announcement.Enabled}}checked{{end}}>
+      {{.T "ann.enabled"}}
+    </label>
+    <p class="muted hint">{{.T "ann.enabledHint"}}</p>
+
+    <label>{{.T "ann.titleLabel"}}
+      <input name="title" value="{{.Announcement.Title}}" maxlength="64">
+    </label>
+    <p class="muted hint">{{.T "ann.titleHint"}}</p>
+
+    <label>{{.T "ann.body"}}
+      <textarea name="body" rows="12" maxlength="20000">{{.Announcement.Body}}</textarea>
+    </label>
+    <p class="muted hint">{{.T "ann.bodyHint"}}</p>
+
+    <button class="btn" type="submit">{{.T "ann.save"}}</button>
+  </form>
+
+  {{if .Announcement.UpdatedAt}}
+  <p class="muted">
+    {{.T "ann.updatedAt"}} <span class="pill">{{timeFmtShort .Announcement.UpdatedAt}}</span>
+    {{if .Announcement.UpdatedBy}}
+      &mdash; {{.T "ann.updatedBy"}} <span class="pill">{{.Announcement.UpdatedBy}}</span>
+    {{end}}
+  </p>
+  {{else}}
+  <p class="muted">{{.T "ann.never"}}</p>
+  {{end}}
+</section>
+
+<section class="card">
+  <h2>{{.T "ann.preview"}}</h2>
+  <p class="muted">{{.T "ann.previewHint"}}</p>
+  <p>
+    {{.T "ann.endpoint"}}
+    <a href="/alert" target="_blank" rel="noreferrer"><code>{{.Endpoint}}</code></a>
+  </p>
+  {{if .HasBody}}
+    <pre>{{.Announcement.Body}}</pre>
+  {{else}}
+    <p class="muted">{{.T "ann.empty"}}</p>
+  {{end}}
+</section>
+
+<section class="card">
+  <h2>{{.T "ann.how"}}</h2>
+  <p class="muted">{{.T "ann.howClient"}}</p>
+  <p class="muted">{{.T "ann.howPatch"}}</p>
+  <p class="muted">{{.T "ann.howDisabled"}}</p>
+</section>
+{{end}}

@@ -1,0 +1,85 @@
+{{define "content"}}
+{{if .Ban}}
+  <div class="flash flash-error">
+    {{.T "panel.banBanner"}}
+    {{if .Ban.Permanent}}{{.T "panel.banPermanent"}}{{else}}{{.T "common.until"}} {{timeFmtShort .Ban.UnbanDate}}{{end}}.
+    {{.T "panel.muteReason"}} {{.Ban.Reason}}
+  </div>
+{{end}}
+{{if .Muted}}
+  <div class="flash flash-info">
+    {{printf (.T "panel.muteBanner") (timeFmtShort .MuteUntil)}}
+    {{if .Account.MuteReason}}{{.T "panel.muteReason"}} {{.Account.MuteReason}}{{end}}
+  </div>
+{{end}}
+{{if not .Account.Active}}
+  <div class="flash flash-error">{{.T "panel.disabledBanner"}}</div>
+{{end}}
+
+<h1>{{.T "panel.myAccount"}}</h1>
+
+<div class="grid">
+  <div class="card">
+    <h2>{{.Account.Username}}</h2>
+    <table class="kv">
+      <tr><th>{{.T "panel.rank"}}</th><td>{{template "badge" .RankBadge .Account.Rank}}</td></tr>
+      <tr><th>{{.T "panel.joined"}}</th><td>{{timeFmt .Account.JoinDate}}</td></tr>
+      <tr><th>{{.T "panel.lastLogin"}}</th><td>{{timeFmt .Account.LastLogin}}</td></tr>
+      <tr><th>{{.T "panel.lastIP"}}</th><td><code>{{.Account.LastIP}}</code></td></tr>
+      <tr><th>{{.T "panel.email"}}</th><td>{{if .Account.Email}}{{.Account.Email}}{{else}}<span class="muted">{{.T "common.notSet"}}</span>{{end}}</td></tr>
+      <tr><th>{{.T "panel.characters"}}</th><td>{{len .Characters}}</td></tr>
+    </table>
+    <p>
+      <a class="btn btn-ghost" href="/panel/password">{{.T "panel.changePassword"}}</a>
+      <a class="btn btn-ghost" href="/panel/sessions">{{.T "panel.sessions"}} ({{.SessionCnt}})</a>
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>{{.T "panel.security"}}</h2>
+    <table class="kv">
+      <tr>
+        <th>{{.T "panel.twoFactor"}}</th>
+        <td>
+          {{if .TwoFAOn}}
+            <span class="pill pill-ok">{{.T "common.enabled"}}</span>
+          {{else}}
+            <span class="pill">{{.T "common.disabled"}}</span>
+          {{end}}
+        </td>
+      </tr>
+      <tr>
+        <th>{{.T "panel.failedLogins"}}</th>
+        <td>{{.Account.FailedLogins}}</td>
+      </tr>
+    </table>
+    <p><a class="btn btn-ghost" href="/panel/security">{{.T "panel.manageTwoFactor"}}</a></p>
+  </div>
+</div>
+
+<section class="card">
+  <h2>
+    {{.T "panel.characters"}}
+    <a class="btn btn-ghost btn-sm right" href="/panel/characters">{{.T "common.manage"}}</a>
+  </h2>
+  {{if .Characters}}
+    <table class="table">
+      <thead><tr><th>{{.T "chars.name"}}</th><th>{{.T "chars.level"}}</th><th>{{.T "chars.race"}}</th><th>{{.T "chars.class"}}</th><th>{{.T "chars.guild"}}</th><th>{{.T "chars.lastSeen"}}</th></tr></thead>
+      <tbody>
+      {{range .Characters}}
+        <tr>
+          <td><strong>{{.Name}}</strong> {{if .Online}}{{template "badge" $.CharacterState true}}{{end}}</td>
+          <td>{{.Level}}</td>
+          <td>{{$.RaceName .Race}}</td>
+          <td>{{$.ClassName .Class}}</td>
+          <td>{{if .GuildName}}{{.GuildName}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+          <td>{{unixTime .LogoutTime}}</td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+  {{else}}
+    <p class="muted">{{.T "panel.noCharacters"}}</p>
+  {{end}}
+</section>
+{{end}}

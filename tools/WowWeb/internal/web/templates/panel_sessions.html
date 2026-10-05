@@ -1,0 +1,42 @@
+{{define "content"}}
+<h1>{{.T "sess.title"}}</h1>
+
+<section class="card">
+  {{if .Sessions}}
+    <table class="table">
+      <thead><tr><th>{{.T "sess.started"}}</th><th>{{.T "sess.lastSeen"}}</th><th>{{.T "sess.expires"}}</th><th>{{.T "sess.address"}}</th><th>{{.T "sess.client"}}</th></tr></thead>
+      <tbody>
+      {{range .Sessions}}
+        <tr>
+          <td>{{timeFmtShort .CreatedAt}}</td>
+          <td>{{timeFmtShort .LastSeenAt}}</td>
+          <td>{{timeFmtShort .ExpiresAt}}</td>
+          <td><code>{{.IP}}</code></td>
+          <td class="muted truncate">{{.UserAgent}}</td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+  {{else}}
+    <p class="muted">{{.T "sess.none"}}</p>
+  {{end}}
+
+  <div class="row">
+    <form method="post" action="/panel/sessions/revoke" class="inline"
+          onsubmit="return confirm('{{.T "sess.confirmOthers"}}');">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <button class="btn btn-ghost" type="submit">{{.T "sess.signOutOthers"}}</button>
+    </form>
+    <form method="post" action="/panel/sessions/revoke" class="inline"
+          onsubmit="return confirm('{{.T "sess.confirmAll"}}');">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <input type="hidden" name="all" value="1">
+      <button class="btn btn-danger" type="submit">{{.T "sess.signOutAll"}}</button>
+    </form>
+  </div>
+
+  <p class="muted">{{printf (.T "sess.hint") .Config.SessionTTLHours}}</p>
+</section>
+
+<p class="muted"><a href="/panel">&larr; {{.T "passwd.back"}}</a></p>
+{{end}}

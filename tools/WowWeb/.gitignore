@@ -1,0 +1,10 @@
+# Never commit real configuration: .env holds the database password.
+# Everything it can contain is documented in .env.example.
+.env
+.env.*
+!.env.example
+
+# Local build output
+/wowweb
+*.test
+coverage.out

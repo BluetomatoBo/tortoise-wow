@@ -13,6 +13,12 @@ server change can reach - that part needs a client patch.
 下载 / Download:
 <https://github.com/BluetomatoBo/tortoise-wow/releases/tag/client-zhcn-patch-v1.0>
 
+生成该补丁的工具在 [`tools/ClientPatch/`](../../tools/ClientPatch/)；
+公告内容的编辑界面在 [`tools/WowWeb/`](../../tools/WowWeb/) 的 `/admin/announcement`。
+
+The tool that builds the patch lives in [`tools/ClientPatch/`](../../tools/ClientPatch/);
+the announcement editor is `/admin/announcement` in [`tools/WowWeb/`](../../tools/WowWeb/).
+
 ---
 
 ## 中文说明

@@ -1,0 +1,34 @@
+{{define "content"}}
+<section class="card narrow">
+  <h1>{{.T "acct.create"}}</h1>
+
+  <form method="post" action="/admin/accounts/new">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    <label>{{.T "reg.accountName"}}
+      <input name="username" value="{{.Form.Username}}" pattern="[A-Za-z0-9_-]{3,16}" required autofocus>
+      <small class="muted">{{.T "acct.nameHint"}}</small>
+    </label>
+    <label>{{.T "reg.password"}}
+      <input type="password" name="password" minlength="{{.Config.PasswordMinLen}}" maxlength="16" required>
+    </label>
+    <label>{{.T "reg.email"}} <span class="muted">{{.T "common.optional"}}</span>
+      <input type="email" name="email" value="{{.Form.Email}}">
+    </label>
+    <label>{{.T "panel.rank"}}
+      <select name="rank">
+        <option value="0" {{if eq .Form.Rank 0}}selected{{end}}>{{.RankName 0}}</option>
+        <option value="1" {{if eq .Form.Rank 1}}selected{{end}}>{{.RankName 1}}</option>
+        <option value="2" {{if eq .Form.Rank 2}}selected{{end}}>{{.RankName 2}}</option>
+        <option value="3" {{if eq .Form.Rank 3}}selected{{end}}>{{.RankName 3}}</option>
+        <option value="4" {{if eq .Form.Rank 4}}selected{{end}}>{{.RankName 4}}</option>
+        <option value="5" {{if eq .Form.Rank 5}}selected{{end}}>{{.RankName 5}}</option>
+        <option value="6" {{if eq .Form.Rank 6}}selected{{end}}>{{.RankName 6}}</option>
+      </select>
+      <small class="muted">{{printf (.T "acct.rankHint") (.RankName .Account.Rank)}}</small>
+    </label>
+    <button class="btn" type="submit">{{.T "common.create"}}</button>
+  </form>
+
+  <p class="muted"><a href="/admin/accounts">&larr; {{.T "acct.backToAccounts"}}</a></p>
+</section>
+{{end}}

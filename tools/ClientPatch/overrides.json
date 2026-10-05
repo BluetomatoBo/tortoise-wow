@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "客户端覆盖配置 —— gen_patchz.py 读这个文件生成 patch-Z.mpq。",
+    "",
+    "为什么是 patch-Z：客户端只加载 patch.MPQ 与 patch-?.MPQ（单字符），",
+    "字母顺序里 Z 排在最后，所以 patch-Z 的内容会盖过其它所有补丁 ——",
+    "中文汉化包已由 patch-Z.mpq 改名为 patch-X.mpq（X 在 Z 之前，仍然生效）。",
+    "",
+    "为什么写 GlueLocalization.lua 而不是 GlueStrings.lua：",
+    "  GlueXML.toc 的加载顺序是 GlueStrings.lua → GlueFonts.xml → GlueLocalization.xml(→ .lua)，",
+    "  而 AccountLogin.xml（建 ServerAlertFrame 的地方）排在 GlueLocalization.xml 之后。",
+    "  所以写在 GlueLocalization.lua 里的赋值一定会生效，",
+    "  而且**不用整份替换 GlueStrings.lua** —— 那样会把中文包的几千条界面字符串一起冲掉。",
+    "",
+    "这里每个键的改动方式：文件里已有 `KEY = ...` 就替换那一行，没有就在末尾追加。",
+    "值里带反斜杠要写成 \\\\，因为它是 Lua 字符串字面量。",
+    "",
+    "clientDataDir 必须改成**你自己客户端**的 Data 目录；上面那份是本机路径。",
+    "clientDataDir must be pointed at YOUR client's Data folder; the value below",
+    "is from the author's machine."
+  ],
+  "clientDataDir": "/Users/bo/Downloads/twmoa_1181/Data",
+  "outputPatch": "patch-Z.mpq",
+  "luaAssignments": {
+    "Interface\\GlueXML\\GlueLocalization.lua": {
+      "SERVER_ALERT_URL": "http://127.0.0.1:8080/alert",
+      "SERVER_ALERT_TITLE": "系统公告",
+      "SERVER_ALERT_BUTTON_TEXT": "更多信息"
+    }
+  }
+}

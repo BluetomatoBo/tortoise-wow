@@ -1,0 +1,24 @@
+{{define "content"}}
+<h1>{{.T "audit.title"}}</h1>
+<p class="muted">{{.T "audit.hint"}}</p>
+
+<section class="card">
+  <table class="table">
+    <thead><tr><th>{{.T "admin.when"}}</th><th>{{.T "admin.who"}}</th><th>{{.T "admin.action"}}</th><th>{{.T "admin.target"}}</th><th>{{.T "admin.detail"}}</th><th>{{.T "sess.address"}}</th></tr></thead>
+    <tbody>
+    {{range .Entries}}
+      <tr>
+        <td>{{timeFmtShort .At}}</td>
+        <td>{{.Actor}}{{if eq .ActorID 0}} <span class="muted">{{$.T "audit.selfReg"}}</span>{{end}}</td>
+        <td><code>{{.Action}}</code></td>
+        <td>{{.Target}}</td>
+        <td class="muted">{{.Detail}}</td>
+        <td><code>{{.IP}}</code></td>
+      </tr>
+    {{else}}
+      <tr><td colspan="6" class="muted center">{{.T "audit.none"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+{{end}}

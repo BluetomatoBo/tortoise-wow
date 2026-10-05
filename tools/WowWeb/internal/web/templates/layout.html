@@ -1,0 +1,86 @@
+{{define "layout"}}<!DOCTYPE html>
+<html lang="{{.Tr.HTMLLang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{if .Title}}{{.Title}} &middot; {{end}}{{.Config.SiteName}}</title>
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="/">{{.Config.SiteName}}</a>
+    <nav>
+      <a href="/" class="{{if eq .Active "home"}}active{{end}}">{{.T "nav.home"}}</a>
+      {{if .Account}}
+        <a href="/panel" class="{{if eq .Active "panel"}}active{{end}}">{{.T "nav.account"}}</a>
+        <a href="/panel/characters" class="{{if eq .Active "characters"}}active{{end}}">{{.T "nav.characters"}}</a>
+        <a href="/panel/security" class="{{if eq .Active "security"}}active{{end}}">{{.T "nav.security"}}</a>
+        {{if .IsAdmin}}
+          <a href="/admin" class="{{if eq .Active "admin"}}active{{end}}">{{.T "nav.admin"}}</a>
+        {{end}}
+      {{end}}
+    </nav>
+    <div class="langswitch">
+      {{$lang := .Lang}}
+      {{range .Langs}}
+        {{if eq .Code $lang}}
+          <span class="lang-active" title="{{$.T "common.language"}}">{{.Name}}</span>
+        {{else}}
+          <a href="/lang/{{.Code}}" title="{{$.T "common.language"}}">{{.Name}}</a>
+        {{end}}
+      {{end}}
+    </div>
+    <div class="account">
+      {{if .Account}}
+        <span class="who">{{.Account.Username}}{{if .IsAdmin}} {{template "badge" .RankBadge .Account.Rank}}{{end}}</span>
+        <form method="post" action="/logout" class="inline">
+          <button class="btn btn-ghost" type="submit">{{.T "nav.signOut"}}</button>
+        </form>
+      {{else}}
+        <a class="btn btn-ghost" href="/login">{{.T "nav.signIn"}}</a>
+        {{if .Config.AllowRegister}}<a class="btn" href="/register">{{.T "nav.register"}}</a>{{end}}
+      {{end}}
+    </div>
+  </div>
+</header>
+
+{{if .IsAdmin}}
+<div class="subbar">
+  <div class="wrap">
+    <a href="/admin" class="{{if eq .Active "admin"}}active{{end}}">{{.T "nav.admin.dashboard"}}</a>
+    <a href="/admin/accounts" class="{{if eq .Active "admin-accounts"}}active{{end}}">{{.T "nav.admin.accounts"}}</a>
+    <a href="/admin/characters" class="{{if eq .Active "admin-characters"}}active{{end}}">{{.T "nav.admin.characters"}}</a>
+    <a href="/admin/bans" class="{{if eq .Active "admin-bans"}}active{{end}}">{{.T "nav.admin.bans"}}</a>
+    <a href="/admin/announcement" class="{{if eq .Active "admin-announcement"}}active{{end}}">{{.T "nav.admin.announcement"}}</a>
+    <a href="/admin/realms" class="{{if eq .Active "admin-realms"}}active{{end}}">{{.T "nav.admin.realms"}}</a>
+    <a href="/admin/audit" class="{{if eq .Active "admin-audit"}}active{{end}}">{{.T "nav.admin.audit"}}</a>
+  </div>
+</div>
+{{end}}
+
+<main class="wrap">
+  {{range .Flash}}
+    <div class="flash flash-{{.Kind}}">{{.Message}}</div>
+  {{end}}
+
+  {{template "content" .}}
+</main>
+
+<footer class="wrap footer">
+  {{if .Account}}
+  {{/* Addresses and ports are shown only to signed-in players: a public page
+       that lists them is an invitation to scan or flood the realm. */}}
+  <p>
+    {{.Config.SiteName}} &middot; {{.T "footer.world"}} <code>{{.Config.WorldAddress}}:{{.Config.WorldPort}}</code>
+    &middot; {{.T "footer.login"}} <code>:{{.Config.RealmPort}}</code>
+    &middot; <a href="/api/status">{{.T "footer.statusApi"}}</a>
+  </p>
+  {{else}}
+  <p>{{.Config.SiteName}}</p>
+  {{end}}
+  <p class="muted">&copy; {{.Year}} — {{.T "footer.disclaimer"}}</p>
+</footer>
+</body>
+</html>
+{{end}}

@@ -1,0 +1,21 @@
+{{define "content"}}
+<section class="card narrow">
+  <h1>{{.T "login.title"}}</h1>
+  <p class="muted">{{.T "login.hint"}}</p>
+
+  <form method="post" action="/login">
+    <input type="hidden" name="next" value="{{.Next}}">
+    <label>{{.T "login.accountName"}}
+      <input name="username" value="{{.Username}}" autocomplete="username" required autofocus>
+    </label>
+    <label>{{.T "login.password"}}
+      <input type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <button class="btn" type="submit">{{.T "login.title"}}</button>
+  </form>
+
+  {{if .Config.AllowRegister}}
+    <p class="muted">{{.T "login.noAccount"}} <a href="/register">{{.T "login.createOne"}}</a>.</p>
+  {{end}}
+</section>
+{{end}}
