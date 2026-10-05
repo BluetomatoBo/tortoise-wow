@@ -85,7 +85,7 @@ bool npc_captain_blackanvil::GossipHello(Player* player, Creature* creature)
         player->PlayerTalkClass->SendGossipMenu(GOSSIP_TEXT_NOT_IMPRESSED_EVENT_COMPLETE, creature->GetGUID());
         return true;
     }
-    player->PlayerTalkClass->SendGossipMenu(Player::GetGossipTextId(creature), creature->GetGUID());
+    player->PlayerTalkClass->SendGossipMenu(player->GetGossipTextId(creature), creature->GetGUID());
     return true;
 }
 

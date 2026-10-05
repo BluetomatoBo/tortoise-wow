@@ -1458,7 +1458,7 @@ class Player final: public Unit
         void OnGossipSelect(WorldObject* pSource, uint32 gossipListId);
 
         uint32 GetGossipTextId(uint32 menuId, WorldObject* source);
-        static uint32 GetGossipTextId(WorldObject* pSource);
+        uint32 GetGossipTextId(WorldObject* pSource);
         PlayerMenu* PlayerTalkClass;
 
         /*********************************************************/

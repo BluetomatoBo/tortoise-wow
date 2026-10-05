@@ -14317,6 +14317,19 @@ uint32 Player::GetGossipTextId(WorldObject *pSource)
     if (uint32 pos = sObjectMgr.GetNpcGossip(((Creature*)pSource)->GetGUIDLow()))
         return pos;
 
+    // Fall back to the creature's own gossip menu, the way SendPreparedGossip
+    // does. Scripts build their gossip window by calling this overload to ask
+    // "what greeting does this NPC use" - 38 call sites across 22 script files -
+    // and they never look at gossip_menu_id themselves. Without this fallback
+    // they got DEFAULT_GOSSIP_MESSAGE, which is not a row in npc_text, so the
+    // client was shown the "Greetings $N" literal that HandleNpcTextQueryOpcode
+    // and PlayerMenu::SendTalking hardcode, no matter what the NPC's own menu
+    // said. Only reached when the spawn has no npc_gossip override.
+    // Fetching the menu needs this Player because the rows can carry
+    // conditions (about a third of gossip_menu does), so this cannot be static.
+    if (uint32 menuId = pSource->GetDefaultGossipMenuId())
+        return GetGossipTextId(menuId, pSource);
+
     return DEFAULT_GOSSIP_MESSAGE;
 }
 

@@ -190,11 +190,11 @@ bool npc_janela_stouthammer::GossipHello(Player* player, Creature* creature)
     if (player->GetQuestStatus(Silithus::Quests::QUEST_FIELD_DUTY))
     {
         player->PlayerTalkClass->GetGossipMenu().AddMenuItem(GOSSIP_ICON_CHAT, GOSSIP_TEXT_REPORTING_FOR_FIELD_DUTY, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_REPORTING_FOR_FIELD_DUTY);
-        player->PlayerTalkClass->SendGossipMenu(Player::GetGossipTextId(creature), creature->GetGUID());
+        player->PlayerTalkClass->SendGossipMenu(player->GetGossipTextId(creature), creature->GetGUID());
         return true;
     }
 
-    player->PlayerTalkClass->SendGossipMenu(Player::GetGossipTextId(creature), creature->GetGUID());
+    player->PlayerTalkClass->SendGossipMenu(player->GetGossipTextId(creature), creature->GetGUID());
     return true;
 }
 
