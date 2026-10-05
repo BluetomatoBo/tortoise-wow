@@ -12,11 +12,7 @@ import (
 	"tortoiseweb/internal/store"
 )
 
-const (
-	registerThrottleWindow = 10 * time.Minute
-	registerThrottleMax    = 5
-	minAccountNameLen      = 3
-)
+const minAccountNameLen = 3
 
 // ---------------------------------------------------------------------------
 // Home / status
@@ -186,17 +182,22 @@ func (s *Server) handleRegisterSubmit(w http.ResponseWriter, r *http.Request, pa
 		s.rend.Render(w, http.StatusBadRequest, "register", view)
 	}
 
-	// Rate limit by address. Failure here must not block sign-ups, so a
-	// database error is only logged.
-	if attempts, err := s.store.RegisterAttempts(ctx, ip, registerThrottleWindow); err == nil {
-		if attempts >= registerThrottleMax {
-			s.log.Warn("registration throttled", "ip", ip, "attempts", attempts)
-			renderErr(page.T("flash.err.throttled"))
-			return
-		}
-	} else {
-		s.log.Error("registration throttle check failed", "err", err)
+	// Rate limit by address, checked before any validation work so an abusive
+	// client gets the cheapest possible answer.
+	//
+	// The attempt is recorded below regardless of how it ends. Counting only
+	// successful sign-ups - which an earlier version did - leaves the two
+	// cheaper abuses wide open: probing which names are free, and hammering the
+	// validation.
+	blocked, terr := s.registerThrottle(ctx, ip)
+	if terr != nil {
+		s.noteThrottleCheckFailure("register", terr)
+	} else if blocked {
+		s.log.Warn("registration throttled", "ip", ip)
+		http.Error(w, page.T("flash.err.tooManyAttempts"), http.StatusTooManyRequests)
+		return
 	}
+	defer s.recordRegisterAttempt(ctx, ip)
 
 	if msg := s.validateNewAccount(page, username, password, confirm, email); msg != "" {
 		renderErr(msg)
@@ -228,7 +229,6 @@ func (s *Server) handleRegisterSubmit(w http.ResponseWriter, r *http.Request, pa
 		return
 	}
 
-	_ = s.store.RecordRegisterAttempt(ctx, ip)
 	_ = s.store.Audit(ctx, 0, acct.Username, "register", acct.Username,
 		"self-registration from "+ip, ip)
 
@@ -341,17 +341,33 @@ func (s *Server) handleLoginSubmit(w http.ResponseWriter, r *http.Request, page 
 	view.Title = "Sign in"
 	view.Active = "login"
 
-	fail := func(msg string) {
+	fail := func(msg string, status int) {
 		view.addFlash("error", msg)
-		s.rend.Render(w, http.StatusUnauthorized, "login", view)
+		s.rend.Render(w, status, "login", view)
+	}
+
+	// Refuse before touching the password. The hash comparison is the most
+	// expensive thing this endpoint does, and under attack it is the thing that
+	// must not be reached.
+	//
+	// The wording and status do not depend on whether the account exists, so a
+	// throttled response cannot be used to probe for names.
+	blocked, rule, terr := s.loginThrottle(ctx, ip, username)
+	if terr != nil {
+		s.noteThrottleCheckFailure("login", terr)
+	} else if blocked {
+		s.log.Warn("web login throttled", "username", username, "ip", ip, "rule", rule)
+		fail(page.T("flash.err.tooManyAttempts"), http.StatusTooManyRequests)
+		return
 	}
 
 	acct, err := s.store.VerifyLogin(ctx, username, password)
 	switch {
 	case errors.Is(err, store.ErrNotFound):
 		// Deliberately vague: do not reveal whether the account exists.
+		s.recordLoginFailure(ctx, ip, username)
 		s.log.Info("failed web login", "username", username, "ip", ip)
-		fail(page.T("flash.err.badCredentials"))
+		fail(page.T("flash.err.badCredentials"), http.StatusUnauthorized)
 		return
 	case err != nil:
 		s.serverError(w, r, "verify login", err)
@@ -359,9 +375,16 @@ func (s *Server) handleLoginSubmit(w http.ResponseWriter, r *http.Request, page 
 	}
 
 	if !acct.Active {
-		fail(page.T("flash.err.accountDisabled"))
+		// The password was right, so this is not a guess. It is not counted.
+		fail(page.T("flash.err.accountDisabled"), http.StatusUnauthorized)
 		return
 	}
+
+	// Proving the password clears the per-account counter, so a player who
+	// mistyped a few times is not left throttled. The per-address counter is
+	// deliberately kept: otherwise one valid account would let an attacker
+	// reset their own failures.
+	s.clearLoginFailures(ctx, username)
 
 	token, _, err := s.store.CreateSession(ctx, acct.ID, s.cfg.SessionTTL, ip, r.UserAgent())
 	if err != nil {

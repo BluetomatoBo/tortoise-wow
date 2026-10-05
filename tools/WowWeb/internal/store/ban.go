@@ -342,37 +342,6 @@ func (s *Store) RecentAudit(ctx context.Context, limit int) ([]AuditEntry, error
 	return out, rows.Err()
 }
 
-// RegisterAttempts counts sign-ups from one address inside a window, used to
-// rate limit registration without keeping state in memory.
-func (s *Store) RegisterAttempts(ctx context.Context, ip string, window time.Duration) (int, error) {
-	var n int
-	err := s.Logon.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM web_register_attempts
-		 WHERE ip = ? AND at > NOW() - INTERVAL ? SECOND`,
-		ip, int(window.Seconds())).Scan(&n)
-	if err != nil {
-		if isMissingTable(err) {
-			return 0, nil // throttling table not created yet: do not block sign-ups
-		}
-		return 0, err
-	}
-	return n, nil
-}
-
-func (s *Store) RecordRegisterAttempt(ctx context.Context, ip string) error {
-	_, err := s.Logon.ExecContext(ctx,
-		`INSERT INTO web_register_attempts (at, ip) VALUES (NOW(), ?)`, truncate(ip, 45))
-	return err
-}
-
-// PruneRegisterAttempts drops old rows; called opportunistically.
-func (s *Store) PruneRegisterAttempts(ctx context.Context, olderThan time.Duration) error {
-	_, err := s.Logon.ExecContext(ctx,
-		`DELETE FROM web_register_attempts WHERE at < NOW() - INTERVAL ? SECOND`,
-		int(olderThan.Seconds()))
-	return err
-}
-
 func isMissingTable(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "doesn't exist")
 }

@@ -125,14 +125,22 @@ func (s *Store) EnsureSchema(ctx context.Context) error {
 			KEY ` + "`idx_actor`" + ` (` + "`actor_account_id`" + `)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
-		// Server-side registration throttle, so a burst of sign-ups from one
-		// address can be rate limited without external state.
-		`CREATE TABLE IF NOT EXISTS ` + "`web_register_attempts`" + ` (
+		// Rate-limit counters, kept in the database so they survive a restart
+		// and are shared by every process. One row per event; the kind decides
+		// which rule it feeds (failed sign-ins per address, per account, or
+		// sign-up submissions per address).
+		//
+		// Replaces an earlier web_register_attempts table, which only counted
+		// successful sign-ups. An install that predates this keeps the old
+		// table unused; it can be dropped.
+		`CREATE TABLE IF NOT EXISTS ` + "`web_throttle`" + ` (
 			` + "`id`" + ` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			` + "`kind`" + ` VARCHAR(24) NOT NULL,
+			` + "`bucket`" + ` VARCHAR(64) NOT NULL,
 			` + "`at`" + ` DATETIME NOT NULL,
-			` + "`ip`" + ` VARCHAR(45) NOT NULL DEFAULT '',
 			PRIMARY KEY (` + "`id`" + `),
-			KEY ` + "`idx_at_ip`" + ` (` + "`at`" + `,` + "`ip`" + `)
+			KEY ` + "`idx_lookup`" + ` (` + "`kind`" + `,` + "`bucket`" + `,` + "`at`" + `),
+			KEY ` + "`idx_at`" + ` (` + "`at`" + `)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
 
 		// A generated authenticator secret is parked here until the user proves

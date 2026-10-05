@@ -50,6 +50,21 @@ type Config struct {
 	SessionTTL     time.Duration
 	SessionSecure  bool // set the cookie Secure flag (behind HTTPS)
 	PasswordMinLen int
+
+	// Brute-force limits.
+	//
+	// The game's password hash is unsalted SHA-1, so a password that leaks can
+	// be cracked offline quickly. Online guessing is the part this service can
+	// slow down, and it does it with counters in the database rather than in
+	// memory, so a restart does not reset an attacker's progress.
+	//
+	// A limit of 0 disables that rule.
+	LoginMaxAttempts        int           // failed sign-ins per address
+	LoginWindow             time.Duration // ...within this window
+	LoginAccountMaxAttempts int           // failed sign-ins per account name
+	LoginAccountWindow      time.Duration // ...within this window, any address
+	RegisterMaxAttempts     int           // sign-up submissions per address
+	RegisterWindow          time.Duration // ...within this window
 }
 
 // Load reads the configuration from the environment.
@@ -93,6 +108,16 @@ func Load() (Config, error) {
 		SessionTTL:     time.Duration(envInt("SESSION_TTL_HOURS", 24*7)) * time.Hour,
 		SessionSecure:  envBool("SESSION_SECURE", false),
 		PasswordMinLen: envInt("PASSWORD_MIN_LEN", 4),
+
+		// The account limit is deliberately looser than the address limit: a
+		// low one would let anyone lock a known player out of the website by
+		// failing a few sign-ins with that player's name.
+		LoginMaxAttempts:        envInt("LOGIN_MAX_ATTEMPTS", 10),
+		LoginWindow:             time.Duration(envInt("LOGIN_WINDOW_MINUTES", 15)) * time.Minute,
+		LoginAccountMaxAttempts: envInt("LOGIN_ACCOUNT_MAX_ATTEMPTS", 20),
+		LoginAccountWindow:      time.Duration(envInt("LOGIN_ACCOUNT_WINDOW_MINUTES", 30)) * time.Minute,
+		RegisterMaxAttempts:     envInt("REGISTER_MAX_ATTEMPTS", 10),
+		RegisterWindow:          time.Duration(envInt("REGISTER_WINDOW_MINUTES", 60)) * time.Minute,
 	}
 
 	if c.DBPassword == "" {
@@ -103,6 +128,12 @@ func Load() (Config, error) {
 	}
 	if c.MaxAccounts < 0 {
 		return c, fmt.Errorf("MAX_ACCOUNTS must not be negative")
+	}
+	if c.LoginMaxAttempts < 0 || c.LoginAccountMaxAttempts < 0 || c.RegisterMaxAttempts < 0 {
+		return c, fmt.Errorf("brute-force limits must not be negative (use 0 to disable one)")
+	}
+	if c.LoginWindow < 0 || c.LoginAccountWindow < 0 || c.RegisterWindow < 0 {
+		return c, fmt.Errorf("brute-force windows must not be negative")
 	}
 	if c.DefaultLang != "en" && c.DefaultLang != "zh" {
 		return c, fmt.Errorf("DEFAULT_LANG must be \"en\" or \"zh\", got %q", c.DefaultLang)

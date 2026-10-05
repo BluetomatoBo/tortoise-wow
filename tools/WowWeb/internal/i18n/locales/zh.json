@@ -392,7 +392,6 @@
   "flash.err.passwordSame": "密码不能与账号名相同。",
   "flash.err.emailInvalid": "邮箱地址格式不正确。",
   "flash.err.emailRequired": "必须填写邮箱地址。",
-  "flash.err.throttled": "来自你所在地址的注册请求过于频繁，请稍后再试。",
   "flash.err.accountLimit": "本服务器账号数量已达上限。",
   "flash.err.nameTaken": "该账号名已被占用。",
   "flash.err.badCredentials": "账号名或密码错误。",
@@ -486,5 +485,6 @@
   "ann.howPatch": "该地址写在一个很小的客户端补丁（patch-Z.mpq）里，用来覆盖汉化包里的原值。只有站点搬迁时才需要改它。",
   "ann.howDisabled": "在这里改动会在下一个登录界面生效。不需要重启服务端，也不需要改客户端补丁。",
   "flash.ok.announcementSaved": "公告已保存。",
-  "home.signInForStatus": "登录后可见服务器状态与连接信息。"
+  "home.signInForStatus": "登录后可见服务器状态与连接信息。",
+  "flash.err.tooManyAttempts": "尝试次数过多，请等待几分钟后再试。"
 }

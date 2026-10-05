@@ -75,6 +75,22 @@ func createTableStatements(t *testing.T, schemaPath string, wanted []string) []s
 		if m == "" {
 			t.Fatalf("table %q not found in %s", table, schemaPath)
 		}
+		// The shipped schema declares these tables MyISAM, which is what the
+		// core historically used. Real deployments run them on InnoDB, and the
+		// store opens a transaction in CreateAccount, so a MyISAM fixture
+		// cannot exercise that code: with GTID enforcement on, MySQL refuses to
+		// mix transactional and non-transactional tables in one transaction
+		// (error 1785) and the test fails for a reason the production database
+		// would never hit.
+		//
+		// Forcing InnoDB makes the fixture match what the store is actually
+		// talking to. The schema has no foreign keys, so nothing is newly
+		// enforced by the switch.
+		m = regexp.MustCompile(`ENGINE=\w+`).ReplaceAllString(m, "ENGINE=InnoDB")
+		// ROW_FORMAT=FIXED is a MyISAM-only option and InnoDB rejects it
+		// outright; dropping it means "engine default", which is what a
+		// converted table ends up with.
+		m = regexp.MustCompile(` ?ROW_FORMAT=\w+`).ReplaceAllString(m, "")
 		statements = append(statements, m)
 	}
 	return statements
@@ -227,14 +243,31 @@ func TestIntegration(t *testing.T) {
 			t.Errorf("unknown user: err = %v, want ErrNotFound", err)
 		}
 
-		// failed_logins is incremented on failure and cleared on success.
-		var fails uint32
-		if err := db.QueryRowContext(ctx,
-			"SELECT failed_logins FROM account WHERE id = ?", created.ID).Scan(&fails); err != nil {
-			t.Fatal(err)
+		// failed_logins goes up on a bad password and back to zero on the next
+		// good one. The wrong-password attempt above is the only failure here,
+		// so the counter must read 1 at this point: the assertion used to say 0,
+		// which could not hold because this subtest never signs in again after
+		// the failure.
+		readFails := func() uint32 {
+			t.Helper()
+			var n uint32
+			if err := db.QueryRowContext(ctx,
+				"SELECT failed_logins FROM account WHERE id = ?", created.ID).Scan(&n); err != nil {
+				t.Fatal(err)
+			}
+			return n
 		}
-		if fails != 0 {
-			t.Errorf("failed_logins = %d, want 0 after a successful login", fails)
+		if n := readFails(); n != 1 {
+			t.Errorf("failed_logins = %d, want 1 after one bad password", n)
+		}
+
+		// And a successful sign-in clears it, which is the other half of the
+		// behaviour the comment above describes.
+		if _, err := st.VerifyLogin(ctx, "TESTUSER", "Secret123"); err != nil {
+			t.Fatalf("VerifyLogin after failure: %v", err)
+		}
+		if n := readFails(); n != 0 {
+			t.Errorf("failed_logins = %d, want 0 after a successful sign-in", n)
 		}
 	})
 
@@ -368,6 +401,16 @@ func TestIntegration(t *testing.T) {
 	})
 
 	t.Run("PermanentBan", func(t *testing.T) {
+		// account_banned is keyed by (id, bandate), and UnbanAccount only flips
+		// `active` - it keeps the row. So a second ban of the same account in
+		// the same second is a duplicate key, not a new ban. This subtest wants
+		// a fresh permanent ban to inspect, so the earlier row is removed first;
+		// reusing a ban issued one second ago would test nothing new anyway.
+		if _, err := db.ExecContext(ctx,
+			"DELETE FROM account_banned WHERE id = ?", created.ID); err != nil {
+			t.Fatal(err)
+		}
+
 		// duration 0 is the permanent marker: bandate == unbandate.
 		if err := st.BanAccount(ctx, created.ID, 0, "forever", "ADMIN", 1); err != nil {
 			t.Fatal(err)
@@ -802,21 +845,109 @@ func TestIntegration(t *testing.T) {
 		}
 	})
 
-	t.Run("RegisterThrottle", func(t *testing.T) {
+	t.Run("ThrottleCountsArePerKindAndBucket", func(t *testing.T) {
 		for i := 0; i < 3; i++ {
-			if err := st.RecordRegisterAttempt(ctx, "198.51.100.1"); err != nil {
+			if err := st.ThrottleRecord(ctx, store.ThrottleRegister, "198.51.100.1"); err != nil {
 				t.Fatal(err)
 			}
 		}
-		n, err := st.RegisterAttempts(ctx, "198.51.100.1", 10*time.Minute)
+		n, err := st.ThrottleCount(ctx, store.ThrottleRegister, "198.51.100.1", 10*time.Minute)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if n != 3 {
 			t.Errorf("attempts = %d, want 3", n)
 		}
-		if other, _ := st.RegisterAttempts(ctx, "198.51.100.2", 10*time.Minute); other != 0 {
+		if other, _ := st.ThrottleCount(ctx, store.ThrottleRegister, "198.51.100.2", 10*time.Minute); other != 0 {
 			t.Errorf("attempts for another address = %d, want 0", other)
+		}
+		// The same key under a different kind is a different counter, which is
+		// what keeps the sign-in rules from eating the sign-up budget.
+		if cross, _ := st.ThrottleCount(ctx, store.ThrottleLoginIP, "198.51.100.1", 10*time.Minute); cross != 0 {
+			t.Errorf("cross-kind count = %d, want 0", cross)
+		}
+	})
+
+	t.Run("ThrottleWindowExpires", func(t *testing.T) {
+		if err := st.ThrottleRecord(ctx, store.ThrottleLoginAccount, "someone"); err != nil {
+			t.Fatal(err)
+		}
+		// A zero-length window looks back no time at all, so nothing can be
+		// inside it. This is how a rule that has aged out behaves.
+		if n, _ := st.ThrottleCount(ctx, store.ThrottleLoginAccount, "someone", 0); n != 0 {
+			t.Errorf("count inside a zero window = %d, want 0", n)
+		}
+		if n, _ := st.ThrottleCount(ctx, store.ThrottleLoginAccount, "someone", time.Hour); n != 1 {
+			t.Errorf("count inside an hour = %d, want 1", n)
+		}
+	})
+
+	t.Run("ThrottleKeyIsCaseAndSpaceInsensitive", func(t *testing.T) {
+		if err := st.ThrottleRecord(ctx, store.ThrottleLoginAccount, "  Thrall  "); err != nil {
+			t.Fatal(err)
+		}
+		// The store folds case and trims, so the three spellings share a row.
+		for _, spelling := range []string{"THRALL", "thrall", "Thrall"} {
+			n, _ := st.ThrottleCount(ctx, store.ThrottleLoginAccount, spelling, time.Hour)
+			if n != 1 {
+				t.Errorf("count for %q = %d, want 1 (should share one bucket)", spelling, n)
+			}
+		}
+	})
+
+	t.Run("ThrottleClearDropsOnlyThatBucket", func(t *testing.T) {
+		key := "clear-me"
+		for i := 0; i < 2; i++ {
+			if err := st.ThrottleRecord(ctx, store.ThrottleLoginAccount, key); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := st.ThrottleRecord(ctx, store.ThrottleLoginIP, key); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := st.ThrottleClear(ctx, store.ThrottleLoginAccount, key); err != nil {
+			t.Fatal(err)
+		}
+		if n, _ := st.ThrottleCount(ctx, store.ThrottleLoginAccount, key, time.Hour); n != 0 {
+			t.Errorf("account count after clear = %d, want 0", n)
+		}
+		// A successful sign-in clears the account bucket only. The per-address
+		// counter has to survive it, or one valid account would let an attacker
+		// reset their own failures.
+		if n, _ := st.ThrottleCount(ctx, store.ThrottleLoginIP, key, time.Hour); n != 1 {
+			t.Errorf("address count after clear = %d, want 1", n)
+		}
+	})
+
+	t.Run("PruneThrottleDropsOldRows", func(t *testing.T) {
+		const ip = "203.0.113.9"
+		if err := st.ThrottleRecord(ctx, store.ThrottleLoginIP, ip); err != nil {
+			t.Fatal(err)
+		}
+
+		// Just recorded, so it is well inside an hour and must survive.
+		if err := st.PruneThrottle(ctx, time.Hour); err != nil {
+			t.Fatal(err)
+		}
+		if n, _ := st.ThrottleCount(ctx, store.ThrottleLoginIP, ip, time.Hour); n != 1 {
+			t.Errorf("count after a one-hour prune = %d, want 1", n)
+		}
+
+		// Age the row past the cutoff and prune again. Backdating is done here
+		// rather than relying on a zero-length window: `at` is a DATETIME with
+		// second precision, so a row written and pruned inside the same second
+		// is neither older nor younger and the comparison is a coin toss.
+		if _, err := db.ExecContext(ctx,
+			`UPDATE web_throttle SET at = NOW() - INTERVAL 2 DAY
+			 WHERE kind = ? AND bucket = ?`, store.ThrottleLoginIP, ip); err != nil {
+			t.Fatal(err)
+		}
+		if err := st.PruneThrottle(ctx, 24*time.Hour); err != nil {
+			t.Fatal(err)
+		}
+		if n, _ := st.ThrottleCount(ctx, store.ThrottleLoginIP, ip, 7*24*time.Hour); n != 0 {
+			t.Errorf("count after pruning a two-day-old row = %d, want 0", n)
 		}
 	})
 }
@@ -840,7 +971,11 @@ func withDSN(t *testing.T, base config.Config, dsn, database string) config.Conf
 	t.Helper()
 
 	// user:pass@tcp(host:port)/db?params
-	m := regexp.MustCompile(`^([^:]+):([^@]*)@tcp\(([^:]+):(\d+)\)`).FindStringSubmatch(dsn)
+	//
+	// The password part is greedy on purpose: a real password may contain '@',
+	// and the driver treats the last '@tcp(' as the separator. Matching only
+	// up to the first '@' made the whole suite unrunnable for those servers.
+	m := regexp.MustCompile(`^([^:]+):(.*)@tcp\(([^:]+):(\d+)\)`).FindStringSubmatch(dsn)
 	if m == nil {
 		t.Fatalf("cannot parse DSN %q; expected user:pass@tcp(host:port)/db", dsn)
 	}

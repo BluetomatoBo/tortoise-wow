@@ -149,6 +149,51 @@ wowweb:
 - **领域地址与端口绝不下发给匿名请求**：首页、页脚、`/api/status` 都只在登录后（或干脆不）提供，
   因为公开列出领域住址等于邀请人来扫描或 DDoS。
   这条规则由 `TestAnonymousVisitorSeesNoRealmDetails` 双向固定。
+- **登录与注册都有防爆破限流**：计数器存在数据库里，所以**重启不会重置攻击者的进度**，
+  多进程也共享。登录有两条规则 —— 按来源地址（挡单机猜密码）与按账号名（挡分布式猜同一账号）；
+  注册按来源地址，**每一次提交都计数**（含校验失败的，因为探测哪些用户名可用与批量注册是同一类滥用）。
+  检查发生在**密码校验之前**，被拦的请求根本走不到哈希比较；而且**对不存在的账号同样计数**，
+  所以这个机制不能被用来枚举用户名。见 [防爆破](#防爆破)。
+
+### 防爆破
+
+游戏密码哈希是无盐 SHA-1，所以**离线**破解很快；网站能做的是拖慢**在线**猜测。
+
+| 规则 | 默认 | 作用 |
+|---|---|---|
+| `LOGIN_MAX_ATTEMPTS` / `LOGIN_WINDOW_MINUTES` | 10 次 / 15 分钟 | 单个来源地址的失败登录次数 |
+| `LOGIN_ACCOUNT_MAX_ATTEMPTS` / `LOGIN_ACCOUNT_WINDOW_MINUTES` | 20 次 / 30 分钟 | 单个账号名的失败登录次数（不限来源） |
+| `REGISTER_MAX_ATTEMPTS` / `REGISTER_WINDOW_MINUTES` | 10 次 / 60 分钟 | 单个来源地址的注册提交次数 |
+
+设计要点：
+
+- **计数器在数据库里**（`web_throttle` 表），不在内存 map 里 —— 重启不会重置攻击者的进度，
+  多进程/负载均衡也共享同一份。
+- **检查在密码校验之前**，被拦的请求只花两次 `COUNT`，到不了哈希比较；
+  这个接口在被攻击时也要保持廉价。
+- **对不存在的账号同样计数**：桶以「提交的用户名」为键，而不是账号 id，
+  所以这条机制无法用来判断哪些账号是真的。
+- **成功登录清账号计数、不清地址计数**：证明拥有账号才能清掉针对该账号的计数；
+  如果成功也清地址计数，那持有任意一个有效账号的攻击者就能无限重置自己的失败数。
+- **账号阈值刻意比地址阈值宽松**，因为过于严格的账号级锁定会让人用某个玩家的名字连错几次，
+  就把那个玩家锁在网站外面。想彻底关掉这条规则就把上限设为 `0`。
+
+#### 与游戏端的关系
+
+游戏客户端走 realmd，那边有独立的一套：`WrongPass.MaxCount`（默认 10）、
+`WrongPass.BanTime`（默认 300 秒）、`WrongPass.BanType`（默认 0 = 封 **IP**，1 = 封账号）。
+
+两点值得注意：
+
+1. **两边共用同一个计数器** —— realmd 在密码错误时给 `account.failed_logins` 加一，
+   本站在 `VerifyLogin` 里也是同一列。所以**在网页上猜密码同样会累加到游戏端的封禁阈值**，
+   等于多了一层防护。反过来说，玩家在网页上连错 10 次，可能连带把自己的 IP 从游戏里
+   封 5 分钟（realmd 的计数是**累计值，只在成功登录时清零**，没有时间窗口）。
+   共用 IP 的场景（同一个 NAT、宿舍）下，一个人手滑会影响其他人。
+2. 代码里的 `GetIntDefault("WrongPass.MaxCount", 0)` 默认是**关**的，但
+   `realmd.conf.dist` 里写的是 `10`，而 docker 的 entrypoint 是**原样拷贝** `.dist` ——
+   所以除非你手工改过，部署后它是**开着**的。想确认就查一下容器里
+   `/etc/.../realmd.conf` 的 `WrongPass.MaxCount`。
 
 ### 目录结构
 
@@ -619,11 +664,66 @@ What this service does about the things it *can* control:
   counts only to a signed-in player, because a public page that lists where the
   realm lives is an invitation to scan or flood it. `TestAnonymousVisitorSeesNoRealmDetails`
   pins both halves of that rule.
+* **Sign-in and sign-up are rate limited** with counters in the database, so an
+  attacker's progress survives a restart and is shared by every process. See
+  [Brute-force limits](#brute-force-limits).
 
 The service has no `SELECT` on passwords, never logs a password, and never
 returns a hash to a template.
 
 ---
+
+## Brute-force limits
+
+The game's password hash is unsalted SHA-1, so an attacker who obtains it can
+crack it offline quickly. What this service can slow down is *online* guessing.
+
+| Setting | Default | What it caps |
+| --- | --- | --- |
+| `LOGIN_MAX_ATTEMPTS` / `LOGIN_WINDOW_MINUTES` | 10 per 15 min | failed sign-ins from one address |
+| `LOGIN_ACCOUNT_MAX_ATTEMPTS` / `LOGIN_ACCOUNT_WINDOW_MINUTES` | 20 per 30 min | failed sign-ins against one account name, from any address |
+| `REGISTER_MAX_ATTEMPTS` / `REGISTER_WINDOW_MINUTES` | 10 per 60 min | sign-up submissions from one address |
+
+How it is built:
+
+* **Counters live in the database** (`web_throttle`), not in a map in memory, so
+  a restart does not hand an attacker a clean slate and every process behind the
+  load balancer sees the same numbers.
+* **The check runs before the password is verified.** A blocked request costs
+  two `COUNT` queries and never reaches the hash comparison; the endpoint has to
+  stay cheap while it is being hammered.
+* **A name that does not exist is counted too.** Buckets are keyed by the
+  submitted name rather than by an account id, so nothing here reveals which
+  accounts are real.
+* **A successful sign-in clears the account counter and leaves the address
+  counter standing.** Proving ownership of the account is what clears its
+  counter; if a success also cleared the address counter, anyone holding one
+  valid account could reset their own failures at will.
+* **The account limit is looser than the address limit on purpose.** A tight
+  one would let a stranger lock a known player out of the website by failing a
+  few sign-ins with that player's name. Setting a limit to `0` disables that
+  rule.
+
+#### How this relates to the game side
+
+The game client signs in through realmd, which has its own settings:
+`WrongPass.MaxCount` (default 10), `WrongPass.BanTime` (default 300 seconds) and
+`WrongPass.BanType` (default 0 = ban the **IP**, 1 = ban the account).
+
+Two things are worth knowing:
+
+1. **Both sides share one counter.** realmd increments `account.failed_logins`
+   on a bad password, and this service does the same in `VerifyLogin`. So
+   guessing on the website also counts towards the game's ban threshold, which
+   is free defence in depth. The flip side: a player who fumbles their password
+   ten times on the website can get their own address banned from the game for
+   five minutes. realmd's counter is cumulative and only resets on a successful
+   sign-in, with no window, so on a shared address (a NAT, a dorm) one person's
+   mistakes reach everyone.
+2. The code default is `GetIntDefault("WrongPass.MaxCount", 0)`, i.e. **off**,
+   but `realmd.conf.dist` ships `10` and the Docker entrypoint copies that file
+   verbatim - so it is **on** unless you edited it by hand. Check
+   `WrongPass.MaxCount` in the container's `realmd.conf` to be sure.
 
 ## Limitations
 
