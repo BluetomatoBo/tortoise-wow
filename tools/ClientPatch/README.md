@@ -157,17 +157,34 @@ HTTP，实测 `http://172.18.1.6:8080/alert` 可用。其余全部由 `LaunchURL
 | `AUTH_BANNED_URL` | ✅ 世界服 `isBanned`／`IsIPBanned` → `AUTH_BANNED` |
 | `AUTH_SUSPENDED_URL`、`AUTH_NO_TIME_URL`、`AUTH_PARENTAL_CONTROL_URL`、`AUTH_DB_BUSY_URL` | ❌ 对应的码只由**登录服**发出（走 `LOGIN_*`，无链接），世界服不发 |
 
-想亲眼看到「帮助」按钮 —— **只能靠时间差**：
+### 想亲眼看到「帮助」按钮：封完之后必须**重连一次世界服**
 
-1. 用**没有被封**的账号正常登录，**停在选择服务器的界面**（此时登录服已放行）
-2. **不要点服务器**，去后台把**账号**封掉（永久或限时都行）
-3. 点服务器进入 → 世界服这时才在 `CMSG_AUTH_SESSION` 检查 → 回 `AUTH_BANNED`
-   → 弹窗里出现「帮助」→ 点开是 `AUTH_BANNED_URL`
+世界服的检查**只在建立世界服连接的那一刻**（`CMSG_AUTH_SESSION`）执行一次。
+那一刻发生在**从服务器列表点进服务器**的时候，也就是**角色列表出现之前**。
+所以：站在**角色界面**上再封号是没用的 —— 那次检查早就过了，
+之后点「进入游戏」用的是**已有的连接**，不会再校验（表现为"封了还能进"）。
 
-为什么只能这样：**两台服务器查的是同一张表、同一个条件**。登录服的查询是
+正确的做法是利用角色界面那个「**改变服务器**」按钮 —— 它会 `RequestRealmList(1)`
+退回服务器列表，**重选服务器就会重新连一次世界服**：
+
+1. 用**没被封**的账号正常登录，一路进到**角色界面**（此时世界服检查已通过）
+2. 去后台把这个**账号**封掉（永久或限时都行）
+3. 点角色界面上的「**改变服务器**」（`CHANGE_REALM`）→ 回到服务器列表
+4. **重新点那个服务器** → 世界服重新握手 → 这次检查看到封禁 → 回 `AUTH_BANNED`
+   → 弹窗里出现「**帮助**」→ 点开 `AUTH_BANNED_URL`（= `/account/banned`）
+
+> ⚠️ **不要用「进入游戏」** —— 那条路复用现有连接，不会重新校验。
+
+为什么非得这么绕：**两台服务器查的是同一张表、同一个条件**。登录服的查询是
 `account_banned WHERE id = ? AND active = 1 AND (unbandate > NOW() OR unbandate = bandate)`，
-世界服是同一张表的 JOIN 上同样的条件 —— 所以**不存在「只有世界服看得见」的封禁状态**，
-只有「登录时还没封、连世界服时已封」这个时间差。
+世界服是同一张表 JOIN 上同样的条件 —— 所以**不存在「只有世界服看得见」的封禁状态**，
+只有「登录时还没封、重连世界服时已封」这个时间差。而登录服拒绝时用的是
+`LOGIN_*` 一族，**那套永远不带链接**。
+
+> 💡 如果你希望**每个被封的玩家**都能看到说明页（而不是靠手动重连演示），
+> 唯一稳的办法是改 core：让登录服不拦封禁、交给世界服处理
+> （`src/realmd/AuthSocket.cpp` 的 ban 检查），并让世界服区分限时/永久
+> （发 `AUTH_SUSPENDED` 而不是一律 `AUTH_BANNED`），两个页面就都能到达。
 
 > ⚠️ **别用 IP 封禁去试这条路。** 登录服对 `ip_banned` 命中的回应是
 > `WOW_FAIL_DB_BUSY`（不是封禁码），客户端显示的是
@@ -529,19 +546,37 @@ The core's world server sends **five** response codes in total, and only **`AUTH
 | `AUTH_BANNED_URL` | ✅ world server, `isBanned` / `IsIPBanned` → `AUTH_BANNED` |
 | `AUTH_SUSPENDED_URL`, `AUTH_NO_TIME_URL`, `AUTH_PARENTAL_CONTROL_URL`, `AUTH_DB_BUSY_URL` | ❌ those codes are only sent by the **login server** (so they render from `LOGIN_*`, with no link); the world server never sends them |
 
-To see the help button yourself, **timing is the only way**:
+### To see the help button: ban, then **reconnect to the world server**
 
-1. sign in with an account that is **not** banned, and **stop at the realm list** (the login
-   server has already let you through)
-2. **without clicking the realm**, ban the **account** from the web admin (permanent or timed,
-   either works)
-3. click the realm - only now does the world server check, in `CMSG_AUTH_SESSION`, and it
-   answers `AUTH_BANNED`, so the dialog grows a "help" button that opens `AUTH_BANNED_URL`
+The world server checks exactly once per connection, in `CMSG_AUTH_SESSION`, and that happens
+**when you pick a realm from the realm list** - before the character list appears. So banning
+while you sit on the **character screen** does nothing: that check already passed, and "Enter
+World" reuses the existing connection. The account really does stay in the game (which is what
+a player who bans themselves sees).
 
-Why it has to be a race: **both servers run the same query against the same table.** The login
+What works is the **Change Realm** button on the character screen: it calls
+`RequestRealmList(1)`, and picking the realm again makes a **fresh world connection**:
+
+1. sign in with an account that is **not** banned and go all the way to the **character screen**
+2. now ban the **account** from the web admin (permanent or timed, either works)
+3. click "**Change Realm**" (`CHANGE_REALM`) to go back to the realm list
+4. pick the realm again - the world server shakes hands afresh, sees the ban this time, and
+   answers `AUTH_BANNED`, so the dialog grows a "**help**" button that opens
+   `AUTH_BANNED_URL` (= `/account/banned`)
+
+> ⚠️ **Do not use "Enter World"** - that path reuses the connection and never re-checks.
+
+Why it is this awkward: **both servers run the same query against the same table.** The login
 server runs `account_banned WHERE id = ? AND active = 1 AND (unbandate > NOW() OR unbandate =
-bandate)`; the world server joins the same table with the same condition. There is therefore no
-ban state that only the world server can see - only the window between the two checks.
+bandate)`, and the world server joins the same table with the same condition, so there is no ban
+state only the world server can see. And the login server's refusals render from `LOGIN_*`,
+which never carries a link.
+
+> 💡 If you want **every** banned player to be offered the page rather than demonstrating it
+> by hand, the only reliable way is a core change: stop the login server refusing bans and let
+> the world server handle them (`src/realmd/AuthSocket.cpp`), and have the world server tell
+> timed bans from permanent ones (send `AUTH_SUSPENDED` instead of always `AUTH_BANNED`) - then
+> both pages are reachable.
 
 > ⚠️ **Do not try this with an IP ban.** The login server answers an `ip_banned` hit with
 > `WOW_FAIL_DB_BUSY` rather than a ban code, so the player sees "your connection is restricted,
