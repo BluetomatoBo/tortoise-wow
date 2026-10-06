@@ -217,12 +217,10 @@ FRAME_TAGS = ('Frame', 'Button', 'CheckButton', 'SimpleHTML', 'ScrollFrame', 'Sl
 FRAME_OPEN_RE = re.compile(r'<(%s)\b[^>]*?\bname="([A-Za-z0-9_]+)"' % '|'.join(FRAME_TAGS))
 
 
-def find_frame(text, name):
-    """定位一个具名框架的完整块，返回 (起点, 终点, 它锚定的对象或 None)。"""
+def iter_frames(text):
+    """逐个产出 (name, tag, 起点, 终点, 块内容)，按出现顺序。"""
     for m in FRAME_OPEN_RE.finditer(text):
-        if m.group(2) != name:
-            continue
-        tag = m.group(1)
+        tag, name = m.group(1), m.group(2)
         open_re = re.compile(r'<%s\b' % tag)
         close_re = re.compile(r'</%s>' % tag)
         depth, i = 1, m.end()
@@ -230,16 +228,25 @@ def find_frame(text, name):
             o = open_re.search(text, i)
             c = close_re.search(text, i)
             if not c:
-                return None
+                break
             if o and o.start() < c.start():
                 depth += 1
                 i = o.end()
             else:
                 depth -= 1
                 i = c.end()
-        block = text[m.start():i]
+        if depth:
+            continue                      # 闭合标签找不到，跳过这个
+        yield (name, tag, m.start(), i, text[m.start():i])
+
+
+def find_frame(text, name):
+    """定位一个具名框架的完整块，返回 (起点, 终点, 它锚定的对象或 None)。"""
+    for fname, _tag, start, end, block in iter_frames(text):
+        if fname != name:
+            continue
         rel = re.search(r'relativeTo="([A-Za-z0-9_]+)"', block)
-        return (m.start(), i, rel.group(1) if rel else None)
+        return (start, end, rel.group(1) if rel else None)
     return None
 
 
@@ -327,14 +334,14 @@ LAUNCH_URL_RE = re.compile(r'^http://[A-Za-z0-9][A-Za-z0-9./-]*$')
 # 会被 LaunchURL 打开的键。SERVER_ALERT_URL 故意不在其中：客户端用另一条
 # HTTP 路径抓它，可以带端口，实测 http://172.18.1.6:8080/alert 是好的。
 LAUNCH_URL_KEYS = frozenset({
-    'ACCOUNT_CREATE_URL',
-    'AUTH_BANNED_URL',
-    'AUTH_DB_BUSY_URL',
-    'AUTH_NO_TIME_URL',
-    'AUTH_PARENTAL_CONTROL_URL',
-    'AUTH_SUSPENDED_URL',
-    'COMMUNITY_URL',
-    'TECH_SUPPORT_URL',
+    # exe 按返回码读的那 5 个（世界服登录失败对话框）
+    'AUTH_BANNED_URL', 'AUTH_DB_BUSY_URL', 'AUTH_NO_TIME_URL',
+    'AUTH_PARENTAL_CONTROL_URL', 'AUTH_SUSPENDED_URL',
+    # 界面 Lua 直接调 LaunchURL 的那些（登录界面 / 角色选择界面的按钮）。
+    # 权威来源是 verify_client.py 的扫描，这里只是给生成器一个静态清单。
+    'ACCOUNT_CREATE_URL', 'AUTH_TURTLE_WEBSITE', 'COMMUNITY_URL', 'TECH_SUPPORT_URL',
+    'TURTLE_ARMORY_WEBSITE', 'TURTLE_COMMUNITY_FORUM_WEBSITE', 'TURTLE_DISCORD_WEBSITE',
+    'TURTLE_KNOWLEDGE_DATABASE_WEBSITE', 'TURTLE_REDDIT_WEBSITE',
 })
 
 

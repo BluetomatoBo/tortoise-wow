@@ -235,8 +235,13 @@ HTTP，实测 `http://172.18.1.6:8080/alert` 可用。其余全部由 `LaunchURL
 | `AccountLoginTurtleDiscord` | `TURTLE_DISCORD` | `TURTLE_DISCORD_WEBSITE` |
 | `AccountLoginTurtleReddit` | `TURTLE_REDDIT` | `TURTLE_REDDIT_WEBSITE` |
 
-**角色选择界面**（`CharacterSelect.lua`）还有两个：`ManageAccount` → `AUTH_NO_TIME_URL`、
-`TechSupport` → `TECH_SUPPORT_URL`。
+**角色选择界面**（`CharacterSelect.xml` + `.lua`）只有一个真的能点到：
+
+* `BillingWarningButton`（文字是 `MANAGE_ACCOUNT`「管理账号」）→ `CharacterSelect_ManageAccount`
+  → `AUTH_NO_TIME_URL`。注意它在 `BillingWarningFrame` 里，那个框**默认 `hidden`**，
+  只有出现计费告警时才显示 —— 平时看不到这个按钮。
+* `CharacterSelect_TechSupport` → `TECH_SUPPORT_URL`：**函数存在，但没有任何框架调用它**，
+  所以 `TECH_SUPPORT_URL` 实际点不到。`verify_client.py` 会把它列进「孤儿键」。
 
 这些都**可以用 patch-Z 改**：标签键和 URL 键都住在 `GlueStrings.lua`，把它俩一起写进
 `overrides.json` 的 `luaAssignments` 就行（patch-Z 最后加载）。地址照样要过白名单 ——
@@ -697,8 +702,14 @@ they live in the `.lua` files loaded through `<Script file="..."/>` - not in the
 | `AccountLoginTurtleDiscord` | `TURTLE_DISCORD` | `TURTLE_DISCORD_WEBSITE` |
 | `AccountLoginTurtleReddit` | `TURTLE_REDDIT` | `TURTLE_REDDIT_WEBSITE` |
 
-**Character-select screen** (`CharacterSelect.lua`) has two more: `ManageAccount` opens
-`AUTH_NO_TIME_URL`, `TechSupport` opens `TECH_SUPPORT_URL`.
+**Character-select screen** (`CharacterSelect.xml` plus its Lua) has one that is really
+reachable:
+
+* `BillingWarningButton` (labelled `MANAGE_ACCOUNT`) → `CharacterSelect_ManageAccount` →
+  `AUTH_NO_TIME_URL`. It sits inside `BillingWarningFrame`, which is `hidden` by default and
+  only shown when there is a billing warning, so it is normally not on screen.
+* `CharacterSelect_TechSupport` → `TECH_SUPPORT_URL`: the **function exists but no frame calls
+  it**, so `TECH_SUPPORT_URL` cannot be clicked. `verify_client.py` reports it as an orphan.
 
 All of these are **patchable with patch-Z**: the labels and the addresses both live in
 `GlueStrings.lua`, so a pair of entries in `overrides.json`'s `luaAssignments` is enough

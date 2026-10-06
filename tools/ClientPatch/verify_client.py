@@ -147,6 +147,68 @@ def effective_glue_files(data_dir):
     return out
 
 
+def _lua_function_keys(files):
+    """{函数名: [它 LaunchURL 的键]} + {函数名: 文件:行}。"""
+    fn_keys, fn_where = {}, {}
+    cur, where, indent = None, None, 0
+    for name, (src, data) in sorted(files.items()):
+        if not name.lower().endswith('.lua'):
+            continue
+        text = data.decode('utf-8', 'replace')
+        for lineno, line in enumerate(text.splitlines(), 1):
+            m = re.match(r'\s*function\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(', line)
+            if m:
+                cur, where = m.group(1), '%s:%d（%s）' % (name.split(chr(92))[-1], lineno, src)
+                fn_keys.setdefault(cur, [])
+                fn_where[cur] = where
+                continue
+            if line.strip() == 'end' and cur:
+                cur = None
+                continue
+            if cur and not line.lstrip().startswith('--'):
+                for key in LAUNCH_URL_CALL_RE.findall(line):
+                    if key != 'arg1':
+                        fn_keys[cur].append(key)
+    return fn_keys, fn_where
+
+
+def frame_reachability(data_dir):
+    """(界面上的按钮真能点到的键, 只有 Lua 还留着的孤儿键)。
+
+    按钮的 XML 里是 <OnClick>Handler();</OnClick>，处理函数在 Lua 里，函数里才是
+    `LaunchURL(KEY)`。所以「Lua 里还写着这个键」不等于「界面上还有按钮」——
+    删掉框架之后，那些函数就成了没人调用的孤儿。只扫 Lua 分不清这两种情况。
+    """
+    files = effective_glue_files(data_dir)
+    fn_keys, fn_where = _lua_function_keys(files)
+
+    reachable, orphan, evidence = {}, {}, {}
+    # 1) 还存在的框架 → 它的 OnClick 处理函数 → 那些键
+    for name, (src, data) in sorted(files.items()):
+        if not name.lower().endswith('.xml'):
+            continue
+        text = data.decode('utf-8', 'replace')
+        for fname, _tag, _s, _e, block in gp.iter_frames(text):
+            m = re.search(r'<OnClick>\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(', block)
+            if not m:
+                continue
+            handler = m.group(1)
+            for key in fn_keys.get(handler, []):
+                reachable[key] = '%s 的 OnClick → %s（%s）' % (
+                    fname, handler, name.split(chr(92))[-1])
+    # 2) 有 Lua 函数会打开、但没有任何存在的框架调用它
+    all_launched = set()
+    for keys in fn_keys.values():
+        all_launched.update(keys)
+    for fn, keys in fn_keys.items():
+        used = any(('→ %s' % fn) in ev for ev in reachable.values())
+        if used:
+            continue
+        for key in keys:
+            orphan.setdefault(key, '%s 里还有 LaunchURL 调用，但没有框架再调用它' % fn_where[fn])
+    return reachable, orphan
+
+
 def scan_launch_url_keys(data_dir):
     """扫生效界面文件里的 `LaunchURL(KEY)`，返回 (键集合, {键: [证据]})。
 
@@ -325,22 +387,35 @@ def main():
         rep.add(OK, '实际生效的 GlueStrings.lua', f'来自 {source}')
         assigned = parse_assignments(text)
 
-    # 哪些键会被 LaunchURL 打开：扫生效界面文件里的调用点，不猜
+    # 哪些键会被 LaunchURL 打开：扫调用点 + 判断按钮是否还在，不猜
     launched, evidence = scan_launch_url_keys(data_dir)
+    reachable, orphan = frame_reachability(data_dir)
     exe_keys, exe_evidence = exe_launch_url_keys(exe)
     evidence = {k: v for k, v in evidence.items()}
     for k, v in exe_evidence.items():
         evidence.setdefault(k, []).append(v)
     launched |= exe_keys
-    live = sorted(k for k in assigned if k in launched)
+    for k, v in reachable.items():
+        evidence.setdefault(k, []).insert(0, '界面按钮可达：' + v)
+    # 只检查「真的能点到」的键：界面按钮还存在的，或 exe 按返回码读的。
+    # 按钮已删、只有 Lua 还留着的键不在这里 —— 它们的地址已经无关紧要了。
+    live = sorted(k for k in assigned
+                  if (k in reachable or k in exe_keys) and '://' in assigned[k])
     for key in live:
         check_url(key, assigned[key], hosts, rep, is_launch=True)
     if not live:
         rep.add(WARN, 'LaunchURL 用的键',
-                '配置里没有一个键被界面文件引用 —— 检查 overrides.json')
+                '配置里没有一个键指向还存在的按钮 —— 检查 overrides.json')
 
-    # 配了但没人引用的键：只汇总，不参与结论（它们不会有害，但也不会有效果）
-    unused = sorted(k for k in assigned if k not in launched and '://' in assigned[k])
+    # 按键（按钮已从界面删掉，只有 Lua 里还留着）：点不到，但不影响结论
+    orphans = sorted(k for k in assigned if k in orphan and k not in reachable and k not in exe_keys)
+    if orphans:
+        rep.add(OK, '按钮已从界面删掉，只有 Lua 里还留着的键（点不到）',
+                '、'.join(orphans) + '\n        ' + orphan[orphans[0]])
+
+    # 配了但完全没人引用的键：只汇总，不参与结论
+    unused = sorted(k for k in assigned
+                    if k not in launched and k not in orphan and '://' in assigned[k])
     if unused:
         rep.add(OK, '配置里设置了、界面文件却没引用的键（不会有任何效果）',
                 '、'.join(unused) + '\n        依据：扫过所有生效的 Interface\\GlueXML\\*.xml / *.lua')

@@ -22,7 +22,11 @@
     "这里统一用 twow.home.boym.me —— 由 nginx 反代到 172.18.1.6:8080，",
     "见 tools/WowWeb/deploy/nginx/。",
     "",
-    "值里带反斜杠要写成 \\\\，因为它是 Lua 字符串字面量。"
+    "值里带反斜杠要写成 \\\\，因为它是 Lua 字符串字面量。",
+    "",
+    "frameEdits 删的是「界面框架」：登录界面那六个按钮（patch-9 的 AccountLogin.xml）里",
+    "除「官方网站」外全部删掉，剩下的按钮由工具自动改嫁锚定，不会留空档。",
+    "「官方网站」保留并指向本站；角色界面的「管理账号」「技术支持」保留但改指本站页面。"
   ],
   "clientDataDir": "/Users/bo/Downloads/twmoa_1181/Data",
   "outputPatch": "patch-Z.mpq",
@@ -35,8 +39,21 @@
       "AUTH_DB_BUSY_URL": "http://twow.home.boym.me/notice",
       "AUTH_BANNED_URL": "http://twow.home.boym.me/account/banned",
       "AUTH_SUSPENDED_URL": "http://twow.home.boym.me/account/suspended",
-      "AUTH_NO_TIME_URL": "http://twow.home.boym.me/account/no-time",
-      "AUTH_PARENTAL_CONTROL_URL": "http://twow.home.boym.me/account/verify"
+      "AUTH_NO_TIME_URL": "http://twow.home.boym.me/panel",
+      "AUTH_PARENTAL_CONTROL_URL": "http://twow.home.boym.me/account/verify",
+      "AUTH_TURTLE_WEBSITE": "http://twow.home.boym.me/",
+      "TECH_SUPPORT_URL": "http://twow.home.boym.me/notice"
+    }
+  },
+  "frameEdits": {
+    "Interface\\GlueXML\\AccountLogin.xml": {
+      "remove": [
+        "AccountLoginTurtleArmory",
+        "AccountLoginTurtleKnowledgeDatabase",
+        "AccountLoginTurtleReddit",
+        "AccountLoginTurtleCommunityForum",
+        "AccountLoginTurtleDiscord"
+      ]
     }
   }
 }
