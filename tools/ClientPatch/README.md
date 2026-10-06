@@ -229,6 +229,12 @@ HTTP，实测 `http://172.18.1.6:8080/alert` 可用。其余全部由 `LaunchURL
 **要让公告里的链接能点，就得用域名**，而且那个域名要走 80 端口 ——
 见下面「客户端能打开什么样的地址」。
 
+> ⚠️ **发给别人玩之前先想清楚域名**：链接能不能点，取决于**每个玩家自己的机器**
+> 能不能解析这个域名（是浏览器去请求它）。`twow.home.boym.me` 这种名字通常只在内网有效 ——
+> 对外开服时要么给它一条公网 DNS 记录，要么换成一个公网域名后重跑
+> `gen_patchz.py` 与 `patch_urllist.py`（两个命令，各改一处配置/一个槽位）。
+> 同理，**公告面板本身**抓的是同一个域名，解析不了就整个消失。
+
 ## 客户端能打开什么样的地址
 
 **这一节决定了公告里的链接能不能点。** 先看清客户端那两处是怎么工作的。
@@ -622,6 +628,13 @@ Fill in an address reachable **from the machine the game client runs on**:
 
 **A link inside the announcement only works by name**, and that name has to be served on
 port 80 - see "What the client will open" below.
+
+> ⚠️ **Settle the name before handing the client to anyone else.** Whether the link opens
+> depends on **each player's own machine** resolving that name - the browser is what requests
+> it. A name like `twow.home.boym.me` usually only resolves inside one network, so opening the
+> server up means either publishing a DNS record for it or moving to a public name and re-running
+> `gen_patchz.py` and `patch_urllist.py` (one config value and one slot each). The announcement
+> panel fetches that same name, so a player who cannot resolve it does not even get the panel.
 
 ## What the client will open
 
