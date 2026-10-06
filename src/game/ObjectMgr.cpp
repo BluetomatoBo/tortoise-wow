@@ -9637,6 +9637,16 @@ void ObjectMgr::LoadShop()
     delete result;
 
     // Sort items in categories
+    //
+    // The Chinese name is looked up by an index into ItemLocale::Name, which is
+    // keyed by ObjectMgr::m_LocalForIndex positions rather than by LocaleConstant
+    // values. Those two only agree by accident: m_LocalForIndex holds a locale
+    // only when some locale table actually has data for it, so on a realm whose
+    // tables carry Chinese alone, zhCN lands at 0 and the constant (4) addresses
+    // nothing. Asking for the index is what the client's own item query does, and
+    // it answers -1 when the locale was never loaded.
+    int const chineseLocaleIndex = GetIndexForLocale(LOCALE_zhCN);
+
     for (auto& CategoryPair : m_ShopCategoriesMap)
     {
         ShopCategory& ShopCat = CategoryPair.second;
@@ -9662,10 +9672,10 @@ void ObjectMgr::LoadShop()
 			std::string ItemName;
 
 
-			if (sWorld.getConfig(CONFIG_BOOL_SEA_NETWORK))
+			if (sWorld.getConfig(CONFIG_BOOL_SEA_NETWORK) && chineseLocaleIndex >= 0)
 			{
 				//ItemName = Entry.Description_loc4;
-                ItemName = sObjectMgr.GetItemLocaleName(Entry.Item, LOCALE_zhCN);
+                ItemName = sObjectMgr.GetItemLocaleName(Entry.Item, chineseLocaleIndex);
 			}
 			else
 			{

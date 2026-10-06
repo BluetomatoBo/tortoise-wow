@@ -1153,7 +1153,10 @@ class ObjectMgr
             if (!il)
                 return proto->Name1;
 
-            if (il->Name.size() < loc_idx)
+            // loc_idx is an m_LocalForIndex position. Compare with <= : at
+            // size() == loc_idx the index is already one past the end, and the
+            // old < let that through to operator[], which is undefined.
+            if (il->Name.size() <= size_t(loc_idx))
                 return proto->Name1;
             else
                 return il->Name[loc_idx];
