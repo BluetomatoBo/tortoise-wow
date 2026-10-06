@@ -19,7 +19,7 @@
   "common.no": "否",
   "common.perm": "永久",
   "common.until": "至",
-  "common.pageOf": "第 %s / %s 页",
+  "common.pageOf": "第 %d / %d 页",
   "common.prev": "← 上一页",
   "common.next": "下一页 →",
   "nav.home": "首页",
@@ -528,11 +528,8 @@
   "shop.notOnThisRealm": "本服不显示",
   "shop.warn.otherRegionHint": "区域不匹配时，世界服会在启动时跳过这一条 —— 玩家在商城里看不到它。",
   "shop.region.global": "全局",
-  "shop.region.globalHint": "所有服都显示。",
   "shop.region.europe": "欧洲",
-  "shop.region.europeHint": "只在 NiHao=0（欧洲）的服显示。",
   "shop.region.china": "中国",
-  "shop.region.chinaHint": "只在 NiHao=1（中国）的服显示。",
   "shop.item.title": "商城条目",
   "shop.item.newTitle": "新建商城条目",
   "shop.item.editTitle": "编辑商城条目",
@@ -567,5 +564,6 @@
   "shop.flash.created": "已创建物品 %d 的商城条目。",
   "shop.flash.updated": "已保存物品 %d 的商城条目。",
   "shop.flash.deleted": "已删除物品 %d 的商城条目。",
-  "common.cancel": "取消"
+  "common.cancel": "取消",
+  "shop.item.categoryMissing": "这个分类不在 shop_categories 里（世界服启动时会跳过这一条）"
 }

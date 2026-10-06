@@ -25,6 +25,11 @@
     <label>{{.T "shop.categoryLabel"}}
       <select name="category">
         {{$zh := .RealmIsChinese}}
+        {{/* An existing row whose category is gone would otherwise show the
+             first entry as selected and be silently moved there on save. */}}
+        {{if and (not .IsNew) (not .CategoryKnown)}}
+          <option value="{{.Item.Category}}" selected>{{.Item.Category}} &mdash; {{.T "shop.item.categoryMissing"}}</option>
+        {{end}}
         {{range .Categories}}
           <option value="{{.ID}}" {{if eq .ID $.Item.Category}}selected{{end}}>{{.LocalizedName $zh}}</option>
         {{end}}

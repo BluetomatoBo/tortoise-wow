@@ -77,6 +77,25 @@ func TestParseShopItemForm(t *testing.T) {
 		})
 	}
 
+	t.Run("negative ids clamp instead of wrapping", func(t *testing.T) {
+		// min="0" in the form is a hint to the browser; a hand-made POST is not
+		// bound by it, and uint32(-1) is 4294967295 - a real value to the core.
+		values := map[string]string{}
+		for k, v := range valid {
+			values[k] = v
+		}
+		values["model_id"] = "-1"
+		values["item_id"] = "-7"
+		in, problems := parseShopItemForm(form(values))
+		if len(problems) != 0 {
+			t.Fatalf("problems = %v, want none", problems)
+		}
+		if in.ModelID != 0 || in.ItemDisplayID != 0 {
+			t.Errorf("negative ids became model_id=%d item_id=%d, want 0 and 0",
+				in.ModelID, in.ItemDisplayID)
+		}
+	})
+
 	t.Run("floats default instead of failing", func(t *testing.T) {
 		values := map[string]string{}
 		for k, v := range valid {
@@ -182,6 +201,9 @@ func TestShopTemplatesRender(t *testing.T) {
 			tr.T("shop.item.textHint"),
 			"⚠ test warning",
 			"/admin/shop/items/12/delete",
+			// The select has to carry the categories, or none can be chosen.
+			`<select name="category">`,
+			`value="5"`,
 		} {
 			if !strings.Contains(body, want) {
 				t.Errorf("edit form is missing %q", want)
@@ -204,5 +226,156 @@ func TestShopTemplatesRender(t *testing.T) {
 		if strings.Contains(body, "/delete") {
 			t.Error("new form offers a delete action for a row that does not exist yet")
 		}
+		if !strings.Contains(body, `value="1"`) {
+			t.Error("new form's category select has no options")
+		}
+		// A new row has nothing to preserve, so it must not be warned about.
+		if strings.Contains(body, tr.T("shop.item.categoryMissing")) {
+			t.Error("new form warns about a category that does not exist yet")
+		}
 	})
+
+	// A row whose category was removed from shop_categories must keep showing
+	// that value; otherwise the select displays its first entry and saving
+	// silently moves the row into it.
+	t.Run("edit form keeps an unknown category", func(t *testing.T) {
+		page := base()
+		body := render("admin_shop_item", shopItemView{
+			PageData: page,
+			Item: store.ShopItem{ID: 12, Category: 99, Entry: 50071, Price: 50,
+				Region: store.ShopRegionGlobal, Scale: 1},
+			Categories: []store.ShopCategory{{ID: 5, Name: "Mounts", NameCN: "坐骑"}},
+			Regions:    (&Server{}).shopRegions(),
+		})
+		if !strings.Contains(body, `value="99" selected`) {
+			t.Error("the row's own category is not the selected option")
+		}
+		if !strings.Contains(body, tr.T("shop.item.categoryMissing")) {
+			t.Error("a category that no longer exists is not flagged")
+		}
+	})
+
+	// The pager used to print "%!s(int=1)" because the catalogue string had %s
+	// for the two integers the partial passes. The shared partial is used by the
+	// account, ban and character lists too, so this guards all four pages.
+	t.Run("pagination", func(t *testing.T) {
+		page := base()
+		body := render("admin_shop", shopListView{
+			PageData: page,
+			Items: []store.ShopItem{{ID: 1, Category: 5, Entry: 50071, Price: 1,
+				Region: store.ShopRegionGlobal, Scale: 1}},
+			Total: 244, Page: 2, Pages: 10,
+			QueryString: "category=5&",
+			RealmRegion: store.ShopRegionEurope,
+		})
+		if strings.Contains(body, "%!") {
+			t.Errorf("pager has a format error: %s",
+				firstLineContaining(body, "%!"))
+		}
+		if want := "page 2 of 10"; !strings.Contains(body, want) {
+			t.Errorf("pager does not read %q", want)
+		}
+		// The links have to carry the filters through. A plain string in href is
+		// percent-encoded by html/template (= &), which collapses the whole
+		// query into one parameter and makes every page link a no-op, so assert
+		// the encoded forms are absent rather than merely looking for "page=3".
+		for _, want := range []string{
+			`href="?category=5&amp;page=1"`,
+			`href="?category=5&amp;page=3"`,
+		} {
+			if !strings.Contains(body, want) {
+				t.Errorf("pager is missing %s", want)
+			}
+		}
+		for _, bad := range []string{"%3d", "%3D", "%26"} {
+			if strings.Contains(body, bad) {
+				t.Errorf("pager link is double-escaped (%s): %s",
+					bad, firstLineContaining(body, bad))
+			}
+		}
+	})
+}
+
+// firstLineContaining digs out the offending line so a failure shows the text.
+func firstLineContaining(body, needle string) string {
+	for _, line := range strings.Split(body, "\n") {
+		if strings.Contains(line, needle) {
+			return strings.TrimSpace(line)
+		}
+	}
+	return "(not found)"
+}
+
+// TestShopFormViewKeepsCategories pins the bug that made a category impossible
+// to choose: the form's view assembly used to overwrite view.Categories with
+// nil after the handler had loaded them, so the select rendered empty.
+func TestShopFormViewKeepsCategories(t *testing.T) {
+	bundle, err := i18n.Load()
+	if err != nil {
+		t.Fatalf("load i18n: %v", err)
+	}
+	page := PageData{Year: 2026, Tr: bundle.Translator(i18n.ZH)}
+	cats := []store.ShopCategory{
+		{ID: 1, Name: "Miscellaneous", NameCN: "杂项"},
+		{ID: 5, Name: "Mounts", NameCN: "坐骑"},
+	}
+	regions := (&Server{}).shopRegions()
+
+	v := shopFormView(page, shopItemView{}, cats, regions, store.ShopRegionChina, true, true)
+	if len(v.Categories) != 2 {
+		t.Fatalf("categories = %d, want 2 - they did not reach the form", len(v.Categories))
+	}
+	if len(v.Regions) != 3 {
+		t.Errorf("regions = %d, want 3", len(v.Regions))
+	}
+	if v.RealmRegion != store.ShopRegionChina || !v.RealmIsChinese {
+		t.Errorf("realm flags not applied: region=%d chinese=%v", v.RealmRegion, v.RealmIsChinese)
+	}
+	if v.Title == "" || v.Active != "admin-shop" {
+		t.Errorf("page not set up: title=%q active=%q", v.Title, v.Active)
+	}
+
+	// A new row with no category must start on a real one: 0 does not exist, and
+	// the core drops a row whose category it cannot find.
+	if v.Item.Category != 1 {
+		t.Errorf("new row did not default to the first category, got %d", v.Item.Category)
+	}
+	// ...but an existing row keeps whatever it has, even if it is gone.
+	existing := shopFormView(page, shopItemView{Item: store.ShopItem{Category: 99}},
+		cats, regions, store.ShopRegionEurope, false, false)
+	if existing.Item.Category != 99 {
+		t.Errorf("existing row's category was rewritten to %d", existing.Item.Category)
+	}
+}
+
+func TestShopCategoryNameAndKnown(t *testing.T) {
+	cats := []store.ShopCategory{
+		{ID: 5, Name: "Mounts", NameCN: "坐骑"},
+		{ID: 9, Name: "Special", NameCN: ""},
+	}
+
+	zh := shopListView{Categories: cats, RealmIsChinese: true}
+	if got := zh.CategoryName(5); got != "坐骑" {
+		t.Errorf("zh CategoryName(5) = %q, want 坐骑", got)
+	}
+	if got := zh.CategoryName(9); got != "Special" {
+		t.Errorf("CategoryName falls back to the English name, got %q", got)
+	}
+	if got := zh.CategoryName(42); got != "#42" {
+		t.Errorf("CategoryName(unknown) = %q, want #42", got)
+	}
+	en := shopListView{Categories: cats}
+	if got := en.CategoryName(5); got != "Mounts" {
+		t.Errorf("en CategoryName(5) = %q, want Mounts", got)
+	}
+
+	if !(shopItemView{Categories: cats, Item: store.ShopItem{Category: 5}}).CategoryKnown() {
+		t.Error("a category present in the list is reported as missing")
+	}
+	if (shopItemView{Categories: cats, Item: store.ShopItem{Category: 42}}).CategoryKnown() {
+		t.Error("a category absent from the list is reported as known")
+	}
+	if (shopItemView{Categories: cats, Item: store.ShopItem{Category: 0}}).CategoryKnown() {
+		t.Error("category 0 is reported as known")
+	}
 }

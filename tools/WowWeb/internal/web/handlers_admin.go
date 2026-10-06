@@ -3,6 +3,7 @@ package web
 import (
 	"errors"
 	"fmt"
+	"html/template"
 	"net"
 	"net/http"
 	"strconv"
@@ -83,7 +84,7 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request, pa
 
 type adminAccountsView struct {
 	PageData
-	QueryString string
+	QueryString template.URL
 	Accounts    []store.Account
 	Filter      store.AccountFilter
 	Total       int
@@ -684,7 +685,7 @@ func (s *Server) handleAdminDeleteAccount(w http.ResponseWriter, r *http.Request
 
 type adminCharactersView struct {
 	PageData
-	QueryString string
+	QueryString template.URL
 	Characters  []store.Character
 	Filter      store.CharacterFilter
 	Total       int
@@ -916,7 +917,7 @@ func (s *Server) handleAdminCharacterLevel(w http.ResponseWriter, r *http.Reques
 
 type adminBansView struct {
 	PageData
-	QueryString string
+	QueryString template.URL
 	Bans        []store.Ban
 	Filter      store.BanFilter
 	Total       int
@@ -1241,13 +1242,19 @@ func parseDuration(raw string) (time.Duration, error) {
 
 // baseQuery returns the current query string without the page parameter, so
 // pagination links keep the active filters.
-func baseQuery(r *http.Request) string {
+func baseQuery(r *http.Request) template.URL {
 	q := r.URL.Query()
 	q.Del("page")
 	if len(q) == 0 {
 		return ""
 	}
-	return q.Encode() + "&"
+	// template.URL, not string: html/template percent-encodes = and & in a
+	// plain string interpolated into href, which turned "?category=5&page=2"
+	// into "?category%3d5%26page=2" - one parameter the server cannot read, so
+	// every page link was broken. A template.URL is only HTML-escaped (&amp;),
+	// which a browser decodes back. Values here come from url.Values.Encode,
+	// so they are already properly escaped.
+	return template.URL(q.Encode() + "&")
 }
 
 func enabledState(on bool) string {

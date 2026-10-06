@@ -48,7 +48,7 @@
           {{if .ItemNameCN}}<span class="muted">{{.ItemName}}</span>{{end}}
           {{if .ItemLevel}}<span class="pill">{{.ItemLevel}}</span>{{end}}
         </td>
-        <td>{{.Category}}</td>
+        <td>{{$.CategoryName .Category}}</td>
         <td class="right">{{.Price}}</td>
         <td>
           {{$.T (printf "shop.region.%s" (regionName .Region))}}

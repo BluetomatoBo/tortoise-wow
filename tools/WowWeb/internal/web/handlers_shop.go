@@ -3,6 +3,7 @@ package web
 import (
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -42,7 +43,7 @@ type shopListView struct {
 	Total          int
 	Page           int
 	Pages          int
-	QueryString    string
+	QueryString    template.URL
 
 	// RealmRegion is what the core believes this realm is, from its own config;
 	// an item locked to another region never reaches the client.
@@ -126,17 +127,46 @@ type shopItemView struct {
 	RealmIsChinese bool
 }
 
+// shopRegionOption is one entry of the region select. There is no per-option
+// hint: a <select> cannot show one, and shop.item.regionHint already explains
+// what the field does.
 type shopRegionOption struct {
 	Value uint8
 	Key   string
-	Hint  string
+}
+
+// CategoryName resolves a row's category id to the name the realm would show.
+// The list used to print the bare id, so "5" appeared where the client says
+// 坐骑 - the one column that has a name worth reading.
+func (v shopListView) CategoryName(id uint8) string {
+	for _, c := range v.Categories {
+		if c.ID == id {
+			return c.LocalizedName(v.RealmIsChinese)
+		}
+	}
+	return fmt.Sprintf("#%d", id)
+}
+
+// CategoryKnown reports whether this row's category exists in shop_categories.
+// The core drops a row whose category does not, so the form has to keep such a
+// value visible: without this the <select> would show its first entry as
+// selected and saving would quietly move the row to that category. The template
+// only renders the placeholder for an existing row; a new one has nothing to
+// preserve and simply starts on a real category.
+func (v shopItemView) CategoryKnown() bool {
+	for _, c := range v.Categories {
+		if c.ID == v.Item.Category {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Server) shopRegions() []shopRegionOption {
 	return []shopRegionOption{
-		{store.ShopRegionGlobal, "shop.region.global", "shop.region.globalHint"},
-		{store.ShopRegionEurope, "shop.region.europe", "shop.region.europeHint"},
-		{store.ShopRegionChina, "shop.region.china", "shop.region.chinaHint"},
+		{store.ShopRegionGlobal, "shop.region.global"},
+		{store.ShopRegionEurope, "shop.region.europe"},
+		{store.ShopRegionChina, "shop.region.china"},
 	}
 }
 
@@ -155,14 +185,36 @@ func (s *Server) realmIsChinese() bool {
 }
 
 func (s *Server) renderShopForm(w http.ResponseWriter, r *http.Request, page *PageData, view shopItemView, status int) {
+	s.rend.Render(w, status, "admin_shop_item", view)
+}
+
+// shopFormView assembles everything the item form needs.
+//
+// It is separate from the handler, and takes the categories as an argument, for
+// one reason: this is where the category list was once dropped, which left the
+// <select> empty and made a category impossible to choose. A function that
+// cannot silently lose its input, and that a test can call without a database,
+// is the fix - the previous version took an already-built view and overwrote
+// view.Categories with nil.
+func shopFormView(page PageData, view shopItemView, categories []store.ShopCategory,
+	regions []shopRegionOption, realmRegion uint8, realmIsChinese bool, isNew bool) shopItemView {
 	page.Title = page.T("shop.item.title")
 	page.Active = "admin-shop"
-	view.PageData = *page
-	view.Categories = nil
-	view.Regions = s.shopRegions()
-	view.RealmRegion = s.realmRegion()
-	view.RealmIsChinese = s.realmIsChinese()
-	s.rend.Render(w, status, "admin_shop_item", view)
+
+	view.PageData = page
+	view.Categories = categories
+	view.Regions = regions
+	view.RealmRegion = realmRegion
+	view.RealmIsChinese = realmIsChinese
+	view.IsNew = isNew
+
+	// A new row needs a real category selected: 0 is not one, and the loader
+	// drops a row whose category does not exist. Only fall back when nothing
+	// valid was asked for.
+	if isNew && !view.CategoryKnown() && len(categories) > 0 {
+		view.Item.Category = categories[0].ID
+	}
+	return view
 }
 
 func (s *Server) handleAdminShopNewForm(w http.ResponseWriter, r *http.Request, page *PageData) {
@@ -172,19 +224,16 @@ func (s *Server) handleAdminShopNewForm(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	view := shopItemView{
-		IsNew: true,
-		Item: store.ShopItem{
-			Region: store.ShopRegionGlobal,
-			Scale:  1,
-		},
+		Item: store.ShopItem{Region: store.ShopRegionGlobal, Scale: 1},
 	}
-	view.Categories = categories
 	// A prefilled category when arriving from a filtered list.
 	if catStr := r.URL.Query().Get("category"); catStr != "" {
 		if cat, err := strconv.Atoi(catStr); err == nil && cat >= 0 && cat <= 255 {
 			view.Item.Category = uint8(cat)
 		}
 	}
+	view = shopFormView(*page, view, categories, s.shopRegions(), s.realmRegion(),
+		s.realmIsChinese(), true)
 	s.renderShopForm(w, r, page, view, http.StatusOK)
 }
 
@@ -208,12 +257,14 @@ func (s *Server) handleAdminShopItemForm(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	view := shopItemView{Item: item, Categories: categories}
+	view := shopItemView{Item: item}
 	if tmpl, err := s.store.ItemTemplate(ctx, item.Entry); err == nil {
 		view.ItemName = tmpl.DisplayName()
 	} else if errors.Is(err, store.ErrNotFound) {
 		view.ItemMissing = true
 	}
+	view = shopFormView(*page, view, categories, s.shopRegions(), s.realmRegion(),
+		s.realmIsChinese(), false)
 	s.renderShopForm(w, r, page, view, http.StatusOK)
 }
 
@@ -284,18 +335,22 @@ func (s *Server) saveShopItem(w http.ResponseWriter, r *http.Request, page *Page
 	}
 
 	if len(problems) > 0 {
-		view := shopItemView{IsNew: id == 0, Input: input, Warnings: warnings, Error: strings.Join(problems, "；")}
+		view := shopItemView{Input: input, Warnings: warnings, Error: strings.Join(problems, "；")}
 		view.Item = store.ShopItem{ID: id, Category: input.Category, Entry: input.Entry,
 			ModelID: input.ModelID, ItemDisplayID: input.ItemDisplayID,
 			Description: input.Description, DescriptionCN: input.DescriptionCN,
 			Price: input.Price, Region: input.Region,
 			X: input.X, Y: input.Y, Z: input.Z, Rotation: input.Rotation, Scale: input.Scale}
-		if cats, err := s.store.ShopCategories(ctx); err == nil {
-			view.Categories = cats
-		}
 		if tmpl, err := s.store.ItemTemplate(ctx, input.Entry); err == nil {
 			view.ItemName = tmpl.DisplayName()
 		}
+		categories, err := s.store.ShopCategories(ctx)
+		if err != nil {
+			s.serverError(w, r, "list shop categories", err)
+			return
+		}
+		view = shopFormView(*page, view, categories, s.shopRegions(), s.realmRegion(),
+			s.realmIsChinese(), id == 0)
 		s.renderShopForm(w, r, page, view, http.StatusBadRequest)
 		return
 	}
@@ -389,8 +444,8 @@ func parseShopItemForm(r *http.Request) (store.ShopItemInput, []string) {
 		in.Entry = uint32(entry)
 	}
 
-	in.ModelID = uint32(atoiDefault(r.PostFormValue("model_id"), 0))
-	in.ItemDisplayID = uint32(atoiDefault(r.PostFormValue("item_id"), 0))
+	in.ModelID = uintFromForm(r.PostFormValue("model_id"))
+	in.ItemDisplayID = uintFromForm(r.PostFormValue("item_id"))
 
 	price, err := strconv.Atoi(strings.TrimSpace(r.PostFormValue("price")))
 	if err != nil || price <= 0 {
@@ -423,6 +478,17 @@ func parseShopItemForm(r *http.Request) (store.ShopItemInput, []string) {
 		problems = append(problems, "description")
 	}
 	return in, problems
+}
+
+// uintFromForm reads a non-negative integer field. Full atoiDefault is wrong
+// here: it hands back -1 for "-1", and uint32(-1) is 4294967295, which would be
+// written to the display-id column as a real value. The form's min="0" is a
+// hint to the browser, not a guarantee about what arrives.
+func uintFromForm(s string) uint32 {
+	if n := atoiDefault(s, 0); n > 0 {
+		return uint32(n)
+	}
+	return 0
 }
 
 func floatDefault(s string, def float64) float64 {

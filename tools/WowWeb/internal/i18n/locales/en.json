@@ -19,7 +19,7 @@
   "common.no": "no",
   "common.perm": "permanent",
   "common.until": "until",
-  "common.pageOf": "page %s of %s",
+  "common.pageOf": "page %d of %d",
   "common.prev": "← Prev",
   "common.next": "Next →",
   "nav.home": "Home",
@@ -528,11 +528,8 @@
   "shop.notOnThisRealm": "hidden here",
   "shop.warn.otherRegionHint": "When the region does not match, the world server skips the row at startup and players never see it in the shop.",
   "shop.region.global": "Global",
-  "shop.region.globalHint": "Shown on every realm.",
   "shop.region.europe": "Europe",
-  "shop.region.europeHint": "Only on realms with NiHao=0 (Europe).",
   "shop.region.china": "China",
-  "shop.region.chinaHint": "Only on realms with NiHao=1 (China).",
   "shop.item.title": "Shop entry",
   "shop.item.newTitle": "New shop entry",
   "shop.item.editTitle": "Edit shop entry",
@@ -567,5 +564,6 @@
   "shop.flash.created": "Created a shop entry for item %d.",
   "shop.flash.updated": "Saved the shop entry for item %d.",
   "shop.flash.deleted": "Deleted the shop entry for item %d.",
-  "common.cancel": "Cancel"
+  "common.cancel": "Cancel",
+  "shop.item.categoryMissing": "that category is not in shop_categories (the world server skips this row at startup)"
 }
