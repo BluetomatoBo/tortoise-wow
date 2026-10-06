@@ -136,6 +136,36 @@ HTTP，实测 `http://172.18.1.6:8080/alert` 可用。其余全部由 `LaunchURL
 | 登录界面「系统公告」面板正文里的链接 | 正文里的 `<a href>`，见下一节 |
 | 登录失败的对话框（封禁 / 暂停 / 余额为负 / 邮箱未验证 / 服务器繁忙） | `AUTH_BANNED_URL`、`AUTH_SUSPENDED_URL`、`AUTH_NO_TIME_URL`、`AUTH_PARENTAL_CONTROL_URL`、`AUTH_DB_BUSY_URL` |
 
+### ⚠️ 「帮助」按钮只有一半能真的弹出来
+
+客户端里有**两套**登录失败提示，用哪套取决于**哪台服务器拒绝你**：
+
+| 谁拒绝 | 客户端提示语 | 有没有「帮助」按钮 |
+|---|---|---|
+| **登录服 realmd**（账号密码那一步） | `LOGIN_*` 一族（0–17 的分派表） | **没有** —— 只有「确定」，不带任何链接 |
+| **世界服 mangosd**（选了服务器连进去那一步） | `AUTH_*` 一族 + `AUTH_*_URL` | **有** —— 「帮助」→ `LaunchURL(_G[GlueDialog.data])` |
+
+证据是那一串键值：`AUTH_*_URL` 表的索引是 **28 / 30 / 31 / 32 / 33**，正是
+`AUTH_BANNED / AUTH_NO_TIME / AUTH_DB_BUSY / AUTH_SUSPENDED / AUTH_PARENTAL_CONTROL`
+在客户端 `ResponseCodes` 枚举里的值 —— 而只有**世界服的 `SMSG_AUTH_RESPONSE` 用这个枚举**；
+登录服那边的拒绝走 `LOGIN_*`，那张表里根本没有 URL。
+
+而 core 的世界服**只发五种响应码**，其中只有 **`AUTH_BANNED`（28）命中 URL 表**。所以：
+
+| 键 | 这套 core 上能触发吗 |
+|---|---|
+| `AUTH_BANNED_URL` | ✅ 世界服 `isBanned`／`IsIPBanned` → `AUTH_BANNED` |
+| `AUTH_SUSPENDED_URL`、`AUTH_NO_TIME_URL`、`AUTH_PARENTAL_CONTROL_URL`、`AUTH_DB_BUSY_URL` | ❌ 对应的码只由**登录服**发出（走 `LOGIN_*`，无链接），世界服不发 |
+
+想亲眼看到「帮助」按钮：**先正常登录到选服务器的界面**（登录服已放行），
+**然后**在后台把账号或 IP 封掉，再点服务器进入 —— 世界服这时才拒绝，
+用的是 `AUTH_BANNED`，弹窗里就会出现「帮助」，点开是 `AUTH_BANNED_URL`。
+
+> 📌 后台的「**禁用账号**」和「**封禁**」效果不同：禁用写 `account.active=0`，登录服回的是
+> `WOW_FAIL_INCORRECT_PASSWORD`，玩家看到的是「**密码错误**」；封禁写 `account_banned`，
+> 有期限时回 `WOW_FAIL_SUSPENDED`（玩家看到「已被暂时冻结」，**同样没有帮助按钮**），
+> 永久封禁回 `WOW_FAIL_BANNED`。两种情况都由登录服拒绝。
+
 **已经死掉的键**（本客户端里没有任何代码或界面引用它们，改了也不会有反应）：
 `ACCOUNT_CREATE_URL`、`COMMUNITY_URL`、`TECH_SUPPORT_URL`、`TURTLE_ARMORY_WEBSITE`、
 `TURTLE_COMMUNITY_FORUM_WEBSITE`、`TURTLE_DISCORD_WEBSITE`、
@@ -447,6 +477,42 @@ only two things on this client can send a player to a browser:
 |---|---|
 | a link in the login screen's "Server Alert" panel | the `<a href>` in the body, see below |
 | a sign-in failure dialog (banned / suspended / out of credit / e-mail unverified / server busy) | `AUTH_BANNED_URL`, `AUTH_SUSPENDED_URL`, `AUTH_NO_TIME_URL`, `AUTH_PARENTAL_CONTROL_URL`, `AUTH_DB_BUSY_URL` |
+
+### ⚠️ Only half of those "help" buttons can actually appear
+
+The client carries **two** families of sign-in failure text, and which one you get depends on
+**which server refuses you**:
+
+| who refuses | message family | "help" button |
+|---|---|---|
+| **login server (realmd)**, at the account step | `LOGIN_*` (a 0-17 dispatch table) | **none** - only "OK", never a link |
+| **world server (mangosd)**, when entering the realm | `AUTH_*` plus `AUTH_*_URL` | **yes** - help calls `LaunchURL(_G[GlueDialog.data])` |
+
+The evidence is the index of that `AUTH_*_URL` table: **28 / 30 / 31 / 32 / 33**, exactly the
+values of `AUTH_BANNED / AUTH_NO_TIME / AUTH_DB_BUSY / AUTH_SUSPENDED / AUTH_PARENTAL_CONTROL`
+in the client's `ResponseCodes` enum - and only the **world server's `SMSG_AUTH_RESPONSE`**
+uses that enum. The login server's refusals go through the `LOGIN_*` table, which holds no URL
+at all.
+
+The core's world server sends **five** response codes in total, and only **`AUTH_BANNED`
+(28)** hits that table:
+
+| key | reachable on this core? |
+|---|---|
+| `AUTH_BANNED_URL` | ✅ world server, `isBanned` / `IsIPBanned` → `AUTH_BANNED` |
+| `AUTH_SUSPENDED_URL`, `AUTH_NO_TIME_URL`, `AUTH_PARENTAL_CONTROL_URL`, `AUTH_DB_BUSY_URL` | ❌ those codes are only sent by the **login server** (so they render from `LOGIN_*`, with no link); the world server never sends them |
+
+To see the help button yourself: **sign in normally and stop at the realm list** (the login
+server has already let you through), **then** ban the account or the IP from the web admin,
+then click the realm. The world server refuses at that point with `AUTH_BANNED`, so the dialog
+grows a "help" button that opens `AUTH_BANNED_URL`.
+
+> 📌 In the web admin, "**disable account**" and "**ban**" are not the same thing. Disabling
+> writes `account.active = 0`, and the login server answers that with
+> `WOW_FAIL_INCORRECT_PASSWORD` - the player is told the **password is wrong**. A ban writes
+> `account_banned`: with a duration the login server answers `WOW_FAIL_SUSPENDED` (the player
+> sees "temporarily suspended", which also has **no help button**), and without one
+> `WOW_FAIL_BANNED`. Both are refusals by the login server.
 
 **Dead keys** - nothing in this client reads them, so changing them does nothing:
 `ACCOUNT_CREATE_URL`, `COMMUNITY_URL`, `TECH_SUPPORT_URL`, `TURTLE_ARMORY_WEBSITE`,

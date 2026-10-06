@@ -191,6 +191,16 @@ wowweb:
 | `/account/no-time` | 登录被拒「余额为负」（`WOW_FAIL_NO_TIME`） |
 | `/account/verify` | 登录被拒「邮箱未验证」（`WOW_FAIL_PARENTCONTROL`） |
 
+> ⚠️ **这四页里只有 `/account/banned` 在这套 core 上真的能弹出来。** 客户端有**两套**登录
+> 失败提示：**登录服**（realmd）的拒绝用 `LOGIN_*` 一族，对话框**只有「确定」、不带链接**；
+> 只有**世界服**（mangosd）的拒绝用 `AUTH_*` + `AUTH_*_URL`，才有「帮助」按钮。
+> 而 core 的世界服只发五种码，其中只有 `AUTH_BANNED` 命中那张 URL 表。
+> 想看「帮助」按钮：先登录到**选服务器**的界面，再封掉账号/IP，然后点服务器进入。
+> 细节与证据见 [`../ClientPatch/README.md`](../ClientPatch/README.md)。
+>
+> 📌 另外后台的「**禁用账号**」和「**封禁**」不一样：禁用写 `account.active=0`，登录服回
+> `WOW_FAIL_INCORRECT_PASSWORD` —— 玩家看到的是「**密码错误**」。想给出明确理由要用**封禁**。
+
 这些页面**故意不要求登录**：需要它们的人恰恰是登不进来的人，要求会话等于在最需要的时候
 把它们锁掉。它们也**不透露任何服务器地址或端口**，测试会检查这一点。
 
@@ -701,6 +711,18 @@ page for each:
 | `/account/suspended` | sign-in refused: **suspended**, including an IP lock (`WOW_FAIL_SUSPENDED`) |
 | `/account/no-time` | sign-in refused: **negative balance** (`WOW_FAIL_NO_TIME`) |
 | `/account/verify` | sign-in refused: **e-mail unverified** (`WOW_FAIL_PARENTCONTROL`) |
+
+> ⚠️ **On this core, only `/account/banned` can actually be reached.** The client carries two
+> families of sign-in failure text: refusals from the **login server** (realmd) render from the
+> `LOGIN_*` family, whose dialog has **only an "OK" button and never a link**; only refusals
+> from the **world server** (mangosd) use `AUTH_*` plus `AUTH_*_URL`, which is what grows the
+> "help" button. The core's world server sends five codes in total and only `AUTH_BANNED` hits
+> that table. To see it: sign in and stop at the **realm list**, ban the account or IP, then
+> click the realm. See [`../ClientPatch/README.md`](../ClientPatch/README.md) for the evidence.
+>
+> 📌 In the admin, "**disable account**" is not "**ban**": disabling writes
+> `account.active = 0` and the login server answers `WOW_FAIL_INCORRECT_PASSWORD` - the player
+> is told the **password is wrong**. Use a ban to give a real reason.
 
 They are **public on purpose**: the people who need them are the ones who cannot sign in, so
 requiring a session would lock them out exactly when they matter. They also disclose
