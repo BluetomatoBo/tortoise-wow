@@ -251,6 +251,46 @@ NUL 结尾字符串，遇空指针收尾。**不硬编码任何域名**，所以
 被保护的主机（含 `blizzard` / `battle.net` / `turtlecraft` 等）要显式加 `--force` 才允许替换 ——
 它们是客户端门户/补丁服务还在用的地址，换掉可能连带破坏其它功能。
 
+## 怎么验证真的生效
+
+链接能不能点，取决于**两个文件**同时正确：`patch-Z.mpq` 里的地址形状合法，
+且该地址的主机在 `WoW.exe` 的白名单里。分开在两个文件里，而且**任何一件不满足都是静默的**
+（不报错，只是点了没反应），所以有一个自检工具把两者对起来查：
+
+```bash
+python3 verify_client.py                      # 查客户端自己的那一份
+python3 verify_client.py --exe /path/to/你改过的那份/WoW.exe
+python3 verify_client.py --link http://twow.home.boym.me/notice   # 查准备写进公告的地址
+```
+
+它会：
+
+* 按**补丁优先级**找出客户端**实际加载**的那份 `GlueStrings.lua`（不是按文件时间），
+  这样查的是真实生效值 —— 顺手也能看出 patch-Z 到底有没有在生效
+* 逐个检查会被 `LaunchURL` 打开的键：地址形状 + 主机是否在白名单里
+* 单独检查 `SERVER_ALERT_URL`（它由客户端自己抓取，可以带端口，不查白名单）
+* 用 `--link` 检查你打算写进公告正文的地址
+* 把「本客户端不引用的死键」单独汇总一行，不参与结论，免得噪声盖住真问题
+
+退出码 `0` 通过 / `1` 有明确失败 / `2` 只有不确定项，可以直接放进脚本。
+
+### 三层验证
+
+| 层 | 在哪做 | 查什么 |
+|---|---|---|
+| 静态 | 本机（上面的工具） | 两个文件是否配套、地址形状、白名单、`patch-Z` 是否真的最高优先级 |
+| 服务端 | 服务器上 `curl` | `/alert` 是否以 `SERVERALERT:` 开头、有没有 `<a href>`、`/notice` 与 `/account/*` 是否 200 |
+| 客户端 | Windows 上跑游戏 | 面板有没有公告（证明 `patch-Z` 生效）、点链接浏览器有没有打开（证明白名单生效） |
+
+**几个能快速定位问题的信号**：
+
+| 现象 | 说明什么 |
+|---|---|
+| 面板完全没有公告 | `patch-Z` 没生效（或 `SERVER_ALERT_URL` 指错、服务端没起）。查服务端访问日志有没有那一次抓取 —— 这是区分「没来取」和「取了但不喜欢」的唯一办法 |
+| 面板有公告，链接显示成蓝色带方括号 | 正文那行被正确渲染成链接了（`hyperlinkFormat` 生效），形状没问题 |
+| 链接看着能点，点了没反应 | 地址形状或**白名单**没过 —— 用上面的工具查 |
+| 链接点开浏览器是 404 | 白名单和形状都对，问题在服务端（页面不存在）—— 这次就轮到 web 那边了 |
+
 ## 改动生效
 
 | 改什么 | 怎么生效 |
@@ -530,6 +570,45 @@ server checks it either:
 
 Entries matching `blizzard`, `battle.net`, `turtlecraft` and friends are protected and need an
 explicit `--force` — the client's portal/patch services still use them.
+
+## Checking that it actually works
+
+A clickable link needs **two files** to agree: the address in `patch-Z.mpq` has to be a shape
+the client accepts, and its host has to be in `WoW.exe`'s whitelist. They live in different
+files, and **failing either one is silent** - nothing is reported, the click simply does
+nothing - so a checker compares them for you:
+
+```bash
+python3 verify_client.py                      # the client's own copy
+python3 verify_client.py --exe /path/to/the/copy/you/patched/WoW.exe
+python3 verify_client.py --link http://twow.home.boym.me/notice   # an address for the body
+```
+
+It works out which `GlueStrings.lua` the client **actually loads** by walking the patches in
+priority order (not by file date), so it checks the effective values - and tells you whether
+`patch-Z` is in effect at all. Then it validates each key `LaunchURL` opens (shape and
+whitelist), checks `SERVER_ALERT_URL` separately (the client fetches that one itself), checks
+any `--link` you pass, and summarises the keys this client never reads in one line so they
+cannot drown out a real problem.
+
+Exit codes: `0` pass, `1` a definite failure, `2` only uncertain.
+
+### Three layers
+
+| Layer | Where | What it proves |
+|---|---|---|
+| static | on your machine, with the tool above | the two files are in step, addresses are the right shape, `patch-Z` really is the highest-priority patch |
+| server | `curl` on the server | `/alert` starts with `SERVERALERT:` and carries an `<a href>`, `/notice` and `/account/*` return 200 |
+| client | the game on Windows | the panel shows the notice (so `patch-Z` loaded) and clicking the link opens a browser (so the whitelist works) |
+
+**Signals worth knowing:**
+
+| What you see | What it means |
+|---|---|
+| no notice at all | `patch-Z` is not in effect, `SERVER_ALERT_URL` is wrong, or the service is down. Check the server's access log for the fetch - that is the only way to tell "never asked" from "asked and disliked the answer" |
+| the notice appears, the link is blue and bracketed | the line was parsed as a link (`hyperlinkFormat` worked), so its shape is fine |
+| the link looks clickable and does nothing | shape or **whitelist** - run the tool above |
+| the browser opens and shows a 404 | shape and whitelist are fine; the problem is on the web side |
 
 ## What takes effect when
 
