@@ -253,7 +253,18 @@ CharacterCreateOutcome CreateCharacter(uint32 accountId, CharacterCreateInfo con
     if (info.challengeMask)
         pNewChar->SetPlayerVariable(PlayerVariables::PendingChallengeMask, std::to_string(info.challengeMask));
 
-    if (!pNewChar->SaveToDB(false, true, false))
+    // Commit this one synchronously (direct), not through the async queue.
+    //
+    // The client asks for a fresh character list the moment it is told creation
+    // succeeded (CharacterSelect.lua calls GetCharacterListUpdate() when the
+    // screen is shown), and that SELECT is queued with AsyncPQuery - which goes
+    // to the general delay queue, while a queued commit goes to the per-guid
+    // serial queue. Two queues, no ordering: the SELECT could run first and the
+    // new character would be missing until the player reconnected.
+    //
+    // Committing on this thread makes the row exist before CHAR_CREATE_SUCCESS
+    // is sent, which is what the rest of this function already assumes.
+    if (!pNewChar->SaveToDB(false, true, true))
     {
         outcome.result = CHAR_CREATE_ERROR;
         return outcome;
