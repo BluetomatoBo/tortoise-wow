@@ -210,11 +210,39 @@ HTTP，实测 `http://172.18.1.6:8080/alert` 可用。其余全部由 `LaunchURL
 > 有期限时回 `WOW_FAIL_SUSPENDED`（玩家看到「已被暂时冻结」，**同样没有帮助按钮**），
 > 永久封禁回 `WOW_FAIL_BANNED`。两种情况都由登录服拒绝。
 
-**已经死掉的键**（本客户端里没有任何代码或界面引用它们，改了也不会有反应）：
-`ACCOUNT_CREATE_URL`、`COMMUNITY_URL`、`TECH_SUPPORT_URL`、`TURTLE_ARMORY_WEBSITE`、
-`TURTLE_COMMUNITY_FORUM_WEBSITE`、`TURTLE_DISCORD_WEBSITE`、
-`TURTLE_KNOWLEDGE_DATABASE_WEBSITE`、`TURTLE_REDDIT_WEBSITE`、`AUTH_TURTLE_WEBSITE`。
-汉化包把它们指向 wuguifu，但在这个 exe 上点不到，所以不必改。
+### ⚠️ 那个「哪些键有人用」有两半，只查一边会看错
+
+**这一节本身踩过坑**：早期只查了 exe，于是把 `TURTLE_ARMORY_WEBSITE` 这类键全判成死键 ——
+其实登录界面上的「英雄榜」按钮就在用它。原因是**两种读法**：
+
+| 来源 | 谁在读 | 例子 |
+|---|---|---|
+| **界面 Lua** | 登录/选服界面的按钮直接调 `LaunchURL(键)` | `AccountLogin.lua`、`CharacterSelect.lua`（都在 patch-9.mpq） |
+| **exe** | 世界服登录失败时按返回码自己去读键名 | 5 个 `AUTH_*_URL`（28/30/31/32/33 那张表） |
+
+界面 Lua 是按**标识符**读全局变量的，所以那些键名在 exe 里**根本不存在**，看着像死键；
+而只扫 `.xml` 也看不见调用点 —— 调用写在 `.lua` 里，由 `<Script file="..."/>` 加载，
+**不在 toc 清单里**。`verify_client.py` 现在两边都扫，并把调用点（文件:行号）打出来。
+
+**登录界面**（`patch-9.mpq` 的 `AccountLogin.xml` + `AccountLogin.lua`）六个按钮：
+
+| 按钮（frame 名） | 显示的标签 | 打开的地址 |
+|---|---|---|
+| `AccountLoginTurtleWebsite` | `COMMUNITY_SITE` | `AUTH_TURTLE_WEBSITE` |
+| `AccountLoginTurtleArmory` | `TURTLE_ARMORY` | `TURTLE_ARMORY_WEBSITE` |
+| `AccountLoginTurtleKnowledgeDatabase` | `TURTLE_KNOWLEDGE_DATABASE` | `TURTLE_KNOWLEDGE_DATABASE_WEBSITE` |
+| `AccountLoginTurtleCommunityForum` | `TURTLE_COMMUNITY_FORUM` | `TURTLE_COMMUNITY_FORUM_WEBSITE` |
+| `AccountLoginTurtleDiscord` | `TURTLE_DISCORD` | `TURTLE_DISCORD_WEBSITE` |
+| `AccountLoginTurtleReddit` | `TURTLE_REDDIT` | `TURTLE_REDDIT_WEBSITE` |
+
+**角色选择界面**（`CharacterSelect.lua`）还有两个：`ManageAccount` → `AUTH_NO_TIME_URL`、
+`TechSupport` → `TECH_SUPPORT_URL`。
+
+这些都**可以用 patch-Z 改**：标签键和 URL 键都住在 `GlueStrings.lua`，把它俩一起写进
+`overrides.json` 的 `luaAssignments` 就行（patch-Z 最后加载）。地址照样要过白名单 ——
+指向自己的域名时用**完整主机名**最稳。
+
+**真正在本客户端里没人引用的键**：`ACCOUNT_CREATE_URL`、`COMMUNITY_URL`。
 
 ## 地址怎么选
 
@@ -610,11 +638,42 @@ family ("此帐户因违反规则…") has the help button.**
 > sees "temporarily suspended", which also has **no help button**), and without one
 > `WOW_FAIL_BANNED`. Both are refusals by the login server.
 
-**Dead keys** - nothing in this client reads them, so changing them does nothing:
-`ACCOUNT_CREATE_URL`, `COMMUNITY_URL`, `TECH_SUPPORT_URL`, `TURTLE_ARMORY_WEBSITE`,
-`TURTLE_COMMUNITY_FORUM_WEBSITE`, `TURTLE_DISCORD_WEBSITE`,
-`TURTLE_KNOWLEDGE_DATABASE_WEBSITE`, `TURTLE_REDDIT_WEBSITE`, `AUTH_TURTLE_WEBSITE`.
-The translation pack points them at wuguifu, but they cannot be reached on this executable.
+### ⚠️ "Which keys are used" has two halves, and checking one lie
+
+**This section itself got it wrong once**: checking only the executable, every
+`TURTLE_ARMORY_WEBSITE`-style key looked dead - while the "Armory" button on the login screen
+was using it. There are two ways a key gets read:
+
+| where | who reads it | example |
+|---|---|---|
+| **interface Lua** | buttons on the login / character-select screens call `LaunchURL(KEY)` directly | `AccountLogin.lua`, `CharacterSelect.lua` (both in patch-9.mpq) |
+| **the executable** | on a world-server sign-in failure it looks up the key by response code | the five `AUTH_*_URL` (codes 28/30/31/32/33) |
+
+Interface Lua resolves globals **by identifier**, so those names appear nowhere in the
+executable and look dead; and scanning only the `.xml` files misses the calls as well, because
+they live in the `.lua` files loaded through `<Script file="..."/>` - not in the toc list.
+`verify_client.py` now scans both sides and prints the call sites (file:line).
+
+**Login screen** (patch-9.mpq's `AccountLogin.xml` + `AccountLogin.lua`), six buttons:
+
+| button (frame name) | label | opens |
+|---|---|---|
+| `AccountLoginTurtleWebsite` | `COMMUNITY_SITE` | `AUTH_TURTLE_WEBSITE` |
+| `AccountLoginTurtleArmory` | `TURTLE_ARMORY` | `TURTLE_ARMORY_WEBSITE` |
+| `AccountLoginTurtleKnowledgeDatabase` | `TURTLE_KNOWLEDGE_DATABASE` | `TURTLE_KNOWLEDGE_DATABASE_WEBSITE` |
+| `AccountLoginTurtleCommunityForum` | `TURTLE_COMMUNITY_FORUM` | `TURTLE_COMMUNITY_FORUM_WEBSITE` |
+| `AccountLoginTurtleDiscord` | `TURTLE_DISCORD` | `TURTLE_DISCORD_WEBSITE` |
+| `AccountLoginTurtleReddit` | `TURTLE_REDDIT` | `TURTLE_REDDIT_WEBSITE` |
+
+**Character-select screen** (`CharacterSelect.lua`) has two more: `ManageAccount` opens
+`AUTH_NO_TIME_URL`, `TechSupport` opens `TECH_SUPPORT_URL`.
+
+All of these are **patchable with patch-Z**: the labels and the addresses both live in
+`GlueStrings.lua`, so a pair of entries in `overrides.json`'s `luaAssignments` is enough
+(patch-Z loads last). The addresses still have to pass the whitelist - use the **full
+hostname** for your own domain.
+
+**Keys nothing in this client reads**: `ACCOUNT_CREATE_URL` and `COMMUNITY_URL`.
 
 ## Choosing the address
 

@@ -27,6 +27,7 @@
 退出码：0 全部通过；1 有明确的失败项；2 只有不确定项。
 """
 import argparse
+import ctypes
 import json
 import os
 import re
@@ -44,18 +45,22 @@ GLUE = 'Interface\\GlueXML\\GlueStrings.lua'
 OK, WARN, BAD = 'ok', 'warn', 'bad'
 MARK = {OK: '✓', WARN: '⚠', BAD: '✗'}
 
-# 本客户端里真正会被 LaunchURL 打开的键。逐个查过：exe 里有一张按登录失败码索引的
-# 36 字节定长键名表（0x803744 起，含 AUTH_BANNED/DB_BUSY/NO_TIME/SUSPENDED/
-# PARENTAL_CONTROL_URL），而下面这些键在 exe 与生效的界面文件里都没有任何引用。
-LIVE_LAUNCH_KEYS = {
-    'AUTH_BANNED_URL', 'AUTH_DB_BUSY_URL', 'AUTH_NO_TIME_URL',
-    'AUTH_PARENTAL_CONTROL_URL', 'AUTH_SUSPENDED_URL',
-}
-DEAD_LAUNCH_KEYS = {
-    'ACCOUNT_CREATE_URL', 'COMMUNITY_URL', 'TECH_SUPPORT_URL',
-    'AUTH_TURTLE_WEBSITE', 'TURTLE_ARMORY_WEBSITE', 'TURTLE_COMMUNITY_FORUM_WEBSITE',
-    'TURTLE_DISCORD_WEBSITE', 'TURTLE_KNOWLEDGE_DATABASE_WEBSITE', 'TURTLE_REDDIT_WEBSITE',
-}
+# 哪些键真的会被 LaunchURL 打开：**不硬编码**，而是扫生效的界面文件里的
+# `LaunchURL(KEY)` 调用点（见 scan_launch_url_keys）。
+#
+# 这一点踩过坑：早期版本按「exe 里有没有这个字符串」来判断，结果把
+# TURTLE_*_WEBSITE / COMMUNITY_URL / TECH_SUPPORT_URL 全判成了死键 —— 其实它们
+# 由界面 Lua 直接引用（`LaunchURL(TURTLE_ARMORY_WEBSITE)`），而 Lua 是按标识符
+# 查全局变量的，exe 里当然没有这些名字。后来只扫 .xml 也没看见，因为调用写在
+# .lua 里（由 <Script file="..."/> 加载，不在 toc 的清单里）。
+LAUNCH_URL_CALL_RE = re.compile(r'LaunchURL\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)')
+
+
+class _FIND(ctypes.Structure):
+    _fields_ = [('cFileName', ctypes.c_char * 1024), ('dwFileSize', ctypes.c_uint32),
+                ('dwFileTimeLo', ctypes.c_uint32), ('dwFileTimeHi', ctypes.c_uint32),
+                ('dwFileFlags', ctypes.c_uint32), ('dwCompSize', ctypes.c_uint32),
+                ('dwFileIndex', ctypes.c_uint32)]
 
 
 class Report:
@@ -98,6 +103,108 @@ def effective_lua(data_dir, name=GLUE):
         if data is not None:
             return base, data.decode('utf-8', 'replace')
     return None, None
+
+
+def _mpq_names(path, mask):
+    """用 StormLib 列出归档里的文件名（Windows 通配匹配）。"""
+    h = ctypes.c_void_p()
+    if not gp._lib.SFileOpenArchive(path.encode(), 0, gp.MPQ_OPEN_READ_ONLY, ctypes.byref(h)):
+        return []
+    gp._lib.SFileFindFirstFile.restype = ctypes.c_void_p
+    gp._lib.SFileFindFirstFile.argtypes = [ctypes.c_void_p, ctypes.c_char_p,
+                                           ctypes.POINTER(_FIND), ctypes.c_char_p]
+    gp._lib.SFileFindNextFile.argtypes = [ctypes.c_void_p, ctypes.POINTER(_FIND)]
+    fd = _FIND()
+    out = []
+    fh = gp._lib.SFileFindFirstFile(h, mask, ctypes.byref(fd), None)
+    if fh:
+        while True:
+            out.append(fd.cFileName.decode('latin1'))
+            if not gp._lib.SFileFindNextFile(fh, ctypes.byref(fd)):
+                break
+        gp._lib.SFileFindClose(fh)
+    gp._lib.SFileCloseArchive(h)
+    return out
+
+
+def effective_glue_files(data_dir):
+    """{文件显示名: (来自哪个补丁, 内容)} —— 每个文件取优先级最高的那一份。"""
+    glue = 'Interface\\GlueXML\\'
+    out = {}
+    for _prio, base, path in gp.list_patches(data_dir):          # 从低到高，高的覆盖低的
+        try:
+            arc = gp.Archive(path)
+        except OSError:
+            continue
+        for name in _mpq_names(path, (glue + '*').encode()):
+            low = name.lower()
+            if not low.endswith(('.xml', '.lua')):
+                continue
+            data = arc.read(name)
+            if data is not None:
+                out[name] = (base, data)
+        arc.close()
+    return out
+
+
+def scan_launch_url_keys(data_dir):
+    """扫生效界面文件里的 `LaunchURL(KEY)`，返回 (键集合, {键: [证据]})。
+
+    界面 Lua 是**按标识符**读 Lua 全局变量的（LaunchURL(KEY) 里的 KEY 就是
+    GlueStrings 里的键名），所以 exe 里查不到这些名字并不代表没人用。
+    """
+    keys, evidence = set(), {}
+    for name, (src, data) in sorted(effective_glue_files(data_dir).items()):
+        text = data.decode('utf-8', 'replace')
+        for lineno, line in enumerate(text.splitlines(), 1):
+            if line.lstrip().startswith('--'):
+                continue
+            for key in LAUNCH_URL_CALL_RE.findall(line):
+                if key == 'arg1':                    # 面板里的超链接，值是链接本身
+                    continue
+                keys.add(key)
+                evidence.setdefault(key, []).append(
+                    '%s:%d（%s）' % (name.split(chr(92))[-1], lineno, src))
+    return keys, evidence
+
+
+def exe_launch_url_keys(exe):
+    """扫 exe 里「按返回码索引的键名表」，返回 (键集合, {键: 证据})。
+
+    客户端在世界服登录失败时会自己去读这些键（表是 36 字节一条：4 字节返回码 +
+    32 字节键名），所以界面文件里查不到它们 —— 这是另一半来源。只靠界面扫描会
+    把它们误判成「没人用」。
+    """
+    data = open(exe, 'rb').read()
+    keys, evidence = {}, {}
+    # 一条 = 4 字节返回码 + 32 字节键名；名字必须以 _URL 结尾 —— 这张表装的正是
+    # 「哪个返回码该打开哪个地址」。不加这个限制会把 .rdata 里一堆无关的键名按
+    # 同样的步长撞出来（第一次实现就踩了这个坑）。
+    stride, name_off, code_off, name_len = 36, 4, 0, 32
+    pat = re.compile(rb'[A-Z][A-Z0-9_]{3,}_URL')
+    i = 0
+    while i + stride <= len(data):
+        code = int.from_bytes(data[i + code_off:i + code_off + 4], 'little')
+        raw = data[i + name_off:i + name_off + name_len].split(b'\0')[0]
+        if code <= 64 and raw and pat.fullmatch(raw):
+            name = raw.decode()
+            # 必须连成一条（≥2 条）才算表，避免撞上孤立的字符串
+            j = i + stride
+            nxt_code = int.from_bytes(data[j:j + 4], 'little')
+            nxt_raw = data[j + name_off:j + name_off + name_len].split(b'\0')[0]
+            if nxt_code <= 64 and pat.fullmatch(nxt_raw or b''):
+                k = i
+                while k + stride <= len(data):
+                    c = int.from_bytes(data[k:k + 4], 'little')
+                    n = data[k + name_off:k + name_off + name_len].split(b'\0')[0]
+                    if c > 64 or not pat.fullmatch(n or b''):
+                        break
+                    keys[n.decode()] = 'exe 里按返回码索引的键名表（返回码 %d，0x%x 附近）' % (c, 0x400000 + k)
+                    k += stride
+                i = k
+                continue
+        i += 1
+    return set(keys), keys
 
 
 def whitelist(exe):
@@ -218,18 +325,25 @@ def main():
         rep.add(OK, '实际生效的 GlueStrings.lua', f'来自 {source}')
         assigned = parse_assignments(text)
 
-    live = sorted(k for k in assigned if k in LIVE_LAUNCH_KEYS)
+    # 哪些键会被 LaunchURL 打开：扫生效界面文件里的调用点，不猜
+    launched, evidence = scan_launch_url_keys(data_dir)
+    exe_keys, exe_evidence = exe_launch_url_keys(exe)
+    evidence = {k: v for k, v in evidence.items()}
+    for k, v in exe_evidence.items():
+        evidence.setdefault(k, []).append(v)
+    launched |= exe_keys
+    live = sorted(k for k in assigned if k in launched)
     for key in live:
         check_url(key, assigned[key], hosts, rep, is_launch=True)
     if not live:
-        rep.add(BAD, '登录失败对话框用的键',
-                '生效文件里一个都没有 —— 客户端会退回它内置的默认地址')
+        rep.add(WARN, 'LaunchURL 用的键',
+                '配置里没有一个键被界面文件引用 —— 检查 overrides.json')
 
-    # 死键只汇总一行，不参与结论：改了它们在这个客户端上不会有任何反应
-    dead = sorted(k for k in assigned if k in DEAD_LAUNCH_KEYS and '://' in assigned[k])
-    if dead:
-        rep.add(OK, '这些键本客户端不引用（改了也不会有效果）',
-                '、'.join(dead) + '\n        依据：exe 与生效的界面文件里都没有引用')
+    # 配了但没人引用的键：只汇总，不参与结论（它们不会有害，但也不会有效果）
+    unused = sorted(k for k in assigned if k not in launched and '://' in assigned[k])
+    if unused:
+        rep.add(OK, '配置里设置了、界面文件却没引用的键（不会有任何效果）',
+                '、'.join(unused) + '\n        依据：扫过所有生效的 Interface\\GlueXML\\*.xml / *.lua')
 
     if 'SERVER_ALERT_URL' in assigned:
         check_url('SERVER_ALERT_URL', assigned['SERVER_ALERT_URL'], hosts, rep, is_launch=False)
@@ -252,6 +366,11 @@ def main():
     if verdict == OK:
         print('  结论：这一对文件是配套的 —— 面板能拿到公告，链接点得开。')
         print('        （前提：域名在客户端所在机器上能解析，且走 80 端口。）')
+        if not args.quiet:
+            print()
+            print('  界面里真的会调用 LaunchURL 的键（共 %d 个）：' % len(launched))
+            for key in sorted(launched):
+                print('    %-32s %s' % (key, '；'.join(evidence[key][:2])))
         return 0
     if verdict == WARN:
         print('  结论：没有明确错误，但有不确定项 —— 见上面的 ⚠。')
