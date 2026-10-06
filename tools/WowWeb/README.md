@@ -305,15 +305,32 @@ Entries:<cat>=<subcat>=<物品名>=<价>=<description>=<entry>=<model>=<displayi
 
 | 字段 | 来源 |
 |---|---|
-| 物品名 | `NiHao=1` → `locales_item.name_loc4`（中文）；`NiHao=0` → `item_template.name`（英文） |
+| 物品名 | `NiHao=1` → `locales_item` 里放中文的那一列（**注意不是固定的 `name_loc4`**，见下）；`NiHao=0` → `item_template.name`（英文） |
 | 描述 | **永远**是 `item_template.description`，**不做本地化**，两种区域都一样 |
 
-所以想让商城里显示中文：
+**关于「中文在哪一列」这个坑**：核心取物品名时用的是硬编码的数组下标
+（`ObjectMgr.cpp:9668` 的 `GetItemLocaleName(entry, LOCALE_zhCN)`），而那个数组是按
+`ObjectMgr::m_LocalForIndex` 的位置索引的，**不是**按 `name_locN` 的 N。
+本仓库自带的 `locales_item` 基础数据里，8 个 locale 列实际是：
 
-- **名称** → 翻 `locales_item.name_loc4`（前提是本服 `NiHao=1`）
-- **描述** → 只能翻 `item_template.description`。它没有 `_loc4` 版本可用，翻了之后英文客户端也会看到中文——这是核心的限制，不是后台能解决的
+```
+name_loc1=英文  loc2=韩文  loc3=法文  loc4=德文
+name_loc5=简体中文  loc6=繁体中文  loc7=西语  loc8=西语(esMX)
+```
 
-在那两列里改文字**不会**改变游戏里看到的任何内容。
+也就是说简体中文比 MaNGOS 惯例晚了一列。所以**想让商城显示中文，改哪一列要以你库里
+实际的填充为准**，先用下面这条确认：
+
+```sql
+SELECT entry, name_loc4, name_loc5, name_loc6 FROM locales_item WHERE entry = <你的 item entry>;
+```
+
+想让商城里显示中文：
+
+- **名称** → 改那列真正放简体中文的（本仓库数据是 `name_loc5`），且必须 `NiHao=1`
+- **描述** → 只能改 `item_template.description`。它没有能被核心读取的 `_loc4` 版本，改了之后英文客户端也会看到中文——这是核心的限制，不是后台能解决的
+
+在 `shop_items` 那两列里改文字**不会**改变游戏里看到的任何内容。
 
 #### 目前只做条目，不做分类
 
@@ -1040,16 +1057,36 @@ difference decides what you have to translate:
 
 | Field | Source |
 | --- | --- |
-| Name | `NiHao=1` → `locales_item.name_loc4`; `NiHao=0` → `item_template.name` |
+| Name | `NiHao=1` → whichever `locales_item` column holds the Chinese name (see the warning below — it is **not** fixed at `name_loc4`); `NiHao=0` → `item_template.name` |
 | Description | **always** `item_template.description` — no locale lookup, on either region |
 
-So Chinese text in the shop means translating `locales_item.name_loc4` for the
-name (and only when the realm has `NiHao=1`), and `item_template.description` for
-the description. The latter has no `_loc4` counterpart the core will use, so a
+**Which column holds the Chinese name is a trap.** The core looks the name up by a
+hardcoded array index (`GetItemLocaleName(entry, LOCALE_zhCN)` at
+`ObjectMgr.cpp:9668`), and that array is indexed by
+`ObjectMgr::m_LocalForIndex` positions, **not** by the `N` in `name_locN`. The
+`locales_item` data shipped in this repository lays its eight locale columns out
+like this:
+
+```
+name_loc1=English  loc2=Korean  loc3=French  loc4=German
+name_loc5=Simplified Chinese  loc6=Traditional Chinese  loc7=Spanish  loc8=Spanish (esMX)
+```
+
+So Simplified Chinese sits one column later than the MaNGOS convention. Check
+your own data before editing a name:
+
+```sql
+SELECT entry, name_loc4, name_loc5, name_loc6 FROM locales_item WHERE entry = <your item entry>;
+```
+
+Chinese text in the shop therefore means translating the column that actually
+holds the Simplified Chinese name (in this repository's data, `name_loc5`) for the
+name — and only with `NiHao=1` — and `item_template.description` for the
+description. The latter has no `_loc4` counterpart the core will use, so a
 translated description also shows to English clients — a core limitation, not
 something this page can fix.
 
-Editing those two columns **changes nothing** in game.
+Editing the `shop_items` columns **changes nothing** in game.
 
 #### Entries only, not categories
 

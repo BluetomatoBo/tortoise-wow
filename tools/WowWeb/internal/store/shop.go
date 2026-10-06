@@ -26,11 +26,14 @@ import (
 //
 // The name and the description the client shows are NOT the ones in this table:
 // the loader sends item_template's name and description. It picks the name by
-// region -- locales_item's name_loc4 when the realm is Chinese (NiHao), the base
-// name otherwise -- but the description is item_template.description on both,
-// with no locale lookup at all. shop_items.description and description_loc4 are
-// still read into the struct but never used again, so the admin page labels them
-// as unused rather than pretending they are the display text.
+// region -- the Chinese name from locales_item when the realm is Chinese (NiHao),
+// the base name otherwise -- but the description is item_template.description on
+// both, with no locale lookup at all. Which locales_item column holds that Chinese
+// name depends on the data's column layout, not on the column's number: the core
+// looks it up by an index into ObjectMgr::m_LocalForIndex (see GetItemLocaleName).
+// shop_items.description and description_loc4 are still read into the struct but
+// never used again, so the admin page labels them as unused rather than pretending
+// they are the display text.
 
 // ShopRegion values, mirroring enum class ShopRegion in the core.
 const (

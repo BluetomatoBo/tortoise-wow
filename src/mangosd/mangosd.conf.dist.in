@@ -2108,9 +2108,9 @@ Suspicious.Movement.MovementSpeedThreshold = 100.0
 # CN/SEA network mode (CONFIG_BOOL_SEA_NETWORK).
 #
 # 1 - Chinese realm:
-#       - the shop sends shop_categories.Name_loc4 and locales_item.name_loc4
-#         instead of the English names, and also sends the shop rows locked to
-#         the China region that are hidden on a European one
+#       - the shop sends shop_categories.Name_loc4 and the Chinese column of
+#         locales_item (not necessarily name_loc4 - see the module docs), and
+#         also sends the shop rows locked to the China region
 #       - the addon fingerprint duplicate check is skipped, because CN clients
 #         share fingerprints and would otherwise be rejected
 #       - guild names are limited to letters and spaces
