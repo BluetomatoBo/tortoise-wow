@@ -218,6 +218,50 @@ def stamp(text):
 
 
 # ---------------------------------------------------------------------------
+# 客户端能打开什么样的地址
+# ---------------------------------------------------------------------------
+# 除 SERVER_ALERT_URL（客户端自己抓取，比较宽松）以外，这些键的值都会被
+# Lua 的 LaunchURL 打开。它先校验整条地址再交给系统，不合格就**静默什么都不做**
+# —— 界面上看起来是个能点的链接，点下去毫无反应。
+#
+# 规则是从 WoW.exe 里反汇编出来的（0x5abc10）：跳过 "http://" 之后逐字符检查，
+# 只允许字母、数字、'.'、'-'、'/'。所以：
+#   · https:// 会被拒（第 5 个字符就对不上）
+#   · 任何冒号都会被拒 —— **带端口的地址整条作废**，包括 172.18.1.6:8080
+#   · 下划线、问号、# 同样被拒
+# 通过之后才取主机名比对内置白名单（用 patch_urllist.py 加自己的域名）。
+LAUNCH_URL_RE = re.compile(r'^http://[A-Za-z0-9][A-Za-z0-9./-]*$')
+
+# 会被 LaunchURL 打开的键。SERVER_ALERT_URL 故意不在其中：客户端用另一条
+# HTTP 路径抓它，可以带端口，实测 http://172.18.1.6:8080/alert 是好的。
+LAUNCH_URL_KEYS = frozenset({
+    'ACCOUNT_CREATE_URL',
+    'AUTH_BANNED_URL',
+    'AUTH_DB_BUSY_URL',
+    'AUTH_NO_TIME_URL',
+    'AUTH_PARENTAL_CONTROL_URL',
+    'AUTH_SUSPENDED_URL',
+    'COMMUNITY_URL',
+    'TECH_SUPPORT_URL',
+})
+
+
+def launch_url_problem(value):
+    """地址不符合 LaunchURL 规则时返回原因，没问题返回 None。"""
+    if not value.startswith('http://'):
+        why = 'https:// 会被客户端拒绝' if value.startswith('https://') else '客户端只认 http://'
+        return f'必须以 http:// 开头（{why}）'
+    rest = value[len('http://'):]
+    bad = sorted({c for c in rest if not re.match(r'[A-Za-z0-9./-]', c)})
+    if bad:
+        shown = '、'.join(repr(c) for c in bad)
+        if ':' in bad:
+            return f'不能包含 {shown} —— 带端口的地址会被整条拒绝（冒号只允许出现在 http:// 里）'
+        return f'不能包含 {shown}：只允许字母、数字、点、连字符和斜杠'
+    return None
+
+
+# ---------------------------------------------------------------------------
 def main():
     cfg_path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_CONFIG
     cfg = json.load(open(cfg_path, encoding='utf-8'))
@@ -231,6 +275,21 @@ def main():
         raise SystemExit(f'客户端 Data 目录不存在：{data_dir}')
     if not assignments:
         raise SystemExit('配置里没有任何 luaAssignments，什么都不用做')
+
+    # 先拦住客户端打不开的地址：这类错误没有任何反馈，客户端只是点了不动。
+    # 宁可让生成失败，也不要产出一个装上去才发现点了没反应的补丁。
+    problems = []
+    for arch_name, values in assignments.items():
+        for key, value in values.items():
+            if key not in LAUNCH_URL_KEYS:
+                continue
+            why = launch_url_problem(value)
+            if why:
+                problems.append(f'{key} = {value}\n      {why}')
+    if problems:
+        raise SystemExit('这些地址客户端打不开，请改 overrides.json：\n\n  '
+                         + '\n  '.join(problems)
+                         + '\n\n  规则见 README 的「客户端能打开什么样的地址」。')
 
     patches = list_patches(data_dir)
     print(f'客户端：{data_dir}')

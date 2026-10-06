@@ -1,0 +1,33 @@
+{{define "content"}}
+<h1>{{if .Announcement.Title}}{{.Announcement.Title}}{{else}}{{.T "notice.title"}}{{end}}</h1>
+
+{{/* The panel on the login screen shows the same text, truncated to what fits
+     there, and this is where its link points. Saying so once saves the reader
+     from wondering whether they are looking at the same thing. */}}
+<p class="muted">{{.T "notice.intro"}}</p>
+
+<section class="card">
+  {{if .HasBody}}
+    {{range .Paragraphs}}
+      <p>{{.}}</p>
+    {{end}}
+    {{if .LinkURL}}
+      <p><a href="{{.LinkURL}}">{{.LinkURL}}</a></p>
+    {{end}}
+    {{if .Announcement.UpdatedAt}}
+      <p class="muted">{{.T "notice.updated"}} <span class="pill">{{timeFmtShort .Announcement.UpdatedAt}}</span></p>
+    {{end}}
+  {{else}}
+    <p class="muted">{{.T "notice.empty"}}</p>
+  {{end}}
+</section>
+
+{{if .Account}}
+  <p><a class="btn" href="/panel">{{.T "nav.account"}}</a></p>
+{{else}}
+  <p>
+    <a class="btn" href="/login">{{.T "nav.signIn"}}</a>
+    {{if .Config.AllowRegister}}<a class="btn btn-ghost" href="/register">{{.T "nav.register"}}</a>{{end}}
+  </p>
+{{end}}
+{{end}}

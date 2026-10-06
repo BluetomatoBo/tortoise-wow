@@ -41,6 +41,13 @@ func TestRoutesAreRegistered(t *testing.T) {
 		// Fetched by the game client's login screen, so it must stay reachable
 		// without a session.
 		{"GET", "/alert"},
+		// Where the client's links land, likewise reachable without a session:
+		// the player who needs them is the one who could not sign in.
+		{"GET", "/notice"},
+		{"GET", "/account/banned"},
+		{"GET", "/account/suspended"},
+		{"GET", "/account/no-time"},
+		{"GET", "/account/verify"},
 		{"GET", "/assets/style.css"},
 
 		// player area

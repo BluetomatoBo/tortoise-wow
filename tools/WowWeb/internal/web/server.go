@@ -83,6 +83,12 @@ func (s *Server) routes() {
 	// no cookie to key a session on.
 	s.mux.HandleFunc("GET /alert", s.handleAnnouncement)
 
+	// Where the client's links land. Both are fetched by a browser that the
+	// client opened, usually for someone who cannot sign in, so they are public
+	// for the same reason /alert is. See handlers_notice.go.
+	s.mux.HandleFunc("GET /notice", s.public(s.handleNotice))
+	s.mux.HandleFunc("GET /account/{reason}", s.public(s.handleAccountNotice))
+
 	s.mux.HandleFunc("GET /register", s.public(s.handleRegisterForm))
 	s.mux.HandleFunc("POST /register", s.public(s.handleRegisterSubmit))
 	s.mux.HandleFunc("GET /login", s.public(s.handleLoginForm))

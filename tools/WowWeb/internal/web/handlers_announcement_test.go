@@ -79,6 +79,33 @@ func TestAlertDocument(t *testing.T) {
 		{"chinese passes through", "服务器维护中",
 			"SERVERALERT:<html>\n<body>\n<p>服务器维护中</p>\n</body>\n</html>\n"},
 
+		// A line that is nothing but an address becomes a link, in the shape the
+		// client's own eula.html uses - three lines, the anchor alone in the
+		// middle. This is the panel's "more information": the frame has no
+		// button of its own, only this SimpleHTML field, whose
+		// OnHyperlinkClick calls LaunchURL(arg1).
+		{"address on its own line becomes a link",
+			"服务器维护中\nhttp://twow.home.boym.me/notice",
+			"SERVERALERT:<html>\n<body>\n<p>服务器维护中</p>\n" +
+				"<p>\n<a href=\"http://twow.home.boym.me/notice\">http://twow.home.boym.me/notice</a>\n</p>\n" +
+				"</body>\n</html>\n"},
+		{"trailing chinese full stop is not part of the address",
+			"http://twow.home.boym.me/notice。",
+			"SERVERALERT:<html>\n<body>\n" +
+				"<p>\n<a href=\"http://twow.home.boym.me/notice\">http://twow.home.boym.me/notice</a>\n</p>\n" +
+				"</body>\n</html>\n"},
+
+		// The client refuses these, so they stay text. An anchor would look
+		// clickable and do nothing, which is worse than plain text.
+		{"an address with a port is not linked",
+			"http://172.18.1.6:8080/alert",
+			"SERVERALERT:<html>\n<body>\n<p>http://172.18.1.6:8080/alert</p>\n</body>\n</html>\n"},
+		{"https is not linked", "https://twow.home.boym.me/notice",
+			"SERVERALERT:<html>\n<body>\n<p>https://twow.home.boym.me/notice</p>\n</body>\n</html>\n"},
+		{"an address inside a sentence is not linked",
+			"详情见 http://twow.home.boym.me/notice",
+			"SERVERALERT:<html>\n<body>\n<p>详情见 http://twow.home.boym.me/notice</p>\n</body>\n</html>\n"},
+
 		// The game's own colour codes are part of the markup vocabulary and
 		// must survive, because |cAARRGGBB...|r is how an announcement colours
 		// anything.

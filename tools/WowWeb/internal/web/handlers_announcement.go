@@ -3,6 +3,7 @@ package web
 import (
 	"html"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -42,6 +43,65 @@ const serverAlertPrefix = "SERVERALERT:"
 //	constexpr std::size_t kServerAlertBufferCapacity = 2047;
 const serverAlertCapacity = 2047
 
+// openableURL matches an address the client will actually open.
+//
+// Every URL the client opens goes through one gate: the Lua function LaunchURL,
+// which validates the string itself before handing it to the shell. It requires
+// a literal "http://" prefix - https is refused - and then walks the rest,
+// allowing only letters, digits, '.', '-' and '/'. A colon ends the walk, so an
+// address carrying a port is refused outright; so are underscores, query
+// strings and fragments.
+//
+// That matters here because a link the client refuses does not fall back to
+// anything: the panel shows it as a link, the player clicks, and nothing at all
+// happens. So the announcement only ever emits an anchor for an address that
+// passes this pattern.
+//
+// The same gate then checks the host against a whitelist compiled into the
+// executable; that part cannot be checked from here and is handled by
+// tools/ClientPatch/patch_urllist.py.
+var openableURL = regexp.MustCompile(`^http://[A-Za-z0-9][A-Za-z0-9./-]*$`)
+
+// soleURL returns the address in line when the line is nothing but one openable
+// address, and "" otherwise.
+//
+// Taking the whole line is what keeps a half-openable address from turning into
+// the wrong link: a line reading "详情见 http://host:8080/alert" must not become
+// an anchor pointing at "http://host", which is a different page than the one
+// written. Nothing is emitted instead, and the text stays readable.
+func soleURL(line string) string {
+	// Trailing sentence punctuation is not part of the address, and Chinese
+	// prose ends a sentence with characters a URL never contains.
+	trimmed := strings.TrimSpace(line)
+	trimmed = strings.TrimRight(trimmed, "，。、；：！？）》」』”’\"'.,;:!?)]>")
+	if openableURL.MatchString(trimmed) {
+		return trimmed
+	}
+	return ""
+}
+
+// noticeLines normalises a stored body into display lines: line endings
+// normalised, and trailing blanks dropped so they cannot become stray markup. A
+// blank line stays as "" and is what separates paragraphs.
+func noticeLines(body string) []string {
+	text := strings.ReplaceAll(body, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\r", "\n")
+	lines := strings.Split(text, "\n")
+	for i := range lines {
+		lines[i] = strings.TrimRight(lines[i], " \t")
+	}
+	return lines
+}
+
+// writeAlertLink writes an anchor the way the client's own documents do it.
+func writeAlertLink(b *strings.Builder, url string) {
+	b.WriteString("<p>\n<a href=\"")
+	b.WriteString(html.EscapeString(url))
+	b.WriteString("\">")
+	b.WriteString(html.EscapeString(url))
+	b.WriteString("</a>\n</p>\n")
+}
+
 // alertDocument turns the stored plain text into what the client renders.
 //
 // Two rules, both learned the hard way:
@@ -59,17 +119,25 @@ const serverAlertCapacity = 2047
 //     written too.
 //
 // One paragraph per input line, and a <br/> on its own line for a blank one.
+//
+// Two shapes are copied from the client's own documents, which are the only
+// ground truth for what this widget accepts:
+//
+//   - a paragraph as one line with the tags next to the text, as written in the
+//     client's Data/connection-help.html
+//   - a link as three lines with the anchor alone in the middle, as written in
+//     the client's Data/eula.html - the same widget renders that file
+//
+// A line that is nothing but an openable address becomes the second shape, so
+// an announcement can offer a link without the admin writing any markup. The
+// link text is the address itself, again following eula.html.
 func alertDocument(body string) string {
 	var b strings.Builder
 	b.WriteString(serverAlertPrefix)
 	b.WriteString("<html>\n<body>\n")
 
-	text := strings.ReplaceAll(body, "\r\n", "\n")
-	text = strings.ReplaceAll(text, "\r", "\n")
-
 	wrote := false
-	for _, line := range strings.Split(text, "\n") {
-		line = strings.TrimRight(line, " \t")
+	for _, line := range noticeLines(body) {
 		if strings.TrimSpace(line) == "" {
 			// A blank line reads as spacing between paragraphs. Skipped
 			// before the first paragraph so the panel does not open with a
@@ -77,6 +145,11 @@ func alertDocument(body string) string {
 			if wrote {
 				b.WriteString("<br/>\n")
 			}
+			continue
+		}
+		if url := soleURL(line); url != "" {
+			writeAlertLink(&b, url)
+			wrote = true
 			continue
 		}
 		b.WriteString("<p>")

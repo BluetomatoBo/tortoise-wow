@@ -6,27 +6,37 @@
     "字母顺序里 Z 排在最后，所以 patch-Z 的内容会盖过其它所有补丁 ——",
     "中文汉化包已由 patch-Z.mpq 改名为 patch-X.mpq（X 在 Z 之前，仍然生效）。",
     "",
-    "为什么写 GlueLocalization.lua 而不是 GlueStrings.lua：",
-    "  GlueXML.toc 的加载顺序是 GlueStrings.lua → GlueFonts.xml → GlueLocalization.xml(→ .lua)，",
-    "  而 AccountLogin.xml（建 ServerAlertFrame 的地方）排在 GlueLocalization.xml 之后。",
-    "  所以写在 GlueLocalization.lua 里的赋值一定会生效，",
-    "  而且**不用整份替换 GlueStrings.lua** —— 那样会把中文包的几千条界面字符串一起冲掉。",
+    "为什么只写 GlueStrings.lua：",
+    "  SERVER_ALERT_URL 这类键由客户端 C++ 直接加载，必须在 GlueStrings.lua 里；",
+    "  GlueLocalization.lua 要等 GlueLocalization.xml 的 <Script> 才执行，太晚 ——",
+    "  实测只写后者时客户端仍用汉化包里的旧值，公告面板空白。",
+    "  汉化包里的 GlueLocalization.lua 只是一个空壳（Localize 函数体是空的），",
+    "  所以这里不再写它，patch-Z 只装必须的那一份。",
     "",
-    "这里每个键的改动方式：文件里已有 `KEY = ...` 就替换那一行，没有就在末尾追加。",
+    "改这些地址前先读 README 的「客户端能打开什么样的地址」：",
+    "除 SERVER_ALERT_URL（客户端自己抓取，比较宽松）以外，",
+    "所有 *_URL 都由 LaunchURL 打开，必须 http:// 开头、不能带端口、",
+    "字符只允许 [A-Za-z0-9.-/]，而且主机必须在内置的可信域名白名单里",
+    "（白名单用 patch_urllist.py 加）。",
+    "",
+    "这里统一用 twow.home.boym.me —— 由 nginx 反代到 172.18.1.6:8080，",
+    "见 tools/WowWeb/deploy/nginx/。",
+    "",
     "值里带反斜杠要写成 \\\\，因为它是 Lua 字符串字面量。"
   ],
   "clientDataDir": "/Users/bo/Downloads/twmoa_1181/Data",
   "outputPatch": "patch-Z.mpq",
   "luaAssignments": {
     "Interface\\GlueXML\\GlueStrings.lua": {
-      "SERVER_ALERT_URL": "http://172.18.1.6:8080/alert",
       "SERVER_ALERT_TITLE": "系统公告",
-      "SERVER_ALERT_BUTTON_TEXT": "更多信息"
-    },
-    "Interface\\GlueXML\\GlueLocalization.lua": {
-      "SERVER_ALERT_URL": "http://172.18.1.6:8080/alert",
-      "SERVER_ALERT_TITLE": "系统公告",
-      "SERVER_ALERT_BUTTON_TEXT": "更多信息"
+      "SERVER_ALERT_BUTTON_TEXT": "更多信息",
+      "SERVER_ALERT_URL": "http://twow.home.boym.me/alert",
+      "ACCOUNT_CREATE_URL": "http://twow.home.boym.me/register",
+      "AUTH_DB_BUSY_URL": "http://twow.home.boym.me/notice",
+      "AUTH_BANNED_URL": "http://twow.home.boym.me/account/banned",
+      "AUTH_SUSPENDED_URL": "http://twow.home.boym.me/account/suspended",
+      "AUTH_NO_TIME_URL": "http://twow.home.boym.me/account/no-time",
+      "AUTH_PARENTAL_CONTROL_URL": "http://twow.home.boym.me/account/verify"
     }
   }
 }

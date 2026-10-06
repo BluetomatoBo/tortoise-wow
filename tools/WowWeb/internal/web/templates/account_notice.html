@@ -1,0 +1,26 @@
+{{define "content"}}
+<h1>{{.T (printf "reason.%s.title" .Reason)}}</h1>
+
+{{/* The client already said which failure this is, in one line, in its own
+     dialog. This page is what its "more information" opens, so it explains the
+     reason rather than repeating the message. */}}
+<section class="card">
+  <p>{{.T (printf "reason.%s.body" .Reason)}}</p>
+  <p>{{.T (printf "reason.%s.todo" .Reason)}}</p>
+</section>
+
+<section class="card">
+  <h2>{{.T "reason.next"}}</h2>
+  <p class="muted">{{.T "reason.nextHint"}}</p>
+  <p>
+    {{if .ActionHref}}<a class="btn" href="{{.ActionHref}}">{{.ActionLabel}}</a>{{end}}
+    {{if .Account}}
+      <a class="btn btn-ghost" href="/panel">{{.T "nav.account"}}</a>
+    {{else}}
+      <a class="btn btn-ghost" href="/login">{{.T "nav.signIn"}}</a>
+      {{if .Config.AllowRegister}}<a class="btn btn-ghost" href="/register">{{.T "nav.register"}}</a>{{end}}
+    {{end}}
+    <a class="btn btn-ghost" href="/">{{.T "common.back"}}</a>
+  </p>
+</section>
+{{end}}

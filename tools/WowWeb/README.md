@@ -32,6 +32,8 @@ already uses**, so nothing has to be patched or rebuilt on the server side.
 | `/register` | 自助注册，服务端校验 + 按 IP 限流 |
 | `/login` | 用**游戏账号**登录（同一个用户名密码） |
 | `/alert` | 游戏客户端登录界面「系统公告」的正文接口，匿名可访问 |
+| `/notice` | 公告的**网页版** —— 客户端公告里那个链接落到的页面，匿名可访问 |
+| `/account/{banned,suspended,no-time,verify}` | 登录失败对话框的**说明页**，匿名可访问 |
 | `/api/status` | 给监控或 Discord 机器人用的 JSON 状态。**不含任何地址与端口** |
 | `/healthz` | 存活探针，含数据库连通性 |
 | `/lang/{en\|zh}` | 中英切换 |
@@ -88,6 +90,7 @@ already uses**, so nothing has to be patched or rebuilt on the server side.
 | `ADMIN_MIN_RANK` | `4` | 能进 `/admin` 的最低 `account.rank` |
 | `ALLOW_REGISTER` | `true` | 是否开放自助注册 |
 | `SESSION_SECURE` | `false` | 走 HTTPS 时设为 `true` |
+| `WEB_TRUST_PROXY` | `false` | 在反代后面**必须设为 `true`**，否则限流与日志只看得到反代的地址 |
 
 > 网站名字只有 `REALM_NAME` 这一个参数（站名、页脚领域名、验证器签发者共用）。
 
@@ -146,6 +149,86 @@ wowweb:
 
 另外**客户端缓冲区上限 2047 字节**，超出会被静默截断（可能切断 HTML 尾部），
 所以后台在超过时会给出警告。
+
+#### 正文里的链接
+
+「系统公告」面板里**没有按钮** —— 正文是一个 `SimpleHTML` 控件，**链接本身就是按钮**：
+
+```xml
+<SimpleHTML name="ServerAlertText" hyperlinkFormat="|cff2f68ff|H%s|h[%s]|h|r">
+  <Scripts><OnHyperlinkClick>LaunchURL(arg1);</OnHyperlinkClick></Scripts>
+```
+
+这段来自 `patch-9.mpq` 里的 `AccountLogin.xml`。`interface.MPQ` 里那份老版本确实有个
+「更多信息」按钮，但优先级更低、不生效，照那份改会改错地方。
+
+所以公告正文里**单独占一行的 `http://` 地址**会被渲染成链接，形状抄的是客户端自己的
+`Data/eula.html` —— 同一个控件渲染的文件：
+
+```html
+<p>
+<a href="http://twow.home.boym.me/notice">http://twow.home.boym.me/notice</a>
+</p>
+```
+
+只认**独占一行**的地址。夹在句子中间的地址**不会**变成链接：客户端的 `LaunchURL` 会拒绝
+带端口、下划线、问号的地址，而那种地址若被截成前半段就会指向另一个页面，不如干脆不给点。
+这条规则是 `soleURL`，`TestSoleURL` 钉住了它。
+
+> ⚠️ 链接要真的能点，还差两件事：地址必须是**域名 + 80 端口**（不能有端口号），
+> 且该域名在 `WoW.exe` 的白名单里 —— 见 [`../ClientPatch/`](../ClientPatch/)。
+
+### 客户端会把玩家送到哪里
+
+这个客户端里能把玩家送进浏览器的只有两处（其余 `*_URL` 键在 exe 与生效界面里都没有引用，
+是死代码），本站为它们各准备了一页：
+
+| 路径 | 谁会走到这里 |
+|---|---|
+| `/notice` | 公告正文里的链接；登录失败对话框「服务器繁忙/会话超时」也指向它 |
+| `/account/banned` | 登录被拒「账号已被封禁」（`WOW_FAIL_BANNED`） |
+| `/account/suspended` | 登录被拒「账号已被暂停」，含 IP 锁定（`WOW_FAIL_SUSPENDED`） |
+| `/account/no-time` | 登录被拒「余额为负」（`WOW_FAIL_NO_TIME`） |
+| `/account/verify` | 登录被拒「邮箱未验证」（`WOW_FAIL_PARENTCONTROL`） |
+
+这些页面**故意不要求登录**：需要它们的人恰恰是登不进来的人，要求会话等于在最需要的时候
+把它们锁掉。它们也**不透露任何服务器地址或端口**，测试会检查这一点。
+
+原因清单是 `handlers_notice.go` 里的 `accountNoticeReasons`，与客户端补丁里的
+`AUTH_*_URL` 一一对应；两边对不上会在测试里露出来。
+
+### 用域名访问（客户端要求）
+
+游戏客户端只肯打开 **`http://域名`** 形式的链接（冒号会让它整条拒绝），
+所以要让公告里的链接可点，就得有一个走 **80 端口**的域名指到本站。仓库里带了一份
+可直接用的配置：
+
+```bash
+sudo cp deploy/nginx/twow.home.boym.me.conf /etc/nginx/conf.d/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+同时在 `.env` 里设这两项：
+
+```
+WEB_BASE_URL=http://twow.home.boym.me   # 后台页面上显示的对外地址
+WEB_TRUST_PROXY=1                        # 否则所有玩家共用一个限流桶
+```
+
+`WEB_TRUST_PROXY=1` 不是可选项：反代后面每个请求的来源都是 nginx 自己的地址，
+不开这个，**登录失败限流会按同一个 IP 计数 —— 一个人连错几次密码就把所有人挡住**。
+
+这个域名**故意只走 HTTP**：客户端根本打不开 `https://` 的链接，所以它的链接必须留在
+80 端口。要给浏览器上 TLS，就另开一个 443 的 server 块并设 `SESSION_SECURE=true`，
+80 那个继续留给客户端。
+
+验证（在服务器上）：
+
+```bash
+curl -s  -H 'Host: twow.home.boym.me' http://172.18.1.6/healthz
+curl -s  -H 'Host: twow.home.boym.me' http://172.18.1.6/alert | head -3   # 应看到 SERVERALERT:
+curl -s  -H 'Host: twow.home.boym.me' http://172.18.1.6/notice | grep -o '<h1>[^<]*</h1>'
+```
 
 ### 安全说明（要点）
 
@@ -279,6 +362,9 @@ has to be patched or rebuilt on the server side:
 | `/` | Landing page. Signed-in players also get live counts and the realm list with addresses and load; anonymous visitors get neither |
 | `/register` | Self-registration with server-side validation and per-IP throttling |
 | `/login` | Sign in with the **game** account name and password |
+| `/alert` | The login-screen notice the **game client** fetches; public on purpose |
+| `/notice` | The notice as a **web page** - where the link inside the client's panel lands |
+| `/account/{banned,suspended,no-time,verify}` | What a sign-in failure dialog's link opens |
 | `/api/status` | JSON status for monitoring or a Discord bot. Carries counts and load, but **never an address or port** |
 | `/healthz` | Liveness/readiness probe including database connectivity |
 | `/lang/{en\|zh}` | Language switcher (also sets the `tw_lang` cookie) |
@@ -422,7 +508,9 @@ UPDATE `tw_logon`.`account` SET `rank` = 4 WHERE `username` = 'YOURACCOUNT';
 Terminate TLS in nginx/Caddy and forward to the service. Set
 `WEB_TRUST_PROXY=true` so rate limiting and the audit log see the real client
 address, and `SESSION_SECURE=true` so the session cookie is only sent over
-HTTPS.
+HTTPS. (For the plain-HTTP name the game client needs, with a ready config file,
+see [Reaching the site by name](#reaching-the-site-by-name-what-the-client-needs)
+below.)
 
 ```nginx
 location / {
@@ -551,6 +639,93 @@ rendered document outgrows it.
 
 Editing needs neither a server restart nor a client patch. Only moving the site
 itself means regenerating `patch-Z.mpq`.
+
+#### Links in the body
+
+The "Server Alert" panel has **no button**: its body is a `SimpleHTML` widget, so a
+**link in the body is the button**:
+
+```xml
+<SimpleHTML name="ServerAlertText" hyperlinkFormat="|cff2f68ff|H%s|h[%s]|h|r">
+  <Scripts><OnHyperlinkClick>LaunchURL(arg1);</OnHyperlinkClick></Scripts>
+```
+
+That comes from `AccountLogin.xml` inside `patch-9.mpq`. The older copy in
+`interface.MPQ` does carry a "more information" button, but it has a lower priority and
+never loads - editing against it would change the wrong thing.
+
+So an `http://` address **alone on a line** of the body is rendered as a link, in the shape
+copied from the client's own `Data/eula.html`, a file the same widget renders:
+
+```html
+<p>
+<a href="http://twow.home.boym.me/notice">http://twow.home.boym.me/notice</a>
+</p>
+```
+
+Only an address alone on its line qualifies. One buried in a sentence stays text: the
+client's `LaunchURL` refuses addresses with a port, an underscore or a query, and such an
+address truncated to its first half would point somewhere nobody asked for. That rule is
+`soleURL`, pinned by `TestSoleURL`.
+
+> ⚠️ For the click to do anything, two more things have to be true: the address must be a
+> **name on port 80** (no port number), and that name must be in the executable's
+> whitelist - see [`../ClientPatch/`](../ClientPatch/).
+
+### Where the client sends a player
+
+Only two things on this client can open a browser (every other `*_URL` key is referenced by
+neither the executable nor any active interface file, so it is dead code), and there is a
+page for each:
+
+| Page | What sends someone here |
+| --- | --- |
+| `/notice` | the link in the announcement body; the "server busy / session expired" dialog points here too |
+| `/account/banned` | sign-in refused: **account banned** (`WOW_FAIL_BANNED`) |
+| `/account/suspended` | sign-in refused: **suspended**, including an IP lock (`WOW_FAIL_SUSPENDED`) |
+| `/account/no-time` | sign-in refused: **negative balance** (`WOW_FAIL_NO_TIME`) |
+| `/account/verify` | sign-in refused: **e-mail unverified** (`WOW_FAIL_PARENTCONTROL`) |
+
+They are **public on purpose**: the people who need them are the ones who cannot sign in, so
+requiring a session would lock them out exactly when they matter. They also disclose
+**nothing about the realm** - no address, no port - which a test checks.
+
+The list of reasons is `accountNoticeReasons` in `handlers_notice.go`, matched one for one
+with the `AUTH_*_URL` values in the client patch; a mismatch shows up in the tests.
+
+### Reaching the site by name (what the client needs)
+
+The game client only opens `http://name` addresses - a colon makes it refuse the whole
+thing - so a clickable link needs a **name served on port 80**. The repository carries a
+ready configuration:
+
+```bash
+sudo cp deploy/nginx/twow.home.boym.me.conf /etc/nginx/conf.d/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+and two settings in `.env`:
+
+```
+WEB_BASE_URL=http://twow.home.boym.me   # what the admin pages show as the public address
+WEB_TRUST_PROXY=1                        # otherwise every player shares one throttle bucket
+```
+
+`WEB_TRUST_PROXY=1` is not optional: behind a proxy every request arrives from nginx's own
+address, so without it **the sign-in throttle counts everyone as one visitor - a single
+person mistyping their password locks the whole server out**.
+
+This name is deliberately **plain HTTP**: the client cannot follow an `https://` link at all,
+so its links have to stay on port 80. If browsers should get TLS, add a second server block
+for 443, set `SESSION_SECURE=true`, and leave the port-80 name in place for the client.
+
+To check it, on the server:
+
+```bash
+curl -s  -H 'Host: twow.home.boym.me' http://172.18.1.6/healthz
+curl -s  -H 'Host: twow.home.boym.me' http://172.18.1.6/alert | head -3   # expect SERVERALERT:
+curl -s  -H 'Host: twow.home.boym.me' http://172.18.1.6/notice | grep -o '<h1>[^<]*</h1>'
+```
 
 ---
 

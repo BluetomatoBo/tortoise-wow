@@ -5,12 +5,13 @@
 `/admin/announcement` 管理。
 
 另附 `patch_urllist.py`：把 `WoW.exe` 里写死的**可信 URL 白名单**等长覆盖成自己的域名，
-让公告里的链接变成可点击（见下文「让公告里的链接可点击」）。
+让公告里的链接变成可点击（见下文「客户端能打开什么样的地址」）。
 
 Writes **configuration values** into a client patch, `patch-Z.mpq`, that loads last and
 therefore overrides whatever a translation pack or Blizzard's own files contain. Today it
 points the login screen's "Server Alert" panel at [WowWeb](../WowWeb/)'s
-`/admin/announcement`.
+`/admin/announcement`, and points the five sign-in failure dialogs (banned, suspended, out
+of credit, e-mail unverified, server busy) at the pages that explain them.
 
 Bundled with it, `patch_urllist.py` rewrites the **trusted-URL whitelist baked into
 `WoW.exe`** (same-length overwrite) so links inside the announcement become clickable —
@@ -38,6 +39,10 @@ see "Making the links clickable" below.
 
 于是做法是：把 URL 固定成一个可配置的**接口地址**，配置放到服务端这边，由接口返回内容。
 改公告不再需要碰客户端。
+
+同一个补丁还负责**登录失败对话框**指向哪一页：封禁、暂停、余额为负、邮箱未验证、
+服务器繁忙这五种情况，客户端各有一个 `AUTH_*_URL`，全部指向 WowWeb 的对应页面，
+免得玩家看到一句「账号已被封禁」之后无处可去。
 
 ## 为什么必须叫 `patch-Z`
 
@@ -103,14 +108,39 @@ python3 gen_patchz.py /path/to/other.json
   "clientDataDir": "/path/to/client/Data",   // 客户端 Data 目录
   "outputPatch": "patch-Z.mpq",              // 产物文件名，必须是 Z
   "luaAssignments": {
-    "Interface\\GlueXML\\GlueLocalization.lua": {
-      "SERVER_ALERT_URL": "http://127.0.0.1:8080/alert",
+    "Interface\\GlueXML\\GlueStrings.lua": {
       "SERVER_ALERT_TITLE": "系统公告",
-      "SERVER_ALERT_BUTTON_TEXT": "更多信息"
+      "SERVER_ALERT_BUTTON_TEXT": "更多信息",
+      "SERVER_ALERT_URL": "http://twow.home.boym.me/alert",
+      "AUTH_DB_BUSY_URL": "http://twow.home.boym.me/notice",
+      "AUTH_BANNED_URL": "http://twow.home.boym.me/account/banned",
+      "AUTH_SUSPENDED_URL": "http://twow.home.boym.me/account/suspended",
+      "AUTH_NO_TIME_URL": "http://twow.home.boym.me/account/no-time",
+      "AUTH_PARENTAL_CONTROL_URL": "http://twow.home.boym.me/account/verify"
     }
   }
 }
 ```
+
+这些键里，**只有 `SERVER_ALERT_URL` 可以带端口**：它由客户端自己抓取，走的是普通
+HTTP，实测 `http://172.18.1.6:8080/alert` 可用。其余全部由 `LaunchURL` 打开，
+必须遵守下面那一节的规则 —— 工具会在生成前拦下不合规的地址。
+
+### 哪些键真的有人用
+
+从 exe 与生效的界面文件里逐个查过（`strings` + 反汇编调用点），这个客户端里只有两处
+能把玩家送到浏览器：
+
+| 触发点 | 用到的键 |
+|---|---|
+| 登录界面「系统公告」面板正文里的链接 | 正文里的 `<a href>`，见下一节 |
+| 登录失败的对话框（封禁 / 暂停 / 余额为负 / 邮箱未验证 / 服务器繁忙） | `AUTH_BANNED_URL`、`AUTH_SUSPENDED_URL`、`AUTH_NO_TIME_URL`、`AUTH_PARENTAL_CONTROL_URL`、`AUTH_DB_BUSY_URL` |
+
+**已经死掉的键**（本客户端里没有任何代码或界面引用它们，改了也不会有反应）：
+`ACCOUNT_CREATE_URL`、`COMMUNITY_URL`、`TECH_SUPPORT_URL`、`TURTLE_ARMORY_WEBSITE`、
+`TURTLE_COMMUNITY_FORUM_WEBSITE`、`TURTLE_DISCORD_WEBSITE`、
+`TURTLE_KNOWLEDGE_DATABASE_WEBSITE`、`TURTLE_REDDIT_WEBSITE`、`AUTH_TURTLE_WEBSITE`。
+汉化包把它们指向 wuguifu，但在这个 exe 上点不到，所以不必改。
 
 ## 地址怎么选
 
@@ -122,12 +152,56 @@ python3 gen_patchz.py /path/to/other.json
 | 局域网里的服务器 | `http://<服务器地址>:8080/alert` |
 | 走 nginx 反代的域名 | `http://你的域名/alert` |
 
-## 让公告里的链接可点击：`patch_urllist.py`
+**要让公告里的链接能点，就得用域名**，而且那个域名要走 80 端口 ——
+见下面「客户端能打开什么样的地址」。
 
-公告正文里写成 `<a href="...">` 的链接，点下去走客户端的 `LaunchURL`，而它对目标主机有一份
-**写死在 `WoW.exe` 里的白名单**：官方的 `*.worldofwarcraft.com`、`*.battle.net` 等，
-乌龟服额外加了 `*.turtlecraft.gg`，中文客户端加了 `*.wuguifu.com`。不在名单里的域名**点不动**，
-服务端也没有任何配置项可以放宽。
+## 客户端能打开什么样的地址
+
+**这一节决定了公告里的链接能不能点。** 先看清客户端那两处是怎么工作的。
+
+登录界面左侧的面板（`ServerAlertFrame`）里**没有按钮** —— 这点很容易看错，因为
+`interface.MPQ` 里那份老版本 `AccountLogin.xml` 里确实有一个「更多信息」按钮，
+但实际生效的是优先级更高的 **`patch-9.mpq` 里那一份**：正文是一个 `SimpleHTML` 控件：
+
+```xml
+<SimpleHTML name="ServerAlertText" hyperlinkFormat="|cff2f68ff|H%s|h[%s]|h|r">
+  <Scripts><OnHyperlinkClick>LaunchURL(arg1);</OnHyperlinkClick></Scripts>
+```
+
+也就是说 **正文里的链接本身就是按钮**，点它调 `LaunchURL(arg1)`。服务器端
+（tools/WowWeb）已经配合好了：公告正文里**单独占一行的地址**会被渲染成链接，
+形状抄的是客户端自己的 `Data/eula.html` —— 同一个控件渲染的文件：
+
+```html
+<p>
+<a href="http://twow.home.boym.me/notice">http://twow.home.boym.me/notice</a>
+</p>
+```
+
+`LaunchURL` 是**唯一**的出口：5 个 `AUTH_*_URL` 对话框也是通过 Lua 调它。
+它在打开之前做两道校验，**任意一道不过就静默什么都不做**（界面上看着能点，点了没反应，
+没有任何错误提示）：
+
+**第一道：地址本身的形状**（反汇编自 `WoW.exe` 0x5abc10）
+
+| 规则 | 说明 |
+|---|---|
+| 必须 `http://` 开头 | `https://` 会被拒 |
+| 不允许冒号出现在 `http://` 之后 | **带端口的地址整条作废**，`172.18.1.6:8080` 不行 |
+| 只允许字母、数字、`.`、`-`、`/` | 下划线、`?`、`#`、中文标点都不行 |
+
+所以一个能用的链接长这样：`http://twow.home.boym.me/notice` —— 域名、80 端口、无参数。
+`gen_patchz.py` 会按这些规则检查 `overrides.json`，不合格就直接中止。
+
+**第二道：主机名必须在白名单里**
+
+白名单**写死在 `WoW.exe` 里**：官方的 `*.worldofwarcraft.com`、`*.battle.net` 等，
+乌龟服加了 `*.turtlecraft.gg`，中文客户端加了 `*.wuguifu.com`。服务端没有任何配置项能放宽它。
+
+白名单是 `.data` 段里的 `const char*` 数组，匹配逻辑也是反汇编出来的：
+普通项与主机名**整串相等**，`*.x` 项则要求主机名恰好是「一个标签 + `.x`」
+（`www.wuguifu.com` 命中 `*.wuguifu.com`，但 `a.b.wuguifu.com` **不**命中）。
+所以最稳的做法是放**完整主机名**，它在两种判定下都成立。
 
 `patch_urllist.py` 把某个槽位**等长覆盖**成你自己的域名：
 
@@ -136,8 +210,8 @@ python3 gen_patchz.py /path/to/other.json
 python3 patch_urllist.py --list
 
 # 换一项（长度不能超过原值），先 dry-run 看校验结果
-python3 patch_urllist.py --set '*.wowtaiwan.com.tw=*.mydomain.net' --dry-run
-python3 patch_urllist.py --set '*.wowtaiwan.com.tw=*.mydomain.net'
+python3 patch_urllist.py --set '*.wowtaiwan.com.tw=twow.home.boym.me' --dry-run
+python3 patch_urllist.py --set '*.wowtaiwan.com.tw=twow.home.boym.me'
 
 # 从备份还原
 python3 patch_urllist.py --restore
@@ -183,6 +257,10 @@ NUL 结尾字符串，遇空指针收尾。**不硬编码任何域名**，所以
 |---|---|
 | `overrides.json` 里的**值** | 重跑 `gen_patchz.py`，然后**完全重启游戏客户端**（MPQ 在启动时挂载） |
 | 公告**正文** | 不用跑这个工具 —— 在 WowWeb 的 `/admin/announcement` 改，下次登录界面即生效 |
+| `WoW.exe` 里的**白名单** | 用 `patch_urllist.py` 打一次即可，之后只要域名不变就不用再动 |
+
+> 📌 正文里**单独占一行**的 `http://` 地址会变成可点击的链接。要让它真的能点，
+> 两件事缺一不可：地址用**域名 + 80 端口**（不能带端口号），且该域名在 exe 白名单里。
 
 ## 依赖
 
@@ -192,9 +270,15 @@ StormLib。macOS 上 `brew install stormlib`，默认路径
 
 ## 验证生成结果
 
-用任意 MPQ 工具打开 `patch-Z.mpq`，确认
-`Interface\GlueXML\GlueLocalization.lua` 里的 `SERVER_ALERT_URL` 指向你的地址；
-并确认汉化包的 `GlueStrings.lua` **仍在 `patch-X.mpq` 里、未被改动**。
+用任意 MPQ 工具打开 `patch-Z.mpq`，确认 `Interface\GlueXML\GlueStrings.lua` 里：
+
+* `SERVER_ALERT_URL` 指向你的 `/alert`
+* 5 个 `AUTH_*_URL` 指向 `/notice` 与 `/account/...`
+* 其余几千行与汉化包**逐字相同**（工具只改这几行，运行时会打印改了哪几行）
+
+再确认汉化包的 `GlueStrings.lua` **仍在 `patch-X.mpq` 里、未被改动**。
+`patch-Z.mpq` 现在只装这一个文件 —— 里面不再有 `GlueLocalization.lua`，
+因为那是汉化包里的空壳，没必要整份覆盖。
 
 ---
 
@@ -295,14 +379,40 @@ not change. It is **idempotent**: the same config twice produces byte-identical 
   "clientDataDir": "/path/to/client/Data",   // the client's Data folder
   "outputPatch": "patch-Z.mpq",              // must be Z
   "luaAssignments": {
-    "Interface\\GlueXML\\GlueLocalization.lua": {
-      "SERVER_ALERT_URL": "http://127.0.0.1:8080/alert",
+    "Interface\\GlueXML\\GlueStrings.lua": {
       "SERVER_ALERT_TITLE": "系统公告",
-      "SERVER_ALERT_BUTTON_TEXT": "更多信息"
+      "SERVER_ALERT_BUTTON_TEXT": "更多信息",
+      "SERVER_ALERT_URL": "http://twow.home.boym.me/alert",
+      "AUTH_DB_BUSY_URL": "http://twow.home.boym.me/notice",
+      "AUTH_BANNED_URL": "http://twow.home.boym.me/account/banned",
+      "AUTH_SUSPENDED_URL": "http://twow.home.boym.me/account/suspended",
+      "AUTH_NO_TIME_URL": "http://twow.home.boym.me/account/no-time",
+      "AUTH_PARENTAL_CONTROL_URL": "http://twow.home.boym.me/account/verify"
     }
   }
 }
 ```
+
+Of these, **only `SERVER_ALERT_URL` may carry a port**: the client fetches it over plain
+HTTP, and `http://172.18.1.6:8080/alert` is known to work. Every other key is opened by
+`LaunchURL` and has to obey the rules in the next section - the generator refuses to
+build a patch containing an address the client would refuse.
+
+### Which keys are actually used
+
+Checked one by one, with `strings` and by looking at the call sites in the executable;
+only two things on this client can send a player to a browser:
+
+| trigger | key |
+|---|---|
+| a link in the login screen's "Server Alert" panel | the `<a href>` in the body, see below |
+| a sign-in failure dialog (banned / suspended / out of credit / e-mail unverified / server busy) | `AUTH_BANNED_URL`, `AUTH_SUSPENDED_URL`, `AUTH_NO_TIME_URL`, `AUTH_PARENTAL_CONTROL_URL`, `AUTH_DB_BUSY_URL` |
+
+**Dead keys** - nothing in this client reads them, so changing them does nothing:
+`ACCOUNT_CREATE_URL`, `COMMUNITY_URL`, `TECH_SUPPORT_URL`, `TURTLE_ARMORY_WEBSITE`,
+`TURTLE_COMMUNITY_FORUM_WEBSITE`, `TURTLE_DISCORD_WEBSITE`,
+`TURTLE_KNOWLEDGE_DATABASE_WEBSITE`, `TURTLE_REDDIT_WEBSITE`, `AUTH_TURTLE_WEBSITE`.
+The translation pack points them at wuguifu, but they cannot be reached on this executable.
 
 ## Choosing the address
 
@@ -314,13 +424,59 @@ Fill in an address reachable **from the machine the game client runs on**:
 | a machine on the LAN | `http://<server host>:8080/alert` |
 | behind an nginx reverse proxy | `http://your-domain/alert` |
 
-## Making the links clickable: `patch_urllist.py`
+**A link inside the announcement only works by name**, and that name has to be served on
+port 80 - see "What the client will open" below.
 
-A link written as `<a href="...">` in the announcement body goes through the client's
-`LaunchURL`, which checks the target host against a **whitelist baked into `WoW.exe`**:
-Blizzard's `*.worldofwarcraft.com`, `*.battle.net`, etc., plus `*.turtlecraft.gg` on the
-Turtle client and `*.wuguifu.com` on the Chinese one. A host outside that list simply
-**does nothing when clicked**, and no server-side setting can relax it.
+## What the client will open
+
+**This section decides whether a link in the announcement is clickable at all.**
+
+The panel on the left of the login screen (`ServerAlertFrame`) has **no button**. That is
+easy to get wrong: the copy of `AccountLogin.xml` inside `interface.MPQ` does have a "more
+information" button, but the file that actually loads is the one in **`patch-9.mpq`**,
+which has a higher priority, and there the body is a `SimpleHTML` widget:
+
+```xml
+<SimpleHTML name="ServerAlertText" hyperlinkFormat="|cff2f68ff|H%s|h[%s]|h|r">
+  <Scripts><OnHyperlinkClick>LaunchURL(arg1);</OnHyperlinkClick></Scripts>
+```
+
+So **a link in the body is the button**. The server side (tools/WowWeb) already cooperates:
+an address alone on a line of the announcement is rendered as a link, in the shape copied
+from the client's own `Data/eula.html` - a file the same widget renders:
+
+```html
+<p>
+<a href="http://twow.home.boym.me/notice">http://twow.home.boym.me/notice</a>
+</p>
+```
+
+`LaunchURL` is the **only** way out of the client: the five `AUTH_*_URL` dialogs go through
+it as well, by evaluating a Lua call. Before opening anything it runs two checks, and
+**failing either one is silent** - the link still looks clickable, and nothing happens.
+
+**First: the shape of the address** (disassembled from `WoW.exe` at 0x5abc10)
+
+| rule | why |
+|---|---|
+| must start with `http://` | `https://` is refused |
+| no colon after the scheme | **any port invalidates the whole address**, so `172.18.1.6:8080` is out |
+| only letters, digits, `.`, `-`, `/` | underscores, `?`, `#` and non-ASCII punctuation are refused |
+
+So a usable link looks like `http://twow.home.boym.me/notice`: a name, port 80, no query.
+`gen_patchz.py` checks `overrides.json` against these rules and stops on a violation.
+
+**Second: the host has to be in a whitelist compiled into `WoW.exe`**
+
+Blizzard's `*.worldofwarcraft.com`, `*.battle.net` and friends, plus `*.turtlecraft.gg` on
+the Turtle client and `*.wuguifu.com` on the Chinese one. No server-side setting can relax
+it.
+
+The whitelist is a `const char*` array in `.data`, and the matching logic was disassembled
+too: a plain entry is compared against the whole host, while a `*.x` entry requires the
+host to be exactly one label plus `.x` (`www.wuguifu.com` matches `*.wuguifu.com`, but
+`a.b.wuguifu.com` does not). So the safe thing to install is the **full hostname**, which
+holds under both readings.
 
 `patch_urllist.py` overwrites one slot with your own domain, **same length or shorter**:
 
@@ -329,8 +485,8 @@ Turtle client and `*.wuguifu.com` on the Chinese one. A host outside that list s
 python3 patch_urllist.py --list
 
 # replace one entry (may not be longer than the original), dry-run first
-python3 patch_urllist.py --set '*.wowtaiwan.com.tw=*.mydomain.net' --dry-run
-python3 patch_urllist.py --set '*.wowtaiwan.com.tw=*.mydomain.net'
+python3 patch_urllist.py --set '*.wowtaiwan.com.tw=twow.home.boym.me' --dry-run
+python3 patch_urllist.py --set '*.wowtaiwan.com.tw=twow.home.boym.me'
 
 # restore from the backup
 python3 patch_urllist.py --restore
@@ -381,6 +537,12 @@ explicit `--force` — the client's portal/patch services still use them.
 |---|---|
 | a **value** in `overrides.json` | re-run `gen_patchz.py`, then **fully restart the game client** (MPQs are mounted at startup) |
 | the announcement **text** | this tool is not involved — edit it in WowWeb at `/admin/announcement` and it shows on the next login screen |
+| the **whitelist** inside `WoW.exe` | run `patch_urllist.py` once; after that it only changes if the domain does |
+
+> 📌 An `http://` address **alone on a line** of the announcement becomes a clickable
+> link. Two things have to be true for the click to do anything: the address must be a
+> **name on port 80** (no port number), and that name must be in the executable's
+> whitelist.
 
 ## Requirements
 
@@ -390,6 +552,14 @@ Linux (`libStorm.so`) and Windows (`StormLib.dll`).
 
 ## Verifying the output
 
-Open `patch-Z.mpq` with any MPQ tool and confirm that `SERVER_ALERT_URL` in
-`Interface\GlueXML\GlueLocalization.lua` points at your address, and that the translation
-pack's `GlueStrings.lua` is **still intact in `patch-X.mpq`**.
+Open `patch-Z.mpq` with any MPQ tool. In `Interface\GlueXML\GlueStrings.lua`, confirm
+that:
+
+* `SERVER_ALERT_URL` points at your `/alert`
+* the five `AUTH_*_URL` values point at `/notice` and `/account/...`
+* the other few thousand lines are **byte for byte** the translation pack's (the tool only
+  rewrites those lines, and prints which ones on every run)
+
+Then confirm the translation pack's `GlueStrings.lua` is **still intact in `patch-X.mpq`**.
+`patch-Z.mpq` now carries that one file only — the `GlueLocalization.lua` copy is gone,
+because the translation pack's own copy is an empty stub not worth overriding.
