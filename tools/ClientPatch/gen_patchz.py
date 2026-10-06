@@ -309,6 +309,35 @@ def changed_line_count(before, after):
     return n
 
 
+# ---------------------------------------------------------------------------
+# Lua：整段文本替换
+# ---------------------------------------------------------------------------
+def apply_rewrites(text, edits):
+    """按配置做逐字替换，返回 (新文本, [动作说明])。
+
+    给「不是 KEY = "值" 的改动」用 —— 修客户端的逻辑 bug 时，要改的是表达式，
+    luaAssignments 那种按赋值行匹配的写法够不着。
+
+    找不到要找的文本时**直接失败**，不静默跳过：这类改动是为了修一个具体问题，
+    悄悄不生效等于补丁看着装了、毛病还在。真遇到上游自己修好了（文本不存在了），
+    把 overrides.json 里对应那一条删掉即可 —— 报错信息里会说明。
+    """
+    actions = []
+    for i, edit in enumerate(edits):
+        find = edit['find']
+        repl = edit['replace']
+        where = edit.get('why') or f'第 {i + 1} 条'
+        n = text.count(find)
+        if n == 0:
+            raise SystemExit(
+                f'找不到要替换的文本（{where}）：\n\n{find}\n\n'
+                '上游可能已经自己修好了 —— 那就把 overrides.json 里这一条删掉；\n'
+                '否则说明它改成了别的写法，需要重新对一下。')
+        text = text.replace(find, repl)
+        actions.append(f'{where} —— 替换 {n} 处')
+    return text, actions
+
+
 def stamp(text, name=''):
     """在文件头插入「本文件由工具生成」的说明，避免以后被手工改乱。
 
@@ -387,12 +416,14 @@ def main():
     out_name = cfg['outputPatch']
     out_path = os.path.join(data_dir, out_name)
     assignments = cfg.get('luaAssignments', {})
+    rewrites = cfg.get('luaRewrites', {})
     frame_edits = cfg.get('frameEdits', {})
 
     if not os.path.isdir(data_dir):
         raise SystemExit(f'客户端 Data 目录不存在：{data_dir}')
-    if not assignments and not frame_edits:
-        raise SystemExit('配置里既没有 luaAssignments 也没有 frameEdits，什么都不用做')
+    if not assignments and not rewrites and not frame_edits:
+        raise SystemExit('配置里 luaAssignments / luaRewrites / frameEdits 都没有，'
+                         '什么都不用做')
 
     # 先拦住客户端打不开的地址：这类错误没有任何反馈，客户端只是点了不动。
     # 宁可让生成失败，也不要产出一个装上去才发现点了没反应的补丁。
@@ -418,7 +449,8 @@ def main():
 
     # 解析每个目标文件的「当前生效版本」——跳过本工具的产物，避免自我叠加
     targets = list(assignments)
-    targets += [n for n in frame_edits if n not in assignments]
+    targets += [n for n in rewrites if n not in assignments]
+    targets += [n for n in frame_edits if n not in assignments and n not in rewrites]
     staged = []
     for arch_name in targets:
         base = None
@@ -447,6 +479,11 @@ def main():
 
         if arch_name in assignments:
             new_text, actions = apply_assignments(new_text, assignments[arch_name])
+            for a in actions:
+                print(f'   {a}')
+
+        if arch_name in rewrites:
+            new_text, actions = apply_rewrites(new_text, rewrites[arch_name])
             for a in actions:
                 print(f'   {a}')
 

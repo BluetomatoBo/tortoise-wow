@@ -37,6 +37,17 @@
     "这里统一用 twow.home.boym.me —— 由 nginx 反代到 172.18.1.6:8080，",
     "见 tools/WowWeb/deploy/nginx/。",
     "",
+    "luaRewrites 是「整段文本替换」，给不是 KEY = \"值\" 的改动用 —— 比如修客户端",
+    "Lua 的逻辑 bug。找不到要替换的文本时生成会直接失败（不静默跳过）：这类改动是",
+    "为了修具体问题，悄悄不生效等于补丁装了、毛病还在。",
+    "",
+    "当前那一条修的是：打开商城必报",
+    "  Turtle_ShopUI.lua:1119: bad argument #1 to 'wipe' (table expected, got no value)",
+    "原因是 ShopEntries[-1]（搜索结果的桶）从没被创建过 —— 数据解析 Shop_ProcessEntries",
+    "只给服务端发来的分类建桶。这个错会中断整个 ShopFrame_Search()，所以搜索功能全坏，",
+    "而且「搜索时隐藏关于面板」也不会执行。加上 or {} 即可，语义不变（wipe 返回原表）。",
+    "上游若自己修好了，生成会报「找不到要替换的文本」，把这一条删掉即可。",
+    "",
     "值里带反斜杠要写成 \\\\，因为它是 Lua 字符串字面量。",
     "",
     "frameEdits 删的是「界面框架」：登录界面那六个按钮（patch-9 的 AccountLogin.xml）里",
@@ -64,6 +75,15 @@
       "DONO_SHOP_ABOUT_TITLE": "关于",
       "DONO_SHOP_ABOUT_TEXT": "所有捐赠奖励都是角色绑定的，而非账号绑定。\n\n非硬核角色有48小时的宽限期来请求退还捐赠奖励物品，部分物品可以前往暴风城63,73或奥格52,70鲍比男爵退还。\n\n一次性消耗品（如更改角色名称、种族变更、驻地契约、时尚硬币袋等）一经使用，即便在48小时宽限期内也无法退款。\n\n硬核角色死亡后捐赠的代币将自动退还。您可以创建一个硬核角色预览捐赠奖励。\n\n|CFFFF0000注意：删除非硬核角色不会退还代币。直接删除未死亡硬核角色不会退还代币。|R\n\n商城中的灰色条目代表其不适用于您的种族、职业或性别，请尽量不要兑换任何呈灰色条目的物品。\n\n如有任何问题，请使用/GM指令请求GM的协助。"
     }
+  },
+  "luaRewrites": {
+    "Interface\\FrameXML\\Turtle_ShopUI\\Turtle_ShopUI.lua": [
+      {
+        "why": "打开商城必报 wipe 参数错误（ShopEntries[-1] 从没被创建）",
+        "find": "\tShopEntries[-1] = wipe(ShopEntries[-1])",
+        "replace": "\tShopEntries[-1] = wipe(ShopEntries[-1] or {})"
+      }
+    ]
   },
   "frameEdits": {
     "Interface\\GlueXML\\AccountLogin.xml": {

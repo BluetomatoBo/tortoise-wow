@@ -118,6 +118,15 @@ python3 gen_patchz.py /path/to/other.json
       "AUTH_NO_TIME_URL": "http://twow.home.boym.me/account/no-time",
       "AUTH_PARENTAL_CONTROL_URL": "http://twow.home.boym.me/account/verify"
     }
+  },
+  "luaRewrites": {                           // 整段文本替换（改不动的地方用）
+    "Interface\\FrameXML\\Turtle_ShopUI\\Turtle_ShopUI.lua": [
+      {
+        "why": "打开商城必报 wipe 参数错误（ShopEntries[-1] 从没被创建）",
+        "find": "\tShopEntries[-1] = wipe(ShopEntries[-1])",
+        "replace": "\tShopEntries[-1] = wipe(ShopEntries[-1] or {})"
+      }
+    ]
   }
 }
 ```
@@ -125,6 +134,35 @@ python3 gen_patchz.py /path/to/other.json
 这些键里，**只有 `SERVER_ALERT_URL` 可以带端口**：它由客户端自己抓取，走的是普通
 HTTP，实测 `http://172.18.1.6:8080/alert` 可用。其余全部由 `LaunchURL` 打开，
 必须遵守下面那一节的规则 —— 工具会在生成前拦下不合规的地址。
+
+### 改客户端 Lua 的逻辑：`luaRewrites`
+
+`luaAssignments` 只会替换 `KEY = "值"` 这种赋值行。要改**表达式或逻辑**（也就是修
+客户端自己的 bug）就用 `luaRewrites`：给一对 `find` / `replace`，逐字替换 ——
+`find` / `replace` 写成 JSON 字符串，**`\t` 这样写的是真制表符**，要和原文件一致。
+
+`find` **找不到时生成会直接失败**，不静默跳过：这类改动是为了修一个具体问题，
+悄悄不生效等于补丁装上了、毛病还在。真遇到上游自己修好了，把这一条删掉即可 ——
+报错信息里会说明。
+
+> 与 `luaAssignments` 一样，`patch-Z` 会整份携带被改的文件，于是盖住汉化包/上游的
+> 同名文件。工具每次都重新从当前生效的那份读取，所以**上游更新后重跑一次**；生成时
+> 打印的「与基准相比 N 行不同」就是为此。
+
+目前配的那一条修的 bug：打开商城必报
+
+```
+Turtle_ShopUI.lua:1119: bad argument #1 to 'wipe' (table expected, got no value)
+```
+
+原因是搜索结果的桶 `ShopEntries[-1]` **从来没有被创建过** —— 解析服务端数据的
+`Shop_ProcessEntries` 只给服务端真发过来的分类建桶（`ShopEntries[catId]`），
+而 `-1` 是客户端合成的搜索桶，没人建。于是搜索框的 `OnTextChanged` 一触发
+（打开窗口就会触发一次）就 `wipe(nil)`。
+
+这不只是刷个报错：Lua 报错会**中断整个 `ShopFrame_Search()`**，所以搜索功能完全不
+生效，「搜索时把关于面板藏起来」那段也不会执行。加上 `or {}` 即可，语义不变
+（`wipe` 返回原表）。
 
 ### 哪些键真的有人用
 
@@ -620,6 +658,15 @@ not change. It is **idempotent**: the same config twice produces byte-identical 
       "AUTH_NO_TIME_URL": "http://twow.home.boym.me/account/no-time",
       "AUTH_PARENTAL_CONTROL_URL": "http://twow.home.boym.me/account/verify"
     }
+  },
+  "luaRewrites": {                           // literal text replacement, for the rest
+    "Interface\\FrameXML\\Turtle_ShopUI\\Turtle_ShopUI.lua": [
+      {
+        "why": "opening the shop always raises a wipe argument error",
+        "find": "\tShopEntries[-1] = wipe(ShopEntries[-1])",
+        "replace": "\tShopEntries[-1] = wipe(ShopEntries[-1] or {})"
+      }
+    ]
   }
 }
 ```
@@ -628,6 +675,39 @@ Of these, **only `SERVER_ALERT_URL` may carry a port**: the client fetches it ov
 HTTP, and `http://172.18.1.6:8080/alert` is known to work. Every other key is opened by
 `LaunchURL` and has to obey the rules in the next section - the generator refuses to
 build a patch containing an address the client would refuse.
+
+### Fixing client Lua logic: `luaRewrites`
+
+`luaAssignments` only rewrites `KEY = "value"` lines. To change an expression or a piece
+of logic - that is, to fix a bug in the client itself - use `luaRewrites`: a `find` /
+`replace` pair, replaced literally. Both are JSON strings, so `\t` means a real tab and
+has to match the file exactly.
+
+A `find` that is **not found makes the generator fail** rather than skip: these entries
+exist to fix one specific problem, and applying them silently-not-at-all would ship a
+patch that looks installed while the problem is still there. If upstream fixes it
+themselves, delete the entry - the error message says so.
+
+> Like `luaAssignments`, this makes patch-Z carry the whole file and shadow the pack's or
+> upstream's copy. The generator re-reads the currently effective version every run, so
+> **re-run it after an upstream update**; that is what the `与基准相比 N 行不同` (N lines
+> differ) line it prints is for.
+
+The entry configured right now fixes:
+
+```
+Turtle_ShopUI.lua:1119: bad argument #1 to 'wipe' (table expected, got no value)
+```
+
+The search-result bucket `ShopEntries[-1]` is **never created**: `Shop_ProcessEntries`
+only creates buckets for the categories the server actually sends (`ShopEntries[catId]`),
+and `-1` is a bucket the client invents for search results. So the search box's
+`OnTextChanged` - which fires as soon as the window opens - calls `wipe(nil)`.
+
+That is not just a noisy message: a Lua error **aborts the whole `ShopFrame_Search()`, so
+searching does nothing at all**, and the part that hides the About panel while searching
+never runs either. Adding `or {}` is enough and changes no semantics (`wipe` returns the
+table it was given).
 
 ### Which keys are actually used
 
