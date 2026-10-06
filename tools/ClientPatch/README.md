@@ -157,9 +157,36 @@ HTTP，实测 `http://172.18.1.6:8080/alert` 可用。其余全部由 `LaunchURL
 | `AUTH_BANNED_URL` | ✅ 世界服 `isBanned`／`IsIPBanned` → `AUTH_BANNED` |
 | `AUTH_SUSPENDED_URL`、`AUTH_NO_TIME_URL`、`AUTH_PARENTAL_CONTROL_URL`、`AUTH_DB_BUSY_URL` | ❌ 对应的码只由**登录服**发出（走 `LOGIN_*`，无链接），世界服不发 |
 
-想亲眼看到「帮助」按钮：**先正常登录到选服务器的界面**（登录服已放行），
-**然后**在后台把账号或 IP 封掉，再点服务器进入 —— 世界服这时才拒绝，
-用的是 `AUTH_BANNED`，弹窗里就会出现「帮助」，点开是 `AUTH_BANNED_URL`。
+想亲眼看到「帮助」按钮 —— **只能靠时间差**：
+
+1. 用**没有被封**的账号正常登录，**停在选择服务器的界面**（此时登录服已放行）
+2. **不要点服务器**，去后台把**账号**封掉（永久或限时都行）
+3. 点服务器进入 → 世界服这时才在 `CMSG_AUTH_SESSION` 检查 → 回 `AUTH_BANNED`
+   → 弹窗里出现「帮助」→ 点开是 `AUTH_BANNED_URL`
+
+为什么只能这样：**两台服务器查的是同一张表、同一个条件**。登录服的查询是
+`account_banned WHERE id = ? AND active = 1 AND (unbandate > NOW() OR unbandate = bandate)`，
+世界服是同一张表的 JOIN 上同样的条件 —— 所以**不存在「只有世界服看得见」的封禁状态**，
+只有「登录时还没封、连世界服时已封」这个时间差。
+
+> ⚠️ **别用 IP 封禁去试这条路。** 登录服对 `ip_banned` 命中的回应是
+> `WOW_FAIL_DB_BUSY`（不是封禁码），客户端显示的是
+> 「**您的连接目前受限。身份验证失败次数过多！**」；而且世界服的 IP 封禁表是**缓存的**，
+> 不一定即时生效。**用账号封禁。**
+
+### 一眼判断是哪台服务器拒绝的
+
+看客户端显示的**文案族**就够了：
+
+| 玩家人看到 | 谁拒绝的 | 有「帮助」吗 |
+|---|---|---|
+| 「该魔兽世界帐号已被冻结，无法继续使用！」（`LOGIN_BANNED`） | 登录服 · 永久封禁 | ❌ |
+| 「该魔兽世界帐号已被暂时冻结，目前无法使用！…」（`LOGIN_SUSPENDED`） | 登录服 · 限时封禁 | ❌ |
+| 「您的连接目前受限。身份验证失败次数过多！」（`LOGIN_DBBUSY`） | 登录服 · IP 封禁（或同一 IP 太多账号） | ❌ |
+| 「**此帐户因违反规则而被禁止**。请阅读我们网站上的使用条款。」（`AUTH_BANNED`） | **世界服 · 账号封禁** | ✅ |
+
+**判据：看到 `LOGIN_` 那一族（"该魔兽世界帐号已被…"）就一定没有链接；
+只有 `AUTH_` 那一族（"此帐户因违反规则…"）才带「帮助」按钮。**
 
 > 📌 后台的「**禁用账号**」和「**封禁**」效果不同：禁用写 `account.active=0`，登录服回的是
 > `WOW_FAIL_INCORRECT_PASSWORD`，玩家看到的是「**密码错误**」；封禁写 `account_banned`，
@@ -502,10 +529,38 @@ The core's world server sends **five** response codes in total, and only **`AUTH
 | `AUTH_BANNED_URL` | ✅ world server, `isBanned` / `IsIPBanned` → `AUTH_BANNED` |
 | `AUTH_SUSPENDED_URL`, `AUTH_NO_TIME_URL`, `AUTH_PARENTAL_CONTROL_URL`, `AUTH_DB_BUSY_URL` | ❌ those codes are only sent by the **login server** (so they render from `LOGIN_*`, with no link); the world server never sends them |
 
-To see the help button yourself: **sign in normally and stop at the realm list** (the login
-server has already let you through), **then** ban the account or the IP from the web admin,
-then click the realm. The world server refuses at that point with `AUTH_BANNED`, so the dialog
-grows a "help" button that opens `AUTH_BANNED_URL`.
+To see the help button yourself, **timing is the only way**:
+
+1. sign in with an account that is **not** banned, and **stop at the realm list** (the login
+   server has already let you through)
+2. **without clicking the realm**, ban the **account** from the web admin (permanent or timed,
+   either works)
+3. click the realm - only now does the world server check, in `CMSG_AUTH_SESSION`, and it
+   answers `AUTH_BANNED`, so the dialog grows a "help" button that opens `AUTH_BANNED_URL`
+
+Why it has to be a race: **both servers run the same query against the same table.** The login
+server runs `account_banned WHERE id = ? AND active = 1 AND (unbandate > NOW() OR unbandate =
+bandate)`; the world server joins the same table with the same condition. There is therefore no
+ban state that only the world server can see - only the window between the two checks.
+
+> ⚠️ **Do not try this with an IP ban.** The login server answers an `ip_banned` hit with
+> `WOW_FAIL_DB_BUSY` rather than a ban code, so the player sees "your connection is restricted,
+> too many failed authentications", and the world server's copy of that table is **cached** and
+> may not have picked the ban up yet. **Ban the account.**
+
+### Telling the two servers apart at a glance
+
+The message family names the server:
+
+| what the player sees | who refused | help button |
+|---|---|---|
+| "该魔兽世界帐号已被冻结，无法继续使用！" (`LOGIN_BANNED`) | login server, permanent ban | ❌ |
+| "该魔兽世界帐号已被暂时冻结…" (`LOGIN_SUSPENDED`) | login server, timed ban | ❌ |
+| "您的连接目前受限。身份验证失败次数过多！" (`LOGIN_DBBUSY`) | login server, IP ban (or too many accounts from one IP) | ❌ |
+| "**此帐户因违反规则而被禁止**。请阅读我们网站上的使用条款。" (`AUTH_BANNED`) | **world server, account ban** | ✅ |
+
+**The test: the `LOGIN_` family ("该魔兽世界帐号已被…") never carries a link; only the `AUTH_`
+family ("此帐户因违反规则…") has the help button.**
 
 > 📌 In the web admin, "**disable account**" and "**ban**" are not the same thing. Disabling
 > writes `account.active = 0`, and the login server answers that with
