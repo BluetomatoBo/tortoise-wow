@@ -379,6 +379,39 @@ about   bag   default   free   mount   pet   scroll   service   tabard   ticket 
 URL 硬提交也一样会被拒（handler 再查一次条目数），并提示你先去
 `/admin/shop?category=<id>` 把它们改到别的类别。
 
+**4. 本服区域要用的那个名字必须填。** 核心只会发**一个**名字，没有回退：
+
+```cpp
+categories += to_string(id) + "=0=" + (NiHao ? Name_loc4 : Name) + "=" + Icon + ";";
+```
+
+而客户端用 `(.+)=(%d+)=(.+)=(.+)` 解析，`(.+)` 要求至少一个字符 —— 所以那个名字**为空
+不是显示成空白，而是整条匹配失败、这个分类在游戏里完全不出现**。中文服（`NiHao=1`）
+必须填中文名，欧洲服必须填英文名，表单会拒绝填错的那一边。另一边为空只给警告：现在没事，
+但把本服区域切过去之后这个分类就会消失。
+
+**5.（顺带）ASCII 冒号 `:` 也不能出现。** 客户端拿整份串做一次
+`gsub(arg, ":", ":0=0=关于=about;")` 来插入它自己的「关于」页签，而 `gsub` 会替换**所有**
+冒号 —— 名字里的一个 `:` 会在该分类中间再插一个关于页签，名字变成
+`玩:0=0=关于`、图标也串位。全角 `：` 不受影响（客户端找的是 ASCII 冒号）。
+
+**⚠️ 改完类别要 `/reload` 或重登才会看到。** `.reload shop` 只更新**服务端**内存，而客户端的
+分类列表**每个 UI 会话只请求一次**：
+
+```lua
+-- Turtle_ShopUI.lua:215 —— 启动后 0.5 秒发一次，之后 ready=true 永不再发
+Send("Balance"); Send("Categories"); this.ready = true
+```
+
+`Shop_RefreshEntries()` 只重取**它已经知道的**分类的条目
+（`for k in pairs(ShopEntries)`），从不重新请求分类列表。所以：
+
+| 改了什么 | 客户端要怎么刷新 |
+|---|---|
+| 类别本身（新增/改名/换图标/删除） | **`/reload`**（或重登） |
+| 条目的内容（价格、区域、模型…） | 打开商城就行（`Shop_RefreshEntries`） |
+| 另一种语言的名字 | 不用（切换区域时才用） |
+
 > 「关于」那个页签**不在这张表里** —— 它是客户端自己插进类别列表的
 > （`Turtle_ShopUI.lua:339` 拼 `:0=0=关于=about;`）。要改它的文字见
 > `tools/ClientPatch/README.md` 的「改商城的界面文字」。
@@ -1201,6 +1234,45 @@ every item whose category is missing, so deleting one makes those items disappea
 from the shop with a single line in the log to show for it. The form does not show
 a delete button in that case, and a hand-made POST is refused too (the handler
 recounts) with a pointer to `/admin/shop?category=<id>` to move them first.
+
+**4. The name this realm sends has to be filled in.** The core sends exactly one
+name and has no fallback:
+
+```cpp
+categories += to_string(id) + "=0=" + (NiHao ? Name_loc4 : Name) + "=" + Icon + ";";
+```
+
+The client parses that with `(%d+)=(%d+)=(.+)=(.+)`, and `(.+)` needs at least one
+character — so an empty name is **not shown blank, it fails to match and the whole
+category never appears in game**. A Chinese realm (`NiHao=1`) needs the Chinese
+name, a European one needs the English name, and the form refuses the wrong side.
+An empty name on the *other* side is only a warning: fine now, but that category
+would disappear if the realm's region were flipped.
+
+**5. An ASCII colon `:` is not allowed either.** The client runs
+`gsub(arg, ":", ":0=0=" .. about .. "=about;")` over the whole payload to insert
+its own About tab, and gsub replaces **every** colon — so a `:` inside a name injects
+a second About tab into the middle of that category, leaving the name as
+`玩:0=0=关于` and the icon wrong. A full-width `：` is unaffected (the client looks
+for the ASCII colon).
+
+**⚠️ A category change needs `/reload` or a relog to show up.** `.reload shop` only
+refreshes the **server's** copy, and the client asks for the category list **once per
+UI session**:
+
+```lua
+-- Turtle_ShopUI.lua:215 - sent 0.5s after load, then ready=true and never again
+Send("Balance"); Send("Categories"); this.ready = true
+```
+
+`Shop_RefreshEntries()` re-requests the entries of the categories it **already
+knows** (`for k in pairs(ShopEntries)`) and never asks for the list itself. So:
+
+| What changed | What the client needs |
+| --- | --- |
+| A category (added, renamed, re-iconed, deleted) | **`/reload`** (or a relog) |
+| An entry's contents (price, region, model, ...) | Opening the shop is enough |
+| The name in the other language | Nothing until the region is flipped |
 
 > The About tab is **not a row in this table** — the client inserts it itself
 > (`Turtle_ShopUI.lua:339`, `:0=0=关于=about;`). See

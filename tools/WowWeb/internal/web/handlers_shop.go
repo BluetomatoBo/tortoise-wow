@@ -537,8 +537,14 @@ func shopIconKnown(icon string) bool {
 	return false
 }
 
-// shopCategorySeparators are the two characters the addon string cannot carry.
-const shopCategorySeparators = "=;"
+// shopCategorySeparators are the characters the addon string cannot carry.
+//
+// '=' and ';' are the field and record separators. ':' is subtler: the client
+// runs gsub(arg, ":", ":0=0=" .. about .. "=about;") over the whole payload to
+// insert its own About tab, and gsub replaces every occurrence, so a ':' inside
+// a name injects a second About tab into the middle of that category - the name
+// comes out as "玩:0=0=关于" with the wrong icon, and the real icon is lost.
+const shopCategorySeparators = "=;:"
 
 func hasCategorySeparator(s string) bool { return strings.ContainsAny(s, shopCategorySeparators) }
 
@@ -577,10 +583,15 @@ func categoryIDFromPath(id uint32) (uint8, bool) {
 // texture for, so the list can flag the ones that would render blank.
 func (v shopCategoryListView) IconKnown(icon string) bool { return shopIconKnown(icon) }
 
-// parseShopCategoryForm validates what the form sent. The two separator checks
-// and the id range are refusals; the icon is not, because the list of names in
-// the client is not the only source of artwork.
-func parseShopCategoryForm(r *http.Request) (store.ShopCategoryInput, []string, []string) {
+// parseShopCategoryForm validates what the form sent.
+//
+// The separator checks and the id range are refusals, as is an empty name for the
+// region this realm is: the core sends exactly one of the two names and has no
+// fallback, and the client's pattern needs at least one character, so an empty
+// one does not show a blank tab - it drops the whole category. The icon is only
+// warned about, because the names the client ships are not the only artwork one
+// can have.
+func parseShopCategoryForm(r *http.Request, realmIsChinese bool) (store.ShopCategoryInput, []string, []string) {
 	var in store.ShopCategoryInput
 	var problems, warnings []string
 
@@ -590,6 +601,14 @@ func parseShopCategoryForm(r *http.Request) (store.ShopCategoryInput, []string, 
 
 	if in.Name == "" && in.NameCN == "" {
 		problems = append(problems, "name")
+	} else if realmIsChinese && in.NameCN == "" {
+		// The category would be missing in game entirely, not blank.
+		problems = append(problems, "nameForRealm")
+	} else if !realmIsChinese && in.Name == "" {
+		problems = append(problems, "nameForRealm")
+	} else if in.Name == "" || in.NameCN == "" {
+		// Fine now, but flipping NiHao later would hide it.
+		warnings = append(warnings, "otherNameEmpty")
 	}
 	if hasCategorySeparator(in.Name) || hasCategorySeparator(in.NameCN) {
 		problems = append(problems, "separator")
@@ -704,7 +723,7 @@ func (s *Server) saveShopCategory(w http.ResponseWriter, r *http.Request, page *
 	actor := accountFrom(ctx)
 	isNew := id == 0
 
-	input, problems, warnings := parseShopCategoryForm(r)
+	input, problems, warnings := parseShopCategoryForm(r, s.realmIsChinese())
 
 	// The id is only read on create: changing it would orphan every row that
 	// points at the old one, and the core orders the tabs by it.
@@ -843,8 +862,9 @@ func categoryProblemsText(page *PageData, problems []string) string {
 
 func categoryWarningsText(page *PageData, warnings []string) []string {
 	keys := map[string]string{
-		"iconUnknown":   "shop.cat.warn.iconUnknown",
-		"duplicateName": "shop.cat.warn.duplicateName",
+		"iconUnknown":    "shop.cat.warn.iconUnknown",
+		"duplicateName":  "shop.cat.warn.duplicateName",
+		"otherNameEmpty": "shop.cat.warn.otherNameEmpty",
 	}
 	var out []string
 	for _, w := range warnings {

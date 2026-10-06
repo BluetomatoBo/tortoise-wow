@@ -596,5 +596,7 @@
   "shop.cat.deleteBlockedLink": "查看这个类别下的条目，先把它们改到别的类别。",
   "shop.cat.flash.created": "已创建类别 #%d。",
   "shop.cat.flash.updated": "已保存类别 #%d。",
-  "shop.cat.flash.deleted": "已删除类别 #%d。"
+  "shop.cat.flash.deleted": "已删除类别 #%d。",
+  "shop.cat.err.nameForRealm": "这个服是中文服（NiHao=1），世界服只会把「名称（中文）」发给客户端 —— 留空的话客户端解析失败，整个分类在游戏里不显示（不是显示空白）。英文名同理，欧洲服必须填英文名。",
+  "shop.cat.warn.otherNameEmpty": "另一种语言的名字是空的。现在不影响，但以后把本服区域切到另一边（NiHao 反转），客户端会直接跳过这个分类 —— 建议两边都填。"
 }

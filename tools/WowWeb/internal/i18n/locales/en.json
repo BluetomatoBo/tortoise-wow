@@ -596,5 +596,7 @@
   "shop.cat.deleteBlockedLink": "Show the items in this category and move them to another one first.",
   "shop.cat.flash.created": "Created category #%d.",
   "shop.cat.flash.updated": "Saved category #%d.",
-  "shop.cat.flash.deleted": "Deleted category #%d."
+  "shop.cat.flash.deleted": "Deleted category #%d.",
+  "shop.cat.err.nameForRealm": "This realm is the Chinese one (NiHao=1), so the world server only sends the Chinese name to the client. Left empty, the client cannot parse the row and the category does not appear at all - it is not shown blank. The same applies to the English name on a European realm.",
+  "shop.cat.warn.otherNameEmpty": "The other language's name is empty. That is fine now, but flipping this realm to the other region (NiHao reversed) would make the client skip the category entirely - filling in both is safer."
 }

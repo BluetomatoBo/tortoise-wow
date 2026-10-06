@@ -396,7 +396,7 @@ func TestParseShopCategoryForm(t *testing.T) {
 	valid := map[string]string{"name": "Mounts", "name_loc4": "坐骑", "icon": "mount"}
 
 	t.Run("accepts a complete form", func(t *testing.T) {
-		in, problems, warnings := parseShopCategoryForm(form(valid))
+		in, problems, warnings := parseShopCategoryForm(form(valid), false)
 		if len(problems) != 0 || len(warnings) != 0 {
 			t.Fatalf("problems = %v, warnings = %v, want none", problems, warnings)
 		}
@@ -409,14 +409,14 @@ func TestParseShopCategoryForm(t *testing.T) {
 	})
 
 	t.Run("id is optional but bounded", func(t *testing.T) {
-		in, problems, _ := parseShopCategoryForm(form(withValues(valid, map[string]string{"id": "200"})))
+		in, problems, _ := parseShopCategoryForm(form(withValues(valid, map[string]string{"id": "200"})), false)
 		if len(problems) != 0 || in.ID != 200 {
 			t.Errorf("id 200: problems = %v, id = %d", problems, in.ID)
 		}
 		// The core reads the column with GetUInt8; 256 would be truncated and
 		// the tab would no longer match the rows pointing at it.
 		for _, raw := range []string{"0", "256", "-1", "abc"} {
-			_, problems, _ := parseShopCategoryForm(form(withValues(valid, map[string]string{"id": raw})))
+			_, problems, _ := parseShopCategoryForm(form(withValues(valid, map[string]string{"id": raw})), false)
 			if !contains(problems, "id") {
 				t.Errorf("id %q was accepted", raw)
 			}
@@ -433,9 +433,12 @@ func TestParseShopCategoryForm(t *testing.T) {
 			{"name_loc4": "坐骑;我的"},
 			{"icon": "mount;ticket"},
 			{"icon": "mount=ticket"},
+			{"name": "Mounts:mine"},
+			{"name_loc4": "坐骑:我的"},
+			{"icon": "mount:ticket"},
 		}
 		for _, patch := range cases {
-			_, problems, _ := parseShopCategoryForm(form(withValues(valid, patch)))
+			_, problems, _ := parseShopCategoryForm(form(withValues(valid, patch)), false)
 			if !contains(problems, "separator") {
 				t.Errorf("%v was accepted", patch)
 			}
@@ -448,15 +451,53 @@ func TestParseShopCategoryForm(t *testing.T) {
 			{"icon": ""},
 			{"icon": "   "},
 		} {
-			_, problems, _ := parseShopCategoryForm(form(withValues(valid, patch)))
+			_, problems, _ := parseShopCategoryForm(form(withValues(valid, patch)), false)
 			if len(problems) == 0 {
 				t.Errorf("%v was accepted", patch)
 			}
 		}
-		// One language is enough: the client falls back to whichever is set.
-		if _, problems, _ := parseShopCategoryForm(form(
-			withValues(valid, map[string]string{"name": "", "name_loc4": "坐骑"}))); len(problems) != 0 {
-			t.Errorf("a Chinese-only name was refused: %v", problems)
+	})
+
+	// The core sends exactly one of the two names and has no fallback, and the
+	// client's pattern needs at least one character - so an empty name for this
+	// realm does not show a blank tab, it drops the category entirely.
+	t.Run("requires the name this realm sends", func(t *testing.T) {
+		cn := map[string]string{"name": "", "name_loc4": "坐骑"}
+		en := map[string]string{"name": "Mounts", "name_loc4": ""}
+
+		if _, problems, _ := parseShopCategoryForm(form(withValues(valid, cn)), true); len(problems) != 0 {
+			t.Errorf("on a Chinese realm a Chinese-only name was refused: %v", problems)
+		}
+		if _, problems, _ := parseShopCategoryForm(form(withValues(valid, cn)), false); !contains(problems, "nameForRealm") {
+			t.Errorf("on a European realm a Chinese-only name was accepted: %v", problems)
+		}
+		if _, problems, _ := parseShopCategoryForm(form(withValues(valid, en)), false); len(problems) != 0 {
+			t.Errorf("on a European realm an English-only name was refused: %v", problems)
+		}
+		if _, problems, _ := parseShopCategoryForm(form(withValues(valid, en)), true); !contains(problems, "nameForRealm") {
+			t.Errorf("on a Chinese realm an English-only name was accepted: %v", problems)
+		}
+	})
+
+	// A full-width colon is not the ASCII one the client's gsub looks for, so it
+	// is harmless and must not be refused.
+	t.Run("a full-width colon is allowed", func(t *testing.T) {
+		_, problems, _ := parseShopCategoryForm(form(
+			withValues(valid, map[string]string{"name_loc4": "坐骑：我的"})), true)
+		if len(problems) != 0 {
+			t.Errorf("full-width colon refused: %v", problems)
+		}
+	})
+
+	// Filling only one side works now but breaks on a region flip.
+	t.Run("warns about the empty other name", func(t *testing.T) {
+		_, problems, warnings := parseShopCategoryForm(form(
+			withValues(valid, map[string]string{"name_loc4": ""})), false)
+		if len(problems) != 0 {
+			t.Fatalf("problems = %v, want none", problems)
+		}
+		if !contains(warnings, "otherNameEmpty") {
+			t.Errorf("warnings = %v, want otherNameEmpty", warnings)
 		}
 	})
 
@@ -464,7 +505,7 @@ func TestParseShopCategoryForm(t *testing.T) {
 	// it has to be visible that the tab will be blank until then.
 	t.Run("unknown icon warns instead of refusing", func(t *testing.T) {
 		_, problems, warnings := parseShopCategoryForm(form(
-			withValues(valid, map[string]string{"icon": "wormhole"})))
+			withValues(valid, map[string]string{"icon": "wormhole"})), false)
 		if len(problems) != 0 {
 			t.Errorf("problems = %v, want none", problems)
 		}
