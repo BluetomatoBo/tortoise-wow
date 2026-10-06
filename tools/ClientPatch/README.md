@@ -244,6 +244,38 @@ HTTP，实测 `http://172.18.1.6:8080/alert` 可用。其余全部由 `LaunchURL
 
 **真正在本客户端里没人引用的键**：`ACCOUNT_CREATE_URL`、`COMMUNITY_URL`。
 
+### 删掉按钮：`frameEdits`
+
+改地址/改文案用 `luaAssignments`（键都在 `GlueStrings.lua`）。**要按钮整个消失**
+就得改界面文件本身 —— 那是 XML，`luaAssignments` 管不了，用 `frameEdits`：
+
+```jsonc
+{
+  "frameEdits": {
+    "Interface\\GlueXML\\AccountLogin.xml": {
+      "remove": [
+        "AccountLoginTurtleArmory",
+        "AccountLoginTurtleKnowledgeDatabase",
+        "AccountLoginTurtleReddit"
+      ]
+    }
+  }
+}
+```
+
+它做的不是"藏起来"，而是**整块删掉并把锚定链接改嫁**：
+
+* 这些按钮是**链式锚定**的（后一个 `relativeTo` 前一个），只删会在原位留一个**空档**
+* 所以删完之后，把「锚向被删框架」的引用改嫁到它的**前一个**（前一个也被删就继续往前追），
+  链子不会断、界面不会留洞
+* 找不到的框架会被跳过并说明（所以重复运行是安全的）
+
+框架名从哪来？`AccountLoginTurtleXxx` 这种名字写在界面 XML 的 `name="..."` 里。
+用 `verify_client.py` 或直接解开 `patch-9.mpq` 的 `AccountLogin.xml` 都能看到。
+
+> ⚠️ 只看 `interface.MPQ` 里那份老 `AccountLogin.xml` 会找错地方 —— 生效的是
+> **`patch-9.mpq`** 里那份（优先级更高）。
+
 ## 地址怎么选
 
 客户端在**哪台机器上跑**，就填那台机器能访问到的地址：
@@ -674,6 +706,41 @@ All of these are **patchable with patch-Z**: the labels and the addresses both l
 hostname** for your own domain.
 
 **Keys nothing in this client reads**: `ACCOUNT_CREATE_URL` and `COMMUNITY_URL`.
+
+### Removing buttons: `frameEdits`
+
+Changing an address or a label is `luaAssignments` (those keys live in `GlueStrings.lua`).
+Making a button **disappear** means editing the interface file itself - XML, which
+`luaAssignments` cannot touch - and that is what `frameEdits` is for:
+
+```jsonc
+{
+  "frameEdits": {
+    "Interface\\GlueXML\\AccountLogin.xml": {
+      "remove": [
+        "AccountLoginTurtleArmory",
+        "AccountLoginTurtleKnowledgeDatabase",
+        "AccountLoginTurtleReddit"
+      ]
+    }
+  }
+}
+```
+
+It does not hide them, it deletes the frame **and repairs the anchor chain**:
+
+* these buttons are anchored in a chain (each one `relativeTo` the previous), so deleting one
+  on its own would leave a **gap** where it used to be
+* so after deleting, every reference that anchored to a deleted frame is re-pointed at
+  *its* predecessor (following the chain if that one is gone too) - no dangling reference,
+  no hole in the layout
+* names it cannot find are skipped and reported, so re-running is safe
+
+Frame names are the `name="..."` attributes in the interface XML. `verify_client.py` or the
+effective `AccountLogin.xml` inside `patch-9.mpq` both show them.
+
+> ⚠️ Looking at the older `AccountLogin.xml` in `interface.MPQ` finds the wrong file - the one
+> that loads is in **`patch-9.mpq`**, which has a higher priority.
 
 ## Choosing the address
 

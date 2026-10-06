@@ -205,8 +205,100 @@ def apply_assignments(text, values):
     return body, actions
 
 
-def stamp(text):
-    """在文件头插入「本文件由工具生成」的说明，避免以后被手工改乱。"""
+# ---------------------------------------------------------------------------
+# XML：删掉具名框架
+# ---------------------------------------------------------------------------
+# 界面上的按钮是**链式锚定**的：后一个 relativeTo 前一个。所以"只删不补"会在原位
+# 留一个空档。做法分两遍：先整块删掉，再把「锚向被删框架」的引用改嫁到它的前一个
+# （前一个也被删就继续往前追）。链上每个框架只被它的下一个引用，所以改嫁就够了。
+FRAME_TAGS = ('Frame', 'Button', 'CheckButton', 'SimpleHTML', 'ScrollFrame', 'Slider',
+              'EditBox', 'StatusBar', 'MessageFrame', 'ColorSelect', 'Cooldown', 'Model',
+              'PlayerModel', 'DressUpModel', 'Minimap', 'GameTooltip')
+FRAME_OPEN_RE = re.compile(r'<(%s)\b[^>]*?\bname="([A-Za-z0-9_]+)"' % '|'.join(FRAME_TAGS))
+
+
+def find_frame(text, name):
+    """定位一个具名框架的完整块，返回 (起点, 终点, 它锚定的对象或 None)。"""
+    for m in FRAME_OPEN_RE.finditer(text):
+        if m.group(2) != name:
+            continue
+        tag = m.group(1)
+        open_re = re.compile(r'<%s\b' % tag)
+        close_re = re.compile(r'</%s>' % tag)
+        depth, i = 1, m.end()
+        while depth:
+            o = open_re.search(text, i)
+            c = close_re.search(text, i)
+            if not c:
+                return None
+            if o and o.start() < c.start():
+                depth += 1
+                i = o.end()
+            else:
+                depth -= 1
+                i = c.end()
+        block = text[m.start():i]
+        rel = re.search(r'relativeTo="([A-Za-z0-9_]+)"', block)
+        return (m.start(), i, rel.group(1) if rel else None)
+    return None
+
+
+def remove_frames(text, names):
+    """删掉这些具名框架并把锚定引用改嫁，返回 (新文本, [动作说明])。"""
+    actions = []
+    blocks = []
+    for name in names:
+        found = find_frame(text, name)
+        if not found:
+            actions.append(f'{name} 在这个文件里找不到（跳过 —— 也许已经删掉了）')
+            continue
+        blocks.append((name, found[2], found[0], found[1]))
+    if not blocks:
+        return text, actions
+
+    prev_of = {name: rel for name, rel, _s, _e in blocks}
+    doomed = set(prev_of)
+
+    def resolve(prev):
+        seen = set()
+        while prev in doomed and prev not in seen:
+            seen.add(prev)
+            prev = prev_of.get(prev)
+        return prev
+
+    # 先删（从后往前，前面的偏移才不受影响），再按名字改嫁引用
+    for name, _rel, start, end in sorted(blocks, key=lambda b: -b[2]):
+        text = text[:start] + text[end:]
+        actions.append(f'{name} 已删除')
+
+    for name in sorted(doomed):
+        target = resolve(name)
+        if target:
+            text, n = re.subn(r'relativeTo="%s"' % re.escape(name),
+                              'relativeTo="%s"' % target, text)
+            if n:
+                actions.append(f'  {n} 处锚定从 {name} 改嫁到 {target}')
+        else:
+            text, n = re.subn(r'\s*relativeTo="%s"' % re.escape(name), '', text)
+            if n:
+                actions.append(f'  {n} 处锚定去掉了 relativeTo="{name}"（回落到父框架）')
+    return text, actions
+
+
+def stamp(text, name=''):
+    """在文件头插入「本文件由工具生成」的说明，避免以后被手工改乱。
+
+    Lua 与 XML 的注释语法不同，按扩展名选。
+    """
+    if name.lower().endswith('.xml'):
+        marker = '<!-- [gen_patchz] 由 overrides.json 生成'
+        if marker in text:
+            return text
+        note = (f'{marker} -->\n'
+                '<!-- [gen_patchz] 这里删掉了配置里点名的界面框架。 -->\n'
+                '<!-- [gen_patchz] 改配置请编辑 overrides.json 后重跑 gen_patchz.py， -->\n'
+                '<!-- [gen_patchz] 不要直接改这个文件（下次生成会被覆盖）。 -->\n')
+        return note + text
     marker = '-- [gen_patchz] 由 overrides.json 生成'
     if marker in text:
         return text
@@ -270,11 +362,12 @@ def main():
     out_name = cfg['outputPatch']
     out_path = os.path.join(data_dir, out_name)
     assignments = cfg.get('luaAssignments', {})
+    frame_edits = cfg.get('frameEdits', {})
 
     if not os.path.isdir(data_dir):
         raise SystemExit(f'客户端 Data 目录不存在：{data_dir}')
-    if not assignments:
-        raise SystemExit('配置里没有任何 luaAssignments，什么都不用做')
+    if not assignments and not frame_edits:
+        raise SystemExit('配置里既没有 luaAssignments 也没有 frameEdits，什么都不用做')
 
     # 先拦住客户端打不开的地址：这类错误没有任何反馈，客户端只是点了不动。
     # 宁可让生成失败，也不要产出一个装上去才发现点了没反应的补丁。
@@ -299,8 +392,10 @@ def main():
         print(f'   {prio:>4}  {name}{tag}')
 
     # 解析每个目标文件的「当前生效版本」——跳过本工具的产物，避免自我叠加
+    targets = list(assignments)
+    targets += [n for n in frame_edits if n not in assignments]
     staged = []
-    for arch_name, values in assignments.items():
+    for arch_name in targets:
         base = None
         source = None
         for prio, name, path in reversed(patches):          # 从最高优先级往下找
@@ -322,11 +417,21 @@ def main():
             base, source = b'', '(新建)'
         else:
             print(f'\n{arch_name}\n   基准来自：{source}（{len(base)} 字节）')
-        text = base.decode('utf-8', 'replace')
-        new_text, actions = apply_assignments(text, values)
-        for a in actions:
-            print(f'   {a}')
-        staged.append((arch_name, stamp(new_text).encode('utf-8')))
+        new_text = base.decode('utf-8', 'replace')
+
+        if arch_name in assignments:
+            new_text, actions = apply_assignments(new_text, assignments[arch_name])
+            for a in actions:
+                print(f'   {a}')
+
+        if arch_name in frame_edits:
+            spec = frame_edits[arch_name] or {}
+            names = spec.get('remove', []) if isinstance(spec, dict) else list(spec)
+            new_text, actions = remove_frames(new_text, names)
+            for a in actions:
+                print(f'   {a}')
+
+        staged.append((arch_name, stamp(new_text, arch_name).encode('utf-8')))
 
     # 写出补丁
     if os.path.exists(out_path):
