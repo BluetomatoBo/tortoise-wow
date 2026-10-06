@@ -1,0 +1,98 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{if .IsNew}}{{.T "shop.item.newTitle"}}{{else}}{{.T "shop.item.editTitle"}} <span class="muted">#{{.Item.ID}}</span>{{end}}</h1>
+  <a class="btn btn-ghost" href="/admin/shop">{{.T "common.back"}}</a>
+</div>
+
+<p class="muted">{{.T "shop.restartHint"}}</p>
+
+{{if .Error}}<p class="warn">{{.Error}}</p>{{end}}
+{{range .Warnings}}<p class="warn">⚠ {{.}}</p>{{end}}
+
+<form method="post" action="{{if .IsNew}}/admin/shop/new{{else}}/admin/shop/items/{{.Item.ID}}{{end}}">
+  <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+
+  <section class="card">
+    <h2>{{.T "shop.item.what"}}</h2>
+
+    <label>{{.T "shop.item.entry"}}
+      <input name="entry" value="{{if .Input.Entry}}{{.Input.Entry}}{{else if .Item.Entry}}{{.Item.Entry}}{{end}}" required>
+    </label>
+    <p class="muted hint">{{.T "shop.item.entryHint"}}</p>
+    {{if .ItemName}}<p class="muted">{{.T "shop.item.resolvesTo"}} <strong>{{.ItemName}}</strong></p>{{end}}
+    {{if .ItemMissing}}<p class="warn">{{.T "shop.item.missing"}}</p>{{end}}
+
+    <label>{{.T "shop.categoryLabel"}}
+      <select name="category">
+        {{$zh := .RealmIsChinese}}
+        {{range .Categories}}
+          <option value="{{.ID}}" {{if eq .ID $.Item.Category}}selected{{end}}>{{.LocalizedName $zh}}</option>
+        {{end}}
+      </select>
+    </label>
+    <p class="muted hint">{{.T "shop.item.categoryHint"}}</p>
+
+    <label>{{.T "shop.price"}}
+      <input name="price" type="number" min="1" value="{{if .Input.Price}}{{.Input.Price}}{{else if .Item.Price}}{{.Item.Price}}{{end}}" required>
+    </label>
+    <p class="muted hint">{{.T "shop.item.priceHint"}}</p>
+
+    <label>{{.T "shop.region"}}
+      <select name="region">
+        {{range .Regions}}
+          <option value="{{.Value}}" {{if eq .Value $.Item.Region}}selected{{end}}>{{$.T .Key}}</option>
+        {{end}}
+      </select>
+    </label>
+    <p class="muted hint">{{.T "shop.item.regionHint"}}</p>
+  </section>
+
+  <section class="card">
+    <h2>{{.T "shop.item.model"}}</h2>
+    <label>{{.T "shop.item.modelId"}}
+      <input name="model_id" type="number" min="0" value="{{if .Input.ModelID}}{{.Input.ModelID}}{{else}}{{.Item.ModelID}}{{end}}">
+    </label>
+    <label>{{.T "shop.item.displayId"}}
+      <input name="item_id" type="number" min="0" value="{{if .Input.ItemDisplayID}}{{.Input.ItemDisplayID}}{{else}}{{.Item.ItemDisplayID}}{{end}}">
+    </label>
+    <p class="muted hint">{{.T "shop.item.displayIdHint"}}</p>
+
+    <div class="filters">
+      <label>{{.T "shop.item.posX"}}<input name="position_x" value="{{printf "%.2f" .Item.X}}"></label>
+      <label>{{.T "shop.item.posY"}}<input name="position_y" value="{{printf "%.2f" .Item.Y}}"></label>
+      <label>{{.T "shop.item.posZ"}}<input name="position_z" value="{{printf "%.2f" .Item.Z}}"></label>
+      <label>{{.T "shop.item.rotation"}}<input name="rotation" value="{{printf "%.2f" .Item.Rotation}}"></label>
+      <label>{{.T "shop.item.scale"}}<input name="scale" value="{{printf "%.2f" .Item.Scale}}"></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>{{.T "shop.item.text"}}</h2>
+    <p class="muted">{{.T "shop.item.textHint"}}</p>
+    <label>{{.T "shop.item.description"}}
+      <input name="description" maxlength="500" value="{{if .Input.Description}}{{.Input.Description}}{{else}}{{.Item.Description}}{{end}}">
+    </label>
+    <label>{{.T "shop.item.descriptionCn"}}
+      <input name="description_loc4" maxlength="500" value="{{if .Input.DescriptionCN}}{{.Input.DescriptionCN}}{{else}}{{.Item.DescriptionCN}}{{end}}">
+    </label>
+  </section>
+
+  <p>
+    <button class="btn" type="submit">{{.T "common.save"}}</button>
+    <a class="btn btn-ghost" href="/admin/shop">{{.T "common.cancel"}}</a>
+  </p>
+</form>
+
+{{if not .IsNew}}
+{{/* Deleting a row here does not touch anything in game: the item was given by
+     the shop, not by this table. Say so instead of letting someone wonder. */}}
+<section class="card">
+  <h2>{{.T "shop.item.delete"}}</h2>
+  <p class="muted">{{.T "shop.item.deleteHint"}}</p>
+  <form method="post" action="/admin/shop/items/{{.Item.ID}}/delete">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    <button class="btn btn-danger" type="submit">{{.T "shop.item.delete"}}</button>
+  </form>
+</section>
+{{end}}
+{{end}}

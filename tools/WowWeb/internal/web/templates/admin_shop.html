@@ -1,0 +1,76 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.T "shop.title"}} <span class="muted">({{.Total}})</span></h1>
+  <a class="btn" href="/admin/shop/new">{{.T "shop.create"}}</a>
+</div>
+
+{{/* The world server reads both tables once, at startup, and answers the client
+     from memory afterwards. Without saying so, an edit here looks broken. */}}
+<p class="muted">{{.T "shop.restartHint"}}</p>
+
+<section class="card">
+  <form method="get" action="/admin/shop" class="filters">
+    <input name="q" value="{{.Search}}" placeholder="{{.T "shop.search"}}">
+    <select name="category">
+      <option value="">{{.T "shop.anyCategory"}}</option>
+      {{$zh := .RealmIsChinese}}
+      {{range .Categories}}
+        <option value="{{.ID}}" {{if and (isSet $.FilterCategory) (eq (deref $.FilterCategory) .ID)}}selected{{end}}>
+          {{.LocalizedName $zh}} ({{.Items}})
+        </option>
+      {{end}}
+    </select>
+    <button class="btn" type="submit">{{.T "common.filter"}}</button>
+    <a class="btn btn-ghost" href="/admin/shop">{{.T "common.reset"}}</a>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "shop.id"}}</th>
+        <th>{{.T "shop.entry"}}</th>
+        <th>{{.T "shop.itemName"}}</th>
+        <th>{{.T "shop.categoryLabel"}}</th>
+        <th class="right">{{.T "shop.price"}}</th>
+        <th>{{.T "shop.region"}}</th>
+        <th>{{.T "shop.model"}}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Items}}
+      <tr>
+        <td>{{.ID}}</td>
+        <td><code>{{.Entry}}</code></td>
+        <td>
+          {{if .ItemNameCN}}{{.ItemNameCN}}{{else if .ItemName}}{{.ItemName}}{{else}}<span class="warn">{{$.T "shop.itemMissing"}}</span>{{end}}
+          {{if .ItemNameCN}}<span class="muted">{{.ItemName}}</span>{{end}}
+          {{if .ItemLevel}}<span class="pill">{{.ItemLevel}}</span>{{end}}
+        </td>
+        <td>{{.Category}}</td>
+        <td class="right">{{.Price}}</td>
+        <td>
+          {{$.T (printf "shop.region.%s" (regionName .Region))}}
+          {{/* Global reaches every realm; anything else reaches only the realm
+               whose region matches, because the loader drops the rest. */}}
+          {{if and (ne .Region 0) (ne .Region $.RealmRegion)}}
+            <span class="pill pill-warn" title="{{$.T "shop.warn.otherRegionHint"}}">{{$.T "shop.notOnThisRealm"}}</span>
+          {{end}}
+        </td>
+        <td class="muted">
+          {{if .ModelID}}{{.ModelID}}{{else}}{{$.T "shop.modelDefault"}}{{end}}
+          {{if ne .Scale 1.0}}×{{printf "%.2f" .Scale}}{{end}}
+        </td>
+        <td class="right">
+          <a class="btn btn-ghost btn-sm" href="/admin/shop/items/{{.ID}}">{{$.T "common.open"}}</a>
+        </td>
+      </tr>
+    {{else}}
+      <tr><td colspan="8" class="muted center">{{.T "shop.none"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+
+  {{template "pagination" .}}
+</section>
+{{end}}

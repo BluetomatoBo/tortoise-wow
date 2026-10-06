@@ -142,6 +142,14 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /admin/bans/ip", s.admin(s.handleAdminBanIP))
 	s.mux.HandleFunc("POST /admin/bans/ip/remove", s.admin(s.handleAdminUnbanIP))
 
+	// Donation shop (world database: shop_categories / shop_items).
+	s.mux.HandleFunc("GET /admin/shop", s.admin(s.handleAdminShop))
+	s.mux.HandleFunc("GET /admin/shop/new", s.admin(s.handleAdminShopNewForm))
+	s.mux.HandleFunc("POST /admin/shop/new", s.admin(s.handleAdminShopNewSubmit))
+	s.mux.HandleFunc("GET /admin/shop/items/{id}", s.admin(s.handleAdminShopItemForm))
+	s.mux.HandleFunc("POST /admin/shop/items/{id}", s.admin(s.handleAdminShopItemSubmit))
+	s.mux.HandleFunc("POST /admin/shop/items/{id}/delete", s.admin(s.handleAdminShopItemDelete))
+
 	s.mux.HandleFunc("GET /admin/announcement", s.admin(s.handleAdminAnnouncement))
 	s.mux.HandleFunc("POST /admin/announcement", s.admin(s.handleAdminAnnouncementSave))
 

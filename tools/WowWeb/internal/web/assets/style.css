@@ -161,6 +161,7 @@ label.check input { width: auto; margin: 0; }
 .flash-ok { background: rgba(63,185,80,.1); border-color: rgba(63,185,80,.4); }
 .flash-error { background: rgba(248,81,73,.1); border-color: rgba(248,81,73,.4); }
 .flash-info { background: rgba(62,166,255,.1); border-color: rgba(62,166,255,.4); }
+.flash-warn { background: rgba(210,153,34,.12); border-color: rgba(210,153,34,.45); }
 
 /* ---- pager / footer ---- */
 .pager { display: flex; gap: .8rem; align-items: center; margin-top: 1rem; }

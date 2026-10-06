@@ -59,6 +59,7 @@ already uses**, so nothing has to be patched or rebuilt on the server side.
 | `/admin/characters/{id}` | 角色详情与角色操作 |
 | `/admin/bans` | 账号封禁与 IP 封禁 |
 | `/admin/announcement` | **登录界面公告**（见下） |
+| `/admin/shop` | **捐赠商城**（`shop_categories` / `shop_items`，见下） |
 | `/admin/realms` | 编辑 `realmlist`：名称、地址、端口、列表标记、准入等级 |
 | `/admin/audit` | 所有管理操作的日志 |
 
@@ -85,6 +86,7 @@ already uses**, so nothing has to be patched or rebuilt on the server side.
 | `DB_WORLD_NAME` / `DB_CHAR_NAME` / `DB_LOGS_NAME` | — | 世界库 / 角色库 / 日志库 |
 | `REALM_ID` | `1` | 必须与 `mangosd.conf` 的 `RealmID` 一致 |
 | `REALM_NAME` | `Tortoise WoW` | **网站标题**，同时用作验证器 app 的签发者 |
+| `SHOP_REGION` | `europe` | 本服的「区域」，对应 `mangosd.conf` 的 `NiHao`：`europe` 或 `china`。仅影响商城管理页的判定 |
 | `WORLD_ADDRESS` / `WORLD_PORT` | 空 / `8090` | 客户端连接世界服的地址与端口 |
 | `REALM_PORT` | `3724` | 登录服端口 |
 | `ADMIN_MIN_RANK` | `4` | 能进 `/admin` 的最低 `account.rank` |
@@ -256,6 +258,74 @@ curl -s  -H 'Host: twow.home.boym.me' http://172.18.1.6/alert | head -3   # 应�
 curl -s  -H 'Host: twow.home.boym.me' http://172.18.1.6/notice | grep -o '<h1>[^<]*</h1>'
 ```
 
+### 捐赠商城（`/admin/shop`）
+
+玩家在客户端里看到的那个捐赠商城（`Turtle_shopUI`），**物品列表不在客户端**：
+客户端只有界面，列表由服务端通过插件频道的 `TW_SHOP` 消息发过去。服务端读的是
+世界库里的两张表：
+
+| 表 | 作用 |
+|---|---|
+| `shop_categories` | 商城里的分类（ID、英文名、`_loc4` 中文名、图标） |
+| `shop_items` | 每个条目：卖哪个 `item_template.entry`、价格、区域限定、展示模型与位置 |
+
+`/admin/shop` 就是用来维护这两张表的。**改动后必须重启 mangosd 才会在游戏里出现**：
+世界服只在启动时把两张表读进内存（`ObjectMgr::LoadShopCategories` /
+`LoadShopEntries`），之后一直用内存里的副本应答客户端。
+
+#### 会「静默失败」的条件
+
+下面每一条，世界服都只是在日志里写一行然后**跳过这一行**，游戏里没有任何提示。
+所以表单会在提交时直接拦下来，而不是等你重启完去商城找半天：
+
+| 条件 | 世界服日志 |
+|---|---|
+| `price` 为 0 | `price is 0, skipping` |
+| `item`（entry）在 `item_template` 里不存在 | 跳过 |
+| `category` 在 `shop_categories` 里不存在 | 跳过 |
+| 同一个 `entry` 已经有一条商城条目 | `already has an entry in the shop for entry %u` |
+
+下面两条不报错，但结果和你想的不一样，所以页面会给警告：
+
+- **`region_locked` 与本服不匹配**（本服区域由 `SHOP_REGION` 决定，对应
+  `mangosd.conf` 的 `NiHao`）→ 这一条**在别的区域永远看不到**。列表页会给这类行
+  打「本服不显示」标记。
+- **`scale` 为 0** → 模型看不见（想用默认值就填 1）。
+
+#### 两个「看着像显示文字、其实不是」的列
+
+`shop_items.description` 和 `description_loc4` 世界服会读进内存，**然后再也不使用**。
+客户端显示的物品名和描述来自 **`item_template`**（中文服取 `locales_item` 的
+`_loc4`），条目字符串由核心自己拼：
+
+```
+Entries:<cat>=<subcat>=<物品名>=<价>=<description>=<entry>=<model>=<displayid>=<x>=<y>=<z>=<rot>=…
+```
+
+所以表单把这两列标成「不被使用」——在那里改文字**不会**改变游戏里看到的内容。
+换个物品名得去改 `item_template` / `locales_item`。
+
+#### 目前只做条目，不做分类
+
+后台只维护 `shop_items`。`shop_categories` 是**只读**的，列表里会显示每个分类下的
+条目数（核心会跳过指向不存在分类的条目，这个数字有用）。要加分类直接写 SQL。
+
+改条目需要数据库账号对 `tw_world.shop_items` 有写权限——见英文文档的
+*Database privileges*（默认那份授权里 `tw_world` 是只读的）。
+
+#### 上机自检
+
+`deploy/verify_shop.sql` 可以拿真库把上面这些都验一遍：它跑的就是
+`internal/store/shop.go` 里那几条查询（列名、JOIN、分页、重复检测），最后在
+**一个事务里**做 INSERT/UPDATE/DELETE 再 `ROLLBACK`，所以顺带验证了授权是否够用，
+且**不会留下任何数据**：
+
+```bash
+mysql -u wowweb -p tw_world < deploy/verify_shop.sql
+```
+
+每一行结果显示 `PASS` / `FAIL`。用它自己的账号跑，验证的才是线上那套权限。
+
 ### 安全说明（要点）
 
 - **游戏密码哈希本身是无盐 SHA-1** —— 这是核心的限制，本站改不了（客户端必须能用同一列认证）。
@@ -326,7 +396,7 @@ cmd/wowweb/            入口、装配、优雅关闭
 internal/config/       环境变量配置（.env 加载器）
 internal/i18n/         文案目录与语言探测
 internal/gamepwd/      与核心兼容的密码哈希、TOTP
-internal/store/        全部 SQL：账号、角色、封禁、领域、会话、公告
+internal/store/        全部 SQL：账号、角色、封禁、领域、会话、公告、商城
 internal/web/          HTTP 层：路由、中间件、handler
 internal/i18n/locales/ en.json、zh.json（编译进二进制）
 internal/web/templates HTML（html/template，自动转义）
@@ -423,6 +493,7 @@ would save its in-memory position again on logout.
 | `/admin/characters/{id}` | Character detail and character actions |
 | `/admin/bans` | Account bans and IP bans |
 | `/admin/announcement` | The notice the game client shows on its login screen |
+| `/admin/shop` | The **donation shop** (`shop_categories` / `shop_items`) |
 | `/admin/realms` | Edit `realmlist`: name, address, port, list flags, access level |
 | `/admin/audit` | Log of every administrative action |
 
@@ -479,6 +550,7 @@ Everything is read from the environment.
 | `REALM_NAME` | `Tortoise WoW` | Site title and the issuer shown in authenticator apps |
 | `WORLD_ADDRESS` / `WORLD_PORT` | *(empty)* / `8090` | Address advertised on the home page |
 | `REALM_PORT` | `3724` | realmd login port, shown on the home page |
+| `SHOP_REGION` | `europe` | Which region this realm is, mirroring the core's `NiHao` key: `europe` or `china`. Only used by the shop admin page |
 | `DEFAULT_LANG` | `en` | UI language when the visitor has no preference: `en` or `zh` |
 | `ADMIN_MIN_RANK` | `4` | `account.rank` required for `/admin` |
 | `ALLOW_REGISTER` | `true` | Allow public self-registration |
@@ -496,7 +568,17 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON `tw_logon`.* TO 'wowweb'@'%';
 GRANT SELECT, INSERT, UPDATE, DELETE ON `tw_char`.*  TO 'wowweb'@'%';
 GRANT SELECT ON `tw_world`.* TO 'wowweb'@'%';
 GRANT SELECT ON `tw_logs`.*  TO 'wowweb'@'%';
+
+-- Only for the shop admin page. The world database is otherwise read-only to
+-- this service, so the write access is granted per table rather than for the
+-- whole schema. Skip both lines if you do not use /admin/shop.
+GRANT SELECT, INSERT, UPDATE, DELETE ON `tw_world`.`shop_items`      TO 'wowweb'@'%';
+GRANT SELECT                         ON `tw_world`.`shop_categories` TO 'wowweb'@'%';
 ```
+
+The shop also reads `item_template` to resolve an entry into the item name and
+description the client will actually show, and to refuse an entry that does not
+exist — both covered by the `SELECT ON tw_world.*` grant above.
 
 `CREATE` is only needed on `tw_logon` if you want the service to create its own
 `web_*` tables on first start; grant it and revoke it afterwards if you prefer
@@ -895,6 +977,84 @@ panel does not offer them for editing. Edit `GameType`/`RealmZone` in
   `internal/store/delete.go`. A missed table would leave rows that a future
   character could inherit if the GUID were reused.
 
+### The donation shop
+
+The shop the player sees in the client (`Turtle_shopUI`) has **no item list of its
+own**: the interface is in the client, but the entries arrive from the world
+server over the addon channel as `TW_SHOP` messages. The server holds two tables
+from the world database and reads them **once, at startup**
+(`ObjectMgr::LoadShopCategories` / `LoadShopEntries`), then answers from memory:
+
+| Table | Holds |
+| --- | --- |
+| `shop_categories` | The shop's categories: id, English name, `_loc4` name, icon |
+| `shop_items` | One listing: which `item_template.entry` it sells, price, region lock, display model and placement |
+
+`/admin/shop` edits those rows. **A change only reaches the game after mangosd
+restarts** — there is no reload command.
+
+#### Conditions that fail silently
+
+Each one of these makes the world server log a single line at startup and
+**skip the row**, with nothing shown in game. The form therefore refuses them at
+submit time instead of letting you find out by restarting and hunting through the
+shop:
+
+| Condition | What the world server logs |
+| --- | --- |
+| `price` of 0 | `price is 0, skipping` |
+| `item` (the entry) missing from `item_template` | the row is skipped |
+| `category` missing from `shop_categories` | the row is skipped |
+| the same `entry` listed twice | `already has an entry in the shop for entry %u` |
+
+Two more do not error but do not do what you expect, so the page warns about
+them:
+
+* **A `region_locked` that does not match this realm** (the realm's region comes
+  from `SHOP_REGION`, i.e. the core's `NiHao` key) means the row is **never
+  visible on the other region**. The list marks those rows.
+* **A `scale` of 0** makes the model invisible; use 1 for the default.
+
+#### Two columns that look like display text but are not
+
+`shop_items.description` and `description_loc4` are read into memory by the world
+server and then **never used again**. The name and description the client shows
+come from **`item_template`** (from `locales_item` on a Chinese realm), assembled
+by the core into:
+
+```
+Entries:<cat>=<subcat>=<name>=<price>=<description>=<entry>=<model>=<displayid>=<x>=<y>=<z>=<rot>=…
+```
+
+The form labels both columns as unused for that reason: editing them there
+**changes nothing** in game. Renaming an item means editing
+`item_template` / `locales_item`.
+
+#### Entries only, not categories
+
+The admin page maintains `shop_items`. `shop_categories` is **read-only** there,
+shown with the number of entries pointing at each category — worth seeing, since
+the core drops an entry whose category does not exist. Add a category with SQL.
+
+Editing an entry needs write access to `tw_world.shop_items`; see
+[Database privileges](#database-privileges), where that one table is granted
+explicitly because the rest of the world database stays read-only.
+
+#### Checking it against a real database
+
+`deploy/verify_shop.sql` runs all of the above against your own database: the
+same queries `internal/store/shop.go` issues (column names, joins, pagination,
+the duplicate check), then an INSERT / UPDATE / DELETE inside a transaction that
+it **rolls back**, so it also proves the grant is sufficient and leaves nothing
+behind:
+
+```bash
+mysql -u wowweb -p tw_world < deploy/verify_shop.sql
+```
+
+Each line reports `PASS` or `FAIL`. Run it as the account the service uses — that
+is what makes it a test of the live privileges rather than of `root`'s.
+
 ---
 
 ## Security notes
@@ -1012,10 +1172,14 @@ Worth knowing before you promise these features to anyone:
    `ReqEmailVerification = 1`, new accounts will be unable to log in until that
    column is set — either turn the option off, or add the mail step.
 
-4. **No character transfers, auctions, mail or shop integration.** The Turtle
-   shop tables (`shop_coins`, `shop_logs`) are left alone, so deleting a
-   character here does **not** refund shop purchases the way the in-game delete
-   does.
+4. **No coins, refunds, or shop history.** The shop **catalogue**
+   (`shop_items` / `shop_categories`) is editable — see
+   [The donation shop](#the-donation-shop) — but nothing touches balances or
+   history: `shop_coins` and `shop_logs` are left alone. So deleting a character
+   here does **not** refund its shop purchases the way the in-game delete does,
+   and there is no way to grant or inspect coins from this service. That
+   catalogue is also **not live**: the world server loads both tables once at
+   startup, so an edit needs a mangosd restart to appear in the shop.
 
 5. **GDPR-ish deletion is out of scope.** "Delete account" removes the account
    and its characters; log tables that reference them are not touched.
@@ -1057,7 +1221,7 @@ cmd/wowweb/            entry point, wiring, graceful shutdown
 internal/config/       environment configuration (.env loader)
 internal/i18n/         message catalogues and language detection
 internal/gamepwd/      core-compatible password hash and TOTP
-internal/store/        all SQL: accounts, characters, bans, realms, sessions, announcement
+internal/store/        all SQL: accounts, characters, bans, realms, sessions, announcement, shop
 internal/web/          HTTP layer: routes, middleware, handlers
 internal/i18n/locales/ en.json, zh.json (embedded)
 internal/web/templates HTML (html/template, auto-escaped)

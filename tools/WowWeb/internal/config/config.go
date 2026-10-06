@@ -43,8 +43,13 @@ type Config struct {
 	DefaultLang string // default UI language: "en" or "zh"
 
 	// Access control
-	AdminMinRank   int  // account.rank needed for /admin (4 = Administrator)
-	AllowRegister  bool // allow public self-registration
+	AdminMinRank  int  // account.rank needed for /admin (4 = Administrator)
+	AllowRegister bool // allow public self-registration
+
+	// ShopRegion is the shop's regional scope, mirroring the core's NiHao key:
+	// "europe" (the core's default) or "china". It only affects the shop admin
+	// page, which flags rows the client would never be sent.
+	ShopRegion     string
 	RequireEmail   bool
 	MaxAccounts    int // 0 = unlimited
 	SessionTTL     time.Duration
@@ -102,7 +107,12 @@ func Load() (Config, error) {
 		DefaultLang:   strings.ToLower(env("DEFAULT_LANG", "en")),
 		AdminMinRank:  envInt("ADMIN_MIN_RANK", 4),
 		AllowRegister: envBool("ALLOW_REGISTER", true),
-		RequireEmail:  envBool("REQUIRE_EMAIL", false),
+		// ShopRegion is what the core believes this realm is, from its own
+		// NiHao key: "europe" (false, the core's default) or "china" (true).
+		// The shop admin page uses it to flag items that will not reach the
+		// client, and to decide whether to show the _loc4 names.
+		ShopRegion:   strings.ToLower(strings.TrimSpace(env("SHOP_REGION", "europe"))),
+		RequireEmail: envBool("REQUIRE_EMAIL", false),
 
 		MaxAccounts:    envInt("MAX_ACCOUNTS", 0),
 		SessionTTL:     time.Duration(envInt("SESSION_TTL_HOURS", 24*7)) * time.Hour,

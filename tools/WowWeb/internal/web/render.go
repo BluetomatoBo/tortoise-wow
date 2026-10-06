@@ -162,6 +162,9 @@ func templateFuncs() template.FuncMap {
 
 		"add": func(a, b int) int { return a + b },
 		"sub": func(a, b int) int { return a - b },
+		// regionName renders the shop's ShopRegion enum so a template can build
+		// the key shop.region.<name>.
+		"regionName": store.ShopRegionName,
 		"seq": func(n int) []int {
 			out := make([]int, 0, n)
 			for i := 0; i < n; i++ {
