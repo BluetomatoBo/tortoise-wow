@@ -13,10 +13,11 @@ import (
 // The donation shop is edited from the admin area. Two things shape this page
 // more than anything else:
 //
-//  1. The core reads both tables once, at startup, and answers the client from
-//     memory. Nothing here is live; every change needs a mangosd restart. The
-//     page says so rather than letting an administrator wonder why nothing
-//     happened.
+//  1. The core loads both tables into memory and answers the client from there.
+//     Nothing here is live on its own, and it is not obvious how to make it so:
+//     the world server does have `.reload shop`, which clears both maps and
+//     reads them again. The page says that rather than leaving an administrator
+//     to restart mangosd - or to wonder why nothing happened.
 //
 //  2. Most ways of getting a row wrong are silent - the core logs one line and
 //     drops it, and the item simply is not in the shop. So the form refuses

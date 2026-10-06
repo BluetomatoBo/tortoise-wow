@@ -8,10 +8,10 @@ import (
 )
 
 // The donation shop lives entirely in the world database and is read by the
-// core once at startup (ObjectMgr::LoadShopCategories / LoadShopEntries), which
-// then answers the client's TW_SHOP addon messages from memory. So the web side
-// only edits these two tables - and every edit needs a mangosd restart to show
-// up in game.
+// core at startup (ObjectMgr::LoadShop), which then answers the client's TW_SHOP
+// addon messages from memory. So the web side only edits these two tables - and
+// an edit needs `.reload shop` on the world server to show up in game, not a
+// restart: that command clears both maps and reads them again.
 //
 // Two of the columns mean more than they look like, both learned from the
 // loader:

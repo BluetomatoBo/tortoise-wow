@@ -512,7 +512,7 @@
   "nav.admin.shop": "Donation shop",
   "shop.title": "Donation shop",
   "shop.create": "New entry",
-  "shop.restartHint": "The world server reads both tables once at startup and answers the client from memory, so a change here only reaches the game after mangosd restarts.",
+  "shop.reloadHint": "The world server loads both tables into memory at startup. Run `.reload shop` in its console to pick up a change here; no restart is needed.",
   "shop.search": "Search by item name or entry",
   "shop.anyCategory": "All categories",
   "shop.id": "ID",

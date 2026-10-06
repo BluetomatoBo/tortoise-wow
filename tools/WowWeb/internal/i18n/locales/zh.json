@@ -512,7 +512,7 @@
   "nav.admin.shop": "捐赠商城",
   "shop.title": "捐赠商城",
   "shop.create": "新建条目",
-  "shop.restartHint": "两张表由世界服在启动时一次性载入内存 —— 改完要重启 mangosd 才会在游戏里生效。",
+  "shop.reloadHint": "两张表在服务端启动时载入内存。改完在世界服控制台执行 `.reload shop` 即可生效，不需要重启 mangosd。",
   "shop.search": "搜索物品名或 entry",
   "shop.anyCategory": "全部类别",
   "shop.id": "ID",

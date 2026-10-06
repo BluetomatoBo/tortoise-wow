@@ -4,9 +4,10 @@
   <a class="btn" href="/admin/shop/new">{{.T "shop.create"}}</a>
 </div>
 
-{{/* The world server reads both tables once, at startup, and answers the client
-     from memory afterwards. Without saying so, an edit here looks broken. */}}
-<p class="muted">{{.T "shop.restartHint"}}</p>
+{{/* The world server answers the client from an in-memory copy of both tables,
+     and changes reach it through `.reload shop`. Without saying so, an edit here
+     looks broken. */}}
+<p class="muted">{{.T "shop.reloadHint"}}</p>
 
 <section class="card">
   <form method="get" action="/admin/shop" class="filters">

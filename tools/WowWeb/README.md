@@ -269,14 +269,14 @@ curl -s  -H 'Host: twow.home.boym.me' http://172.18.1.6/notice | grep -o '<h1>[^
 | `shop_categories` | 商城里的分类（ID、英文名、`_loc4` 中文名、图标） |
 | `shop_items` | 每个条目：卖哪个 `item_template.entry`、价格、区域限定、展示模型与位置 |
 
-`/admin/shop` 就是用来维护这两张表的。**改动后必须重启 mangosd 才会在游戏里出现**：
-世界服只在启动时把两张表读进内存（`ObjectMgr::LoadShopCategories` /
-`LoadShopEntries`），之后一直用内存里的副本应答客户端。
+`/admin/shop` 就是用来维护这两张表的。**改完在世界服控制台执行 `.reload shop` 即可生效，
+不需要重启 mangosd**：那条命令会把两个 map 清空再重新读表（`ObjectMgr::LoadShop`，
+需要 `SEC_ADMINISTRATOR`）。
 
 #### 会「静默失败」的条件
 
 下面每一条，世界服都只是在日志里写一行然后**跳过这一行**，游戏里没有任何提示。
-所以表单会在提交时直接拦下来，而不是等你重启完去商城找半天：
+所以表单会在提交时直接拦下来，而不是等你 reload 完去商城找半天：
 
 | 条件 | 世界服日志 |
 |---|---|
@@ -992,23 +992,23 @@ panel does not offer them for editing. Edit `GameType`/`RealmZone` in
 The shop the player sees in the client (`Turtle_shopUI`) has **no item list of its
 own**: the interface is in the client, but the entries arrive from the world
 server over the addon channel as `TW_SHOP` messages. The server holds two tables
-from the world database and reads them **once, at startup**
-(`ObjectMgr::LoadShopCategories` / `LoadShopEntries`), then answers from memory:
+from the world database into an in-memory copy (`ObjectMgr::LoadShop`), and answers
+the client from that:
 
 | Table | Holds |
 | --- | --- |
 | `shop_categories` | The shop's categories: id, English name, `_loc4` name, icon |
 | `shop_items` | One listing: which `item_template.entry` it sells, price, region lock, display model and placement |
 
-`/admin/shop` edits those rows. **A change only reaches the game after mangosd
-restarts** — there is no reload command.
+`/admin/shop` edits those rows. **A change reaches the game through
+`.reload shop`** — the command clears both maps and reads them again, so no
+restart is needed. It requires `SEC_ADMINISTRATOR`.
 
 #### Conditions that fail silently
 
-Each one of these makes the world server log a single line at startup and
-**skip the row**, with nothing shown in game. The form therefore refuses them at
-submit time instead of letting you find out by restarting and hunting through the
-shop:
+Each one of these makes the world server log a single line and **skip the row**,
+with nothing shown in game. The form therefore refuses them at submit time
+instead of letting you find out by reloading and hunting through the shop:
 
 | Condition | What the world server logs |
 | --- | --- |
@@ -1199,8 +1199,9 @@ Worth knowing before you promise these features to anyone:
    history: `shop_coins` and `shop_logs` are left alone. So deleting a character
    here does **not** refund its shop purchases the way the in-game delete does,
    and there is no way to grant or inspect coins from this service. That
-   catalogue is also **not live**: the world server loads both tables once at
-   startup, so an edit needs a mangosd restart to appear in the shop.
+   catalogue is also **not live on its own**: the world server answers from an
+   in-memory copy, so an edit needs `.reload shop` (see
+   [The donation shop](#the-donation-shop)).
 
 5. **GDPR-ish deletion is out of scope.** "Delete account" removes the account
    and its characters; log tables that reference them are not touched.
