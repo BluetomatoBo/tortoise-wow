@@ -2103,6 +2103,38 @@ Suspicious.Npckilling.Enable = 1
 # Please note, that calculation is not precise!
 Suspicious.Movement.MovementSpeedThreshold = 100.0
 
+# NiHao - which region this realm is. One core serves both the European and the
+# Chinese realm, and this is the switch for it; in the code it is called the
+# CN/SEA network mode (CONFIG_BOOL_SEA_NETWORK).
+#
+# 1 - Chinese realm:
+#       - the shop sends shop_categories.Name_loc4 and locales_item.name_loc4
+#         instead of the English names, and also sends the shop rows locked to
+#         the China region that are hidden on a European one
+#       - the addon fingerprint duplicate check is skipped, because CN clients
+#         share fingerprints and would otherwise be rejected
+#       - guild names are limited to letters and spaces
+#       - turning on hardcore mode keeps 10 extra CN-only items rather than
+#         destroying them
+#       - reserved names are also read from char_transfer_names
+#       - the world server applies the cn/ migration folders of the update dirs
+#       - a channel throttle is applied to the "Twb" addon
+# 0 - European realm (default): the _loc4 names, the China-locked shop rows and
+#     everything else above are left alone.
+#
+# Before setting this to 1, create the table the reserved-name step reads, or the
+# world server logs a SQL error at startup and skips the CN names with it:
+#     mysql -u root -p tw_char < sql/tools/tool_sea_add_char_transfer_names.sql
+#
+# Takes effect on the next start: the reserved-name and migration steps only run
+# then. Only 1 / true / TRUE / yes / YES count as on - "True" is read as off.
+NiHao = 0
+
+# EnforceEnglish - 1 blocks non-ASCII text in the public chat channels. It is the
+# EU counterpart to NiHao and only exists to keep chat readable on an English
+# realm, so leave it at 0 when NiHao is 1.
+EnforceEnglish = 0
+
 # Shop.RefundWindow - how long players have to request refund of shop items after buying them (in seconds)
 Shop.RefundWindow = 2592000
 
