@@ -1,0 +1,68 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{if .IsNew}}{{.T "shop.cat.newTitle"}}{{else}}{{.T "shop.cat.editTitle"}} <span class="muted">#{{.Category.ID}}</span>{{end}}</h1>
+  <a class="btn btn-ghost" href="/admin/shop/categories">{{.T "common.back"}}</a>
+</div>
+
+<p class="muted">{{.T "shop.reloadHint"}}</p>
+
+{{if .Error}}<p class="warn">{{.Error}}</p>{{end}}
+{{range .Warnings}}<p class="warn">⚠ {{.}}</p>{{end}}
+
+<form method="post" action="{{if .IsNew}}/admin/shop/categories/new{{else}}/admin/shop/categories/{{.Category.ID}}{{end}}">
+  <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+
+  <section class="card">
+    {{/* Only on create: the core orders the tabs by this id and reads it as a
+         byte, and changing it later would orphan every row pointing at it. */}}
+    {{if .IsNew}}
+      <label>{{.T "shop.cat.id"}}
+        <input name="id" type="number" min="1" max="255" value="{{if .Input.ID}}{{.Input.ID}}{{end}}">
+      </label>
+      <p class="muted hint">{{.T "shop.cat.idHint"}}</p>
+    {{end}}
+
+    <label>{{.T "shop.cat.name"}}
+      <input name="name" value="{{if .Input.Name}}{{.Input.Name}}{{else}}{{.Category.Name}}{{end}}">
+    </label>
+    <p class="muted hint">{{.T "shop.cat.nameHint"}}</p>
+
+    <label>{{.T "shop.cat.nameCn"}}
+      <input name="name_loc4" value="{{if .Input.NameCN}}{{.Input.NameCN}}{{else}}{{.Category.NameCN}}{{end}}">
+    </label>
+    <p class="muted hint">{{.T "shop.cat.nameCnHint"}}</p>
+
+    <label>{{.T "shop.cat.icon"}}
+      <input name="icon" list="shopIcons" value="{{if .Input.Icon}}{{.Input.Icon}}{{else}}{{.Category.Icon}}{{end}}" required>
+      <datalist id="shopIcons">
+        {{range .Icons}}<option value="{{.}}"></option>{{end}}
+      </datalist>
+    </label>
+    <p class="muted hint">{{.T "shop.cat.iconHint"}}</p>
+  </section>
+
+  <div class="row">
+    <button class="btn" type="submit">{{.T "common.save"}}</button>
+    <a class="btn btn-ghost" href="/admin/shop/categories">{{.T "common.cancel"}}</a>
+  </div>
+</form>
+
+{{if not .IsNew}}
+  <section class="card">
+    <h2>{{.T "shop.cat.delete"}}</h2>
+    {{if .ItemCount}}
+      {{/* Deleting now would make the core drop every row that points here. */}}
+      <p class="warn"><strong>{{.ItemCount}}</strong> {{.T "shop.cat.deleteBlocked"}}</p>
+      <p class="muted hint">
+        <a href="/admin/shop?category={{.Category.ID}}">{{.T "shop.cat.deleteBlockedLink"}}</a>
+      </p>
+    {{else}}
+      <p class="muted hint">{{.T "shop.cat.deleteHint"}}</p>
+      <form method="post" action="/admin/shop/categories/{{.Category.ID}}/delete">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <button class="btn btn-danger" type="submit">{{.T "shop.cat.delete"}}</button>
+      </form>
+    {{end}}
+  </section>
+{{end}}
+{{end}}

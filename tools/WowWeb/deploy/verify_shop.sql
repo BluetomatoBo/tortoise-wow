@@ -201,9 +201,57 @@ DELETE FROM shop_items WHERE id = @new_id;
 SELECT 'DELETE' AS step,
        IF((SELECT COUNT(*) FROM shop_items WHERE id = @new_id) = 0, 'PASS', 'FAIL') AS result;
 
+-- ---------------------------------------------------------------------------
+-- 6. The category editor's statements, in the same transaction.
+--    The id column is int unsigned but the core reads it with GetUInt8, so the
+--    255 bound is a correctness bound, not a formality.
+-- ---------------------------------------------------------------------------
+SET @new_cat_id = (SELECT IFNULL(MAX(ID), 0) + 1 FROM shop_categories);
+SET @new_cat_id = IF(@new_cat_id > 255, 200, @new_cat_id);
+
+INSERT INTO shop_categories (ID, Name, Name_loc4, icon)
+VALUES (@new_cat_id, 'verify_shop.sql', 'verify_shop.sql', 'default');
+
+SELECT @new_cat_id AS inserted_category, 'category INSERT' AS step,
+       IF((SELECT COUNT(*) FROM shop_categories WHERE ID = @new_cat_id) = 1, 'PASS', 'FAIL') AS result;
+
+-- store.ShopCategory: the id, the two names and the item count in one row.
+SELECT c.ID, COALESCE(c.Name, ''), COALESCE(c.Name_loc4, ''), COALESCE(c.icon, ''), COUNT(i.id)
+  FROM shop_categories c
+  LEFT JOIN shop_items i ON i.category = c.ID
+ WHERE c.ID = @new_cat_id
+ GROUP BY c.ID, c.Name, c.Name_loc4, c.icon;
+
+-- A brand new category has nothing pointing at it, which is what the delete
+-- button checks before it is offered.
+SELECT COUNT(*) AS items_pointing_here, 'category item count' AS step,
+       IF(COUNT(*) = 0, 'PASS', 'FAIL') AS result
+  FROM shop_items WHERE category = @new_cat_id;
+
+UPDATE shop_categories SET Name = 'verify_shop.sql', Name_loc4 = 'verify_shop.sql', icon = 'mount'
+ WHERE ID = @new_cat_id;
+SELECT icon AS updated_icon, 'category UPDATE' AS step,
+       IF(icon = 'mount', 'PASS', 'FAIL') AS result
+  FROM shop_categories WHERE ID = @new_cat_id;
+
+-- The list the editor renders, with the counts the delete check reads.
+SELECT c.ID, COALESCE(c.Name, '') AS name, COALESCE(c.Name_loc4, '') AS name_cn,
+       COALESCE(c.icon, '') AS icon, COUNT(i.id) AS items
+  FROM shop_categories c
+  LEFT JOIN shop_items i ON i.category = c.ID
+ GROUP BY c.ID, c.Name, c.Name_loc4, c.icon
+ ORDER BY c.ID;
+
+DELETE FROM shop_categories WHERE ID = @new_cat_id;
+SELECT 'category DELETE' AS step,
+       IF((SELECT COUNT(*) FROM shop_categories WHERE ID = @new_cat_id) = 0, 'PASS', 'FAIL') AS result;
+
+
 ROLLBACK;
 
-SELECT IF((SELECT COUNT(*) FROM shop_items WHERE id = @new_id) = 0,
+SELECT IF((SELECT COUNT(*) FROM shop_items WHERE id = @new_id) = 0
+          AND (SELECT COUNT(*) FROM shop_categories WHERE ID = @new_cat_id) = 0,
           'PASS',
-          CONCAT('FAIL - the test row ', @new_id, ' survived the rollback, delete it')) AS result,
+          CONCAT('FAIL - a test row survived the rollback: shop_items/', @new_id,
+                 ' shop_categories/', @new_cat_id)) AS result,
        'cleanup' AS step;

@@ -1,0 +1,55 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.T "shop.cat.title"}} <span class="muted">({{len .Categories}})</span></h1>
+  <a class="btn" href="/admin/shop/categories/new">{{.T "shop.cat.create"}}</a>
+</div>
+
+{{/* Same in-memory copy the item page talks about: the whole list is rebuilt by
+     `.reload shop`. */}}
+<p class="muted">{{.T "shop.reloadHint"}}</p>
+
+{{/* The client builds this string itself and it is not in the table. */}}
+<p class="muted hint">{{.T "shop.cat.aboutHint"}}</p>
+
+<section class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "shop.cat.id"}}</th>
+        <th>{{.T "shop.cat.name"}}</th>
+        <th>{{.T "shop.cat.nameCn"}}</th>
+        <th>{{.T "shop.cat.icon"}}</th>
+        <th class="right">{{.T "shop.cat.items"}}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Categories}}
+      <tr>
+        <td>{{.ID}}</td>
+        <td>{{if .Name}}{{.Name}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        <td>{{if .NameCN}}{{.NameCN}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        <td>
+          <code>{{.Icon}}</code>
+          {{if not ($.IconKnown .Icon)}}
+            <span class="pill pill-warn" title="{{$.T "shop.cat.warn.iconUnknown"}}">{{$.T "shop.cat.iconUnknown"}}</span>
+          {{end}}
+        </td>
+        <td class="right">
+          {{if .Items}}
+            <a href="/admin/shop?category={{.ID}}">{{.Items}}</a>
+          {{else}}
+            0
+          {{end}}
+        </td>
+        <td class="right">
+          <a class="btn btn-ghost btn-sm" href="/admin/shop/categories/{{.ID}}">{{$.T "common.open"}}</a>
+        </td>
+      </tr>
+    {{else}}
+      <tr><td colspan="6" class="muted center">{{.T "shop.cat.none"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+{{end}}

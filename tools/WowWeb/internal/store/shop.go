@@ -191,6 +191,96 @@ func (s *Store) ShopCategoryExists(ctx context.Context, id uint8) (bool, error) 
 	return n > 0, err
 }
 
+// ShopCategoryInput is what the category form submits, already parsed.
+type ShopCategoryInput struct {
+	// ID 0 means "let the table assign one". A value is only honoured on create:
+	// the core reads the id as a uint8 and orders the tabs by it, so an
+	// administrator may want to control the order, but changing it later would
+	// orphan every shop_items row pointing at the old one.
+	ID     uint8
+	Name   string
+	NameCN string
+	Icon   string
+}
+
+// ShopCategory reads one row, with the same item count the list shows.
+func (s *Store) ShopCategory(ctx context.Context, id uint8) (ShopCategory, error) {
+	var c ShopCategory
+	err := s.World.QueryRowContext(ctx, `
+		SELECT c.ID, COALESCE(c.Name, ''), COALESCE(c.Name_loc4, ''),
+		       COALESCE(c.icon, ''), COUNT(i.id)
+		  FROM shop_categories c
+		  LEFT JOIN shop_items i ON i.category = c.ID
+		 WHERE c.ID = ?
+		 GROUP BY c.ID, c.Name, c.Name_loc4, c.icon`, id).
+		Scan(&c.ID, &c.Name, &c.NameCN, &c.Icon, &c.Items)
+	if err == sql.ErrNoRows {
+		return ShopCategory{}, ErrNotFound
+	}
+	return c, err
+}
+
+// CreateShopCategory inserts a row and returns its id, which the table assigns
+// when in.ID is 0.
+func (s *Store) CreateShopCategory(ctx context.Context, in ShopCategoryInput) (uint8, error) {
+	var id uint64
+	var err error
+	if in.ID != 0 {
+		_, err = s.World.ExecContext(ctx,
+			`INSERT INTO shop_categories (ID, Name, Name_loc4, icon) VALUES (?, ?, ?, ?)`,
+			in.ID, in.Name, in.NameCN, in.Icon)
+		id = uint64(in.ID)
+	} else {
+		res, execErr := s.World.ExecContext(ctx,
+			`INSERT INTO shop_categories (Name, Name_loc4, icon) VALUES (?, ?, ?)`,
+			in.Name, in.NameCN, in.Icon)
+		if execErr != nil {
+			return 0, execErr
+		}
+		last, idErr := res.LastInsertId()
+		if idErr != nil {
+			return 0, idErr
+		}
+		id = uint64(last)
+	}
+	if err != nil {
+		return 0, err
+	}
+	return uint8(id), nil
+}
+
+// UpdateShopCategory rewrites a row's text. The id is not touched: shop_items
+// rows point at it.
+func (s *Store) UpdateShopCategory(ctx context.Context, id uint8, in ShopCategoryInput) error {
+	res, err := s.World.ExecContext(ctx,
+		`UPDATE shop_categories SET Name = ?, Name_loc4 = ?, icon = ? WHERE ID = ?`,
+		in.Name, in.NameCN, in.Icon, id)
+	if err != nil {
+		return err
+	}
+	if n, err := res.RowsAffected(); err == nil && n == 0 {
+		// MySQL reports 0 for an update that changed nothing, so confirm the row
+		// exists before calling it missing.
+		if _, err := s.ShopCategory(ctx, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// DeleteShopCategory removes a row. The caller has to have checked that nothing
+// points at it: the core drops every shop_items row whose category is gone.
+func (s *Store) DeleteShopCategory(ctx context.Context, id uint8) error {
+	res, err := s.World.ExecContext(ctx, `DELETE FROM shop_categories WHERE ID = ?`, id)
+	if err != nil {
+		return err
+	}
+	if n, err := res.RowsAffected(); err == nil && n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // ShopItems lists items, newest first, with the total for pagination.
 func (s *Store) ShopItems(ctx context.Context, f ShopItemFilter) ([]ShopItem, int, error) {
 	where := []string{"1=1"}

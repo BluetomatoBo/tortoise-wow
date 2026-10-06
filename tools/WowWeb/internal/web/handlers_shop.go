@@ -502,3 +502,355 @@ func floatDefault(s string, def float64) float64 {
 	}
 	return v
 }
+
+// ---------------------------------------------------------------------------
+// Categories
+// ---------------------------------------------------------------------------
+//
+// Three rules shape this form, all of them from the loader and the client:
+//
+//  1. The id has to fit in a byte. ObjectMgr reads it with GetUInt8() while the
+//     column is int unsigned, so 300 is silently truncated and the tab no longer
+//     matches the rows that point at it.
+//
+//  2. The whole category list reaches the client as one addon string built here:
+//     "id=0=name=icon;" repeated. The client splits it on ';' and then on '=',
+//     so an '=' or ';' inside a name or an icon does not break one category, it
+//     breaks every category that follows.
+//
+//  3. The icon is a filename: the client calls
+//     SetTexture("Interface\\ShopFrame\\" .. icon). A name with no file behind it
+//     leaves the tab blank. The list below is every named .blp in that folder,
+//     so the common case is a choice rather than a guess - but it stays a
+//     warning, because adding artwork of your own is legitimate.
+var shopCategoryIcons = []string{
+	"about", "bag", "default", "free", "mount", "pet",
+	"scroll", "service", "tabard", "ticket", "toys",
+}
+
+func shopIconKnown(icon string) bool {
+	for _, known := range shopCategoryIcons {
+		if strings.EqualFold(strings.TrimSpace(icon), known) {
+			return true
+		}
+	}
+	return false
+}
+
+// shopCategorySeparators are the two characters the addon string cannot carry.
+const shopCategorySeparators = "=;"
+
+func hasCategorySeparator(s string) bool { return strings.ContainsAny(s, shopCategorySeparators) }
+
+type shopCategoryView struct {
+	PageData
+	IsNew          bool
+	Category       store.ShopCategory
+	Input          store.ShopCategoryInput
+	Icons          []string
+	RealmIsChinese bool
+
+	Error    string
+	Warnings []string
+	// ItemCount is how many rows point at this category, for the delete hint.
+	ItemCount int
+}
+
+type shopCategoryListView struct {
+	PageData
+	Categories     []store.ShopCategory
+	RealmIsChinese bool
+}
+
+// categoryIDFromPath narrows an id from the URL to what the core can read.
+//
+// The conversion has to be checked first: uint8(300) is 44, so a hand-made URL
+// would quietly edit a different category instead of failing.
+func categoryIDFromPath(id uint32) (uint8, bool) {
+	if id > 255 {
+		return 0, false
+	}
+	return uint8(id), true
+}
+
+// IconKnown reports whether the icon is one of the names the client ships a
+// texture for, so the list can flag the ones that would render blank.
+func (v shopCategoryListView) IconKnown(icon string) bool { return shopIconKnown(icon) }
+
+// parseShopCategoryForm validates what the form sent. The two separator checks
+// and the id range are refusals; the icon is not, because the list of names in
+// the client is not the only source of artwork.
+func parseShopCategoryForm(r *http.Request) (store.ShopCategoryInput, []string, []string) {
+	var in store.ShopCategoryInput
+	var problems, warnings []string
+
+	in.Name = strings.TrimSpace(r.PostFormValue("name"))
+	in.NameCN = strings.TrimSpace(r.PostFormValue("name_loc4"))
+	in.Icon = strings.TrimSpace(r.PostFormValue("icon"))
+
+	if in.Name == "" && in.NameCN == "" {
+		problems = append(problems, "name")
+	}
+	if hasCategorySeparator(in.Name) || hasCategorySeparator(in.NameCN) {
+		problems = append(problems, "separator")
+	}
+	if in.Icon == "" {
+		problems = append(problems, "icon")
+	} else if hasCategorySeparator(in.Icon) {
+		problems = append(problems, "separator")
+	} else if !shopIconKnown(in.Icon) {
+		warnings = append(warnings, "iconUnknown")
+	}
+
+	if raw := strings.TrimSpace(r.PostFormValue("id")); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil || n < 1 || n > 255 {
+			problems = append(problems, "id")
+		} else {
+			in.ID = uint8(n)
+		}
+	}
+	return in, problems, warnings
+}
+
+func (s *Server) renderShopCategoryForm(w http.ResponseWriter, r *http.Request, page *PageData, view shopCategoryView, status int) {
+	s.rend.Render(w, status, "admin_shop_category", view)
+}
+
+// shopCategoryFormView is the category form's assembly, deliberately shaped like
+// shopFormView: the caller cannot lose what it loaded.
+func shopCategoryFormView(page PageData, view shopCategoryView, icons []string, realmIsChinese bool, isNew bool) shopCategoryView {
+	page.Title = page.T("shop.cat.title")
+	page.Active = "admin-shop"
+
+	view.PageData = page
+	view.Icons = icons
+	view.RealmIsChinese = realmIsChinese
+	view.IsNew = isNew
+	return view
+}
+
+func (s *Server) handleAdminShopCategories(w http.ResponseWriter, r *http.Request, page *PageData) {
+	categories, err := s.store.ShopCategories(r.Context())
+	if err != nil {
+		s.serverError(w, r, "list shop categories", err)
+		return
+	}
+	page.Title = page.T("shop.cat.title")
+	page.Active = "admin-shop"
+	s.rend.Render(w, http.StatusOK, "admin_shop_categories", shopCategoryListView{
+		PageData:       *page,
+		Categories:     categories,
+		RealmIsChinese: s.realmIsChinese(),
+	})
+}
+
+func (s *Server) handleAdminShopCategoryNewForm(w http.ResponseWriter, r *http.Request, page *PageData) {
+	view := shopCategoryFormView(*page, shopCategoryView{Category: store.ShopCategory{Icon: "default"}},
+		shopCategoryIcons, s.realmIsChinese(), true)
+	s.renderShopCategoryForm(w, r, page, view, http.StatusOK)
+}
+
+func (s *Server) handleAdminShopCategoryForm(w http.ResponseWriter, r *http.Request, page *PageData) {
+	rawID, ok := s.parseUintPath(r, "id")
+	if !ok {
+		return
+	}
+	id, ok := categoryIDFromPath(rawID)
+	if !ok {
+		// The column holds more, but the core does not read more.
+		s.notFound(w, r)
+		return
+	}
+	cat, err := s.store.ShopCategory(r.Context(), id)
+	if errors.Is(err, store.ErrNotFound) {
+		s.notFound(w, r)
+		return
+	} else if err != nil {
+		s.serverError(w, r, "load shop category", err)
+		return
+	}
+	view := shopCategoryFormView(*page, shopCategoryView{Category: cat, ItemCount: cat.Items},
+		shopCategoryIcons, s.realmIsChinese(), false)
+	s.renderShopCategoryForm(w, r, page, view, http.StatusOK)
+}
+
+func (s *Server) handleAdminShopCategoryNewSubmit(w http.ResponseWriter, r *http.Request, page *PageData) {
+	if !s.checkCSRF(w, r) {
+		return
+	}
+	s.saveShopCategory(w, r, page, 0)
+}
+
+func (s *Server) handleAdminShopCategorySubmit(w http.ResponseWriter, r *http.Request, page *PageData) {
+	if !s.checkCSRF(w, r) {
+		return
+	}
+	rawID, ok := s.parseUintPath(r, "id")
+	if !ok {
+		return
+	}
+	id, ok := categoryIDFromPath(rawID)
+	if !ok {
+		s.notFound(w, r)
+		return
+	}
+	s.saveShopCategory(w, r, page, id)
+}
+
+// saveShopCategory creates (id 0) or updates one category.
+func (s *Server) saveShopCategory(w http.ResponseWriter, r *http.Request, page *PageData, id uint8) {
+	ctx := r.Context()
+	actor := accountFrom(ctx)
+	isNew := id == 0
+
+	input, problems, warnings := parseShopCategoryForm(r)
+
+	// The id is only read on create: changing it would orphan every row that
+	// points at the old one, and the core orders the tabs by it.
+	if isNew && input.ID != 0 {
+		if exists, err := s.store.ShopCategoryExists(ctx, input.ID); err != nil {
+			s.serverError(w, r, "check shop category", err)
+			return
+		} else if exists {
+			problems = append(problems, "idTaken")
+		}
+	}
+	// A name the client already has a tab for is not fatal, but two tabs with
+	// the same label are impossible to tell apart.
+	if len(problems) == 0 {
+		cats, err := s.store.ShopCategories(ctx)
+		if err != nil {
+			s.serverError(w, r, "list shop categories", err)
+			return
+		}
+		for _, c := range cats {
+			if c.ID == id {
+				continue
+			}
+			if strings.EqualFold(strings.TrimSpace(c.Name), input.Name) ||
+				(input.NameCN != "" && strings.EqualFold(strings.TrimSpace(c.NameCN), input.NameCN)) {
+				warnings = append(warnings, "duplicateName")
+				break
+			}
+		}
+	}
+
+	if len(problems) > 0 {
+		view := shopCategoryView{
+			Category: store.ShopCategory{ID: id, Name: input.Name, NameCN: input.NameCN, Icon: input.Icon},
+			Input:    input,
+			Error:    categoryProblemsText(page, problems),
+			Warnings: categoryWarningsText(page, warnings),
+		}
+		view = shopCategoryFormView(*page, view, shopCategoryIcons, s.realmIsChinese(), isNew)
+		s.renderShopCategoryForm(w, r, page, view, http.StatusBadRequest)
+		return
+	}
+
+	if isNew {
+		newID, err := s.store.CreateShopCategory(ctx, input)
+		if err != nil {
+			s.serverError(w, r, "create shop category", err)
+			return
+		}
+		_ = s.store.Audit(ctx, actor.ID, actor.Username, "shop-category-create",
+			fmt.Sprintf("shop_categories/%d", newID),
+			fmt.Sprintf("name=%s icon=%s", input.Name, input.Icon), s.clientIP(r))
+		s.setFlash(w, "ok", fmt.Sprintf(page.T("shop.cat.flash.created"), newID))
+		http.Redirect(w, r, "/admin/shop/categories", http.StatusSeeOther)
+		return
+	}
+
+	if err := s.store.UpdateShopCategory(ctx, id, input); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			s.notFound(w, r)
+			return
+		}
+		s.serverError(w, r, "update shop category", err)
+		return
+	}
+	_ = s.store.Audit(ctx, actor.ID, actor.Username, "shop-category-update",
+		fmt.Sprintf("shop_categories/%d", id),
+		fmt.Sprintf("name=%s icon=%s", input.Name, input.Icon), s.clientIP(r))
+	s.setFlash(w, "ok", fmt.Sprintf(page.T("shop.cat.flash.updated"), id))
+	http.Redirect(w, r, "/admin/shop/categories", http.StatusSeeOther)
+}
+
+// handleAdminShopCategoryDelete refuses while rows still point at the category:
+// the core drops a shop_items row whose category is missing, so deleting one in
+// use would empty part of the shop with nothing but a log line to show for it.
+func (s *Server) handleAdminShopCategoryDelete(w http.ResponseWriter, r *http.Request, page *PageData) {
+	if !s.checkCSRF(w, r) {
+		return
+	}
+	rawID, ok := s.parseUintPath(r, "id")
+	if !ok {
+		return
+	}
+	id, ok := categoryIDFromPath(rawID)
+	if !ok {
+		s.notFound(w, r)
+		return
+	}
+	ctx := r.Context()
+	actor := accountFrom(ctx)
+
+	cat, err := s.store.ShopCategory(ctx, id)
+	if errors.Is(err, store.ErrNotFound) {
+		s.notFound(w, r)
+		return
+	} else if err != nil {
+		s.serverError(w, r, "load shop category", err)
+		return
+	}
+	if cat.Items > 0 {
+		s.setFlash(w, "error", fmt.Sprintf(page.T("shop.cat.err.inUse"), cat.Items))
+		http.Redirect(w, r, "/admin/shop/categories", http.StatusSeeOther)
+		return
+	}
+	if err := s.store.DeleteShopCategory(ctx, id); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			s.notFound(w, r)
+			return
+		}
+		s.serverError(w, r, "delete shop category", err)
+		return
+	}
+	_ = s.store.Audit(ctx, actor.ID, actor.Username, "shop-category-delete",
+		fmt.Sprintf("shop_categories/%d", id), "name="+cat.Name, s.clientIP(r))
+	s.setFlash(w, "ok", fmt.Sprintf(page.T("shop.cat.flash.deleted"), id))
+	http.Redirect(w, r, "/admin/shop/categories", http.StatusSeeOther)
+}
+
+// categoryProblemsText renders the refusal reasons for the form.
+func categoryProblemsText(page *PageData, problems []string) string {
+	keys := map[string]string{
+		"name":      "shop.cat.err.nameRequired",
+		"separator": "shop.cat.err.separators",
+		"icon":      "shop.cat.err.iconRequired",
+		"id":        "shop.cat.err.idRange",
+		"idTaken":   "shop.cat.err.idTaken",
+	}
+	var out []string
+	for _, p := range problems {
+		if k, ok := keys[p]; ok {
+			out = append(out, page.T(k))
+		}
+	}
+	return strings.Join(out, "；")
+}
+
+func categoryWarningsText(page *PageData, warnings []string) []string {
+	keys := map[string]string{
+		"iconUnknown":   "shop.cat.warn.iconUnknown",
+		"duplicateName": "shop.cat.warn.duplicateName",
+	}
+	var out []string
+	for _, w := range warnings {
+		if k, ok := keys[w]; ok {
+			out = append(out, page.T(k))
+		}
+	}
+	return out
+}

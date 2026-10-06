@@ -59,7 +59,8 @@ already uses**, so nothing has to be patched or rebuilt on the server side.
 | `/admin/characters/{id}` | 角色详情与角色操作 |
 | `/admin/bans` | 账号封禁与 IP 封禁 |
 | `/admin/announcement` | **登录界面公告**（见下） |
-| `/admin/shop` | **捐赠商城**（`shop_categories` / `shop_items`，见下） |
+| `/admin/shop` | **捐赠商城**条目（`shop_items`，见下） |
+| `/admin/shop/categories` | 商城的**类别**（`shop_categories`），见下 |
 | `/admin/realms` | 编辑 `realmlist`：名称、地址、端口、列表标记、准入等级 |
 | `/admin/audit` | 所有管理操作的日志 |
 
@@ -332,10 +333,63 @@ SELECT entry, name_loc4, name_loc5, name_loc6 FROM locales_item WHERE entry = <�
 
 在 `shop_items` 那两列里改文字**不会**改变游戏里看到的任何内容。
 
-#### 目前只做条目，不做分类
+#### 类别：`/admin/shop/categories`
 
-后台只维护 `shop_items`。`shop_categories` 是**只读**的，列表里会显示每个分类下的
-条目数（核心会跳过指向不存在分类的条目，这个数字有用）。要加分类直接写 SQL。
+`shop_categories` 也能在后台维护（新增 / 改名换图标 / 删除）。三条约束是硬性的，前两条
+表单直接拒绝，第三条只给警告：
+
+**1. ID 只能是 1–255。** 库里是 `int unsigned`，但核心这么读：
+
+```cpp
+uint8 id = fields[0].GetUInt8();     // ObjectMgr::LoadShop
+```
+
+填 300 会被**静默截断**，页签就和指向它的那些条目对不上了。ID 还决定**页签顺序**
+（客户端收到的分类表按 ID 排序），所以想让某个类别排在前面就给它小的 ID。**建好之后
+不能改** —— 条目都指向它 —— 表单在编辑页不提供这一项。
+
+**2. 名称和图标里不能有 `=` 或 `;`。** 服务端是把**整份**类别表拼成一个字符串发给
+客户端的：
+
+```cpp
+categories += to_string(id) + "=0=" + Name_loc4 + "=" + Icon + ";";
+```
+
+而客户端先按 `;` 切分类、再按 `=` 切字段。所以一个 `=` 不是让一个类别出问题，
+是让**它后面所有类别**错位。这条必须是拒绝，不能是警告。
+
+**3. 图标必须是客户端里真实存在的贴图。** 客户端直接拼路径：
+
+```lua
+SetTexture("Interface\\ShopFrame\\" .. icon)      -- Turtle_ShopUI.lua:372
+```
+
+客户端这个目录里有 332 个文件，但**能当类别图标用的只有 11 个具名文件**，表单会作为
+候选项列出来：
+
+```
+about   bag   default   free   mount   pet   scroll   service   tabard   ticket   toys
+```
+
+填别的名字**只给警告不拒绝** —— 你自己往 patch 里加 `Interface\ShopFrame\<名字>.blp`
+是合法的 —— 但文件名不存在时页签图标是空白的，所以页面上会标出来。
+
+**删除会被拒绝，只要还有条目指向它。** 核心会跳过指向不存在类别的条目，直接删就等于
+让这些条目从商城里消失（而且只有日志里有一行）。表单在这种情况下不显示删除按钮，改了
+URL 硬提交也一样会被拒（handler 再查一次条目数），并提示你先去
+`/admin/shop?category=<id>` 把它们改到别的类别。
+
+> 「关于」那个页签**不在这张表里** —— 它是客户端自己插进类别列表的
+> （`Turtle_ShopUI.lua:339` 拼 `:0=0=关于=about;`）。要改它的文字见
+> `tools/ClientPatch/README.md` 的「改商城的界面文字」。
+
+#### 物品图标的一个限制（和新增物品有关）
+
+- **非外观类别**：物品图标来自 `GetItemInfo(entry).texture`（客户端自己的物品数据），
+  能装备的还会显示 3D 模型 —— **新增任何真实物品都有图**
+- **类别 2（外观/Skins）**：格子贴图是按物品 entry 命名的定制图
+  `Interface\ShopFrame\entries\<item_template.entry>[_1|_2].blp` —— 你新增的物品没有
+  这张图，**格子会是空白的**，需要另外做图
 
 改条目需要数据库账号对 `tw_world.shop_items` 有写权限——见英文文档的
 *Database privileges*（默认那份授权里 `tw_world` 是只读的）。
@@ -520,7 +574,8 @@ would save its in-memory position again on logout.
 | `/admin/characters/{id}` | Character detail and character actions |
 | `/admin/bans` | Account bans and IP bans |
 | `/admin/announcement` | The notice the game client shows on its login screen |
-| `/admin/shop` | The **donation shop** (`shop_categories` / `shop_items`) |
+| `/admin/shop` | The **donation shop** items (`shop_items`) |
+| `/admin/shop/categories` | The shop **categories** (`shop_categories`) |
 | `/admin/realms` | Edit `realmlist`: name, address, port, list flags, access level |
 | `/admin/audit` | Log of every administrative action |
 
@@ -596,16 +651,22 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON `tw_char`.*  TO 'wowweb'@'%';
 GRANT SELECT ON `tw_world`.* TO 'wowweb'@'%';
 GRANT SELECT ON `tw_logs`.*  TO 'wowweb'@'%';
 
--- Only for the shop admin page. The world database is otherwise read-only to
+-- Only for the shop admin pages. The world database is otherwise read-only to
 -- this service, so the write access is granted per table rather than for the
 -- whole schema. Skip both lines if you do not use /admin/shop.
 GRANT SELECT, INSERT, UPDATE, DELETE ON `tw_world`.`shop_items`      TO 'wowweb'@'%';
-GRANT SELECT                         ON `tw_world`.`shop_categories` TO 'wowweb'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON `tw_world`.`shop_categories` TO 'wowweb'@'%';
 ```
 
 The shop also reads `item_template` to resolve an entry into the item name and
 description the client will actually show, and to refuse an entry that does not
 exist — both covered by the `SELECT ON tw_world.*` grant above.
+
+`/admin/shop/categories` writes `shop_categories`, so that table needs the write
+grants too; both lines are listed together because editing either page needs its
+own table. If you granted only `SELECT` on `shop_categories` from an earlier
+version of this document, re-grant it as above or the category editor will fail
+with an access-denied error.
 
 `CREATE` is only needed on `tw_logon` if you want the service to create its own
 `web_*` tables on first start; grant it and revoke it afterwards if you prefer
@@ -1088,14 +1149,75 @@ something this page can fix.
 
 Editing the `shop_items` columns **changes nothing** in game.
 
-#### Entries only, not categories
+#### Categories: `/admin/shop/categories`
 
-The admin page maintains `shop_items`. `shop_categories` is **read-only** there,
-shown with the number of entries pointing at each category — worth seeing, since
-the core drops an entry whose category does not exist. Add a category with SQL.
+`shop_categories` is maintained from the admin area too (create, rename / change
+icon, delete). Three constraints are hard; the form refuses the first two and only
+warns about the third:
 
-Editing an entry needs write access to `tw_world.shop_items`; see
-[Database privileges](#database-privileges), where that one table is granted
+**1. The id has to be 1–255.** The column is `int unsigned`, but the core reads it
+like this:
+
+```cpp
+uint8 id = fields[0].GetUInt8();     // ObjectMgr::LoadShop
+```
+
+300 is silently truncated and the tab no longer matches the rows pointing at it.
+The id also sets the **tab order** (the client receives the categories sorted by
+it), so a smaller id moves a category earlier. It **cannot be changed later** — the
+items point at it — and the edit form does not offer it.
+
+**2. A name or an icon cannot contain `=` or `;`.** The world server builds the
+**whole** category list for the client as one string:
+
+```cpp
+categories += to_string(id) + "=0=" + Name_loc4 + "=" + Icon + ";";
+```
+
+and the client splits it on `;` and then on `=`. One `=` does not break one
+category, it shifts every category after it. This has to be a refusal, not a
+warning.
+
+**3. The icon has to be a texture the client really has.** The client builds the
+path itself:
+
+```lua
+SetTexture("Interface\\ShopFrame\\" .. icon)      -- Turtle_ShopUI.lua:372
+```
+
+That folder holds 332 files, but only 11 named ones work as category icons, and the
+form suggests exactly those:
+
+```
+about   bag   default   free   mount   pet   scroll   service   tabard   ticket   toys
+```
+
+Anything else is **warned about, not refused** — adding your own
+`Interface\ShopFrame\<name>.blp` to a patch is legitimate — but without the file
+the tab has no icon, so the page says so.
+
+**Deleting is refused while items still point at the category.** The core skips
+every item whose category is missing, so deleting one makes those items disappear
+from the shop with a single line in the log to show for it. The form does not show
+a delete button in that case, and a hand-made POST is refused too (the handler
+recounts) with a pointer to `/admin/shop?category=<id>` to move them first.
+
+> The About tab is **not a row in this table** — the client inserts it itself
+> (`Turtle_ShopUI.lua:339`, `:0=0=关于=about;`). See
+> `tools/ClientPatch/README.md` for changing its text.
+
+#### A limitation on item icons (relevant when adding one)
+
+* **Every category except Skins**: an item's icon comes from
+  `GetItemInfo(entry).texture` — the client's own item data — and an equippable one
+  shows a 3D model, so **any real item has an icon**.
+* **Category 2 (Skins)**: the tile is custom artwork named after the item entry,
+  `Interface\ShopFrame\entries\<item_template.entry>[_1|_2].blp`. A new item has no
+  such file, so **its tile will be blank** until you make one.
+
+Editing an entry needs write access to `tw_world.shop_items`, and the category
+editor needs it on `shop_categories`; see
+[Database privileges](#database-privileges), where those two tables are granted
 explicitly because the rest of the world database stays read-only.
 
 #### Checking it against a real database

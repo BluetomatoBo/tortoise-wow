@@ -176,6 +176,35 @@ func TestTemplatesParse(t *testing.T) {
 			},
 		}},
 		{"admin_audit", adminAuditView{PageData: page}},
+		{"admin_shop", shopListView{
+			PageData:   page,
+			Categories: []store.ShopCategory{{ID: 5, Name: "Mounts", NameCN: "坐骑", Items: 2}},
+			Items: []store.ShopItem{
+				{ID: 12, Category: 5, Entry: 50071, Price: 50, Region: store.ShopRegionGlobal, Scale: 1},
+				{ID: 13, Category: 99, Entry: 0, Price: 0, Region: store.ShopRegionChina, Scale: 0},
+			},
+			Total: 2, Page: 2, Pages: 3, QueryString: "category=5&",
+			RealmRegion: store.ShopRegionEurope,
+		}},
+		{"admin_shop_item", shopItemView{
+			PageData:   page,
+			Item:       store.ShopItem{ID: 12, Category: 99, Entry: 50071, Price: 50, Scale: 1},
+			Categories: []store.ShopCategory{{ID: 5, Name: "Mounts", NameCN: "坐骑"}},
+			Regions:    (&Server{}).shopRegions(),
+		}},
+		{"admin_shop_category", shopCategoryView{
+			PageData:  page,
+			Category:  store.ShopCategory{ID: 34, Name: "Toys", NameCN: "玩具", Icon: "wormhole"},
+			Icons:     shopCategoryIcons,
+			ItemCount: 3,
+		}},
+		{"admin_shop_categories", shopCategoryListView{
+			PageData: page,
+			Categories: []store.ShopCategory{
+				{ID: 5, Name: "Mounts", NameCN: "坐骑", Icon: "mount", Items: 2},
+				{ID: 34, Name: "Toys", Icon: "wormhole"},
+			},
+		}},
 		{"error", page},
 	}
 

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -377,5 +378,270 @@ func TestShopCategoryNameAndKnown(t *testing.T) {
 	}
 	if (shopItemView{Categories: cats, Item: store.ShopItem{Category: 0}}).CategoryKnown() {
 		t.Error("category 0 is reported as known")
+	}
+}
+
+// TestParseShopCategoryForm covers the rules that keep a category from breaking
+// the client. Two of them are refusals; the icon name is only a warning.
+func TestParseShopCategoryForm(t *testing.T) {
+	form := func(values map[string]string) *http.Request {
+		v := url.Values{}
+		for k, val := range values {
+			v.Set(k, val)
+		}
+		r := httptest.NewRequest(http.MethodPost, "/admin/shop/categories/new", strings.NewReader(v.Encode()))
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		return r
+	}
+	valid := map[string]string{"name": "Mounts", "name_loc4": "坐骑", "icon": "mount"}
+
+	t.Run("accepts a complete form", func(t *testing.T) {
+		in, problems, warnings := parseShopCategoryForm(form(valid))
+		if len(problems) != 0 || len(warnings) != 0 {
+			t.Fatalf("problems = %v, warnings = %v, want none", problems, warnings)
+		}
+		if in.Name != "Mounts" || in.NameCN != "坐骑" || in.Icon != "mount" {
+			t.Errorf("parsed wrong: %+v", in)
+		}
+		if in.ID != 0 {
+			t.Errorf("id should stay 0 for the table to assign, got %d", in.ID)
+		}
+	})
+
+	t.Run("id is optional but bounded", func(t *testing.T) {
+		in, problems, _ := parseShopCategoryForm(form(withValues(valid, map[string]string{"id": "200"})))
+		if len(problems) != 0 || in.ID != 200 {
+			t.Errorf("id 200: problems = %v, id = %d", problems, in.ID)
+		}
+		// The core reads the column with GetUInt8; 256 would be truncated and
+		// the tab would no longer match the rows pointing at it.
+		for _, raw := range []string{"0", "256", "-1", "abc"} {
+			_, problems, _ := parseShopCategoryForm(form(withValues(valid, map[string]string{"id": raw})))
+			if !contains(problems, "id") {
+				t.Errorf("id %q was accepted", raw)
+			}
+		}
+	})
+
+	// One of these characters in a name or an icon does not break one category,
+	// it breaks every category the server sends after it.
+	t.Run("refuses the addon string separators", func(t *testing.T) {
+		cases := []map[string]string{
+			{"name": "Mounts=mine"},
+			{"name": "Mounts;mine"},
+			{"name_loc4": "坐骑=我的"},
+			{"name_loc4": "坐骑;我的"},
+			{"icon": "mount;ticket"},
+			{"icon": "mount=ticket"},
+		}
+		for _, patch := range cases {
+			_, problems, _ := parseShopCategoryForm(form(withValues(valid, patch)))
+			if !contains(problems, "separator") {
+				t.Errorf("%v was accepted", patch)
+			}
+		}
+	})
+
+	t.Run("requires a name and an icon", func(t *testing.T) {
+		for _, patch := range []map[string]string{
+			{"name": "", "name_loc4": ""},
+			{"icon": ""},
+			{"icon": "   "},
+		} {
+			_, problems, _ := parseShopCategoryForm(form(withValues(valid, patch)))
+			if len(problems) == 0 {
+				t.Errorf("%v was accepted", patch)
+			}
+		}
+		// One language is enough: the client falls back to whichever is set.
+		if _, problems, _ := parseShopCategoryForm(form(
+			withValues(valid, map[string]string{"name": "", "name_loc4": "坐骑"}))); len(problems) != 0 {
+			t.Errorf("a Chinese-only name was refused: %v", problems)
+		}
+	})
+
+	// An unknown icon is allowed - adding your own artwork is legitimate - but
+	// it has to be visible that the tab will be blank until then.
+	t.Run("unknown icon warns instead of refusing", func(t *testing.T) {
+		_, problems, warnings := parseShopCategoryForm(form(
+			withValues(valid, map[string]string{"icon": "wormhole"})))
+		if len(problems) != 0 {
+			t.Errorf("problems = %v, want none", problems)
+		}
+		if !contains(warnings, "iconUnknown") {
+			t.Errorf("warnings = %v, want iconUnknown", warnings)
+		}
+		if !shopIconKnown("MOUNT") {
+			t.Error("the known-icon check should ignore case")
+		}
+		for _, icon := range shopCategoryIcons {
+			if !shopIconKnown(icon) {
+				t.Errorf("%q is listed as a known icon but not recognised", icon)
+			}
+		}
+	})
+}
+
+// withValues copies base and applies patch, so a case only states what it changes.
+func withValues(base, patch map[string]string) map[string]string {
+	out := map[string]string{}
+	for k, v := range base {
+		out[k] = v
+	}
+	for k, v := range patch {
+		out[k] = v
+	}
+	return out
+}
+
+func contains(list []string, want string) bool {
+	for _, s := range list {
+		if s == want {
+			return true
+		}
+	}
+	return false
+}
+
+// TestShopCategoryTemplatesRender runs both category pages, including the
+// branch that refuses to offer a delete.
+func TestShopCategoryTemplatesRender(t *testing.T) {
+	rend, err := newRenderer()
+	if err != nil {
+		t.Fatalf("parse templates: %v", err)
+	}
+	bundle, err := i18n.Load()
+	if err != nil {
+		t.Fatalf("load i18n: %v", err)
+	}
+	tr := bundle.Translator(i18n.EN)
+	base := func() PageData {
+		return PageData{Year: 2026, Tr: tr, Config: PageConfig{SiteName: "Test Realm"}}
+	}
+	render := func(name string, data any) string {
+		t.Helper()
+		rec := httptest.NewRecorder()
+		rend.Render(rec, http.StatusOK, name, data)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("render %s: status %d", name, rec.Code)
+		}
+		return rec.Body.String()
+	}
+
+	t.Run("list", func(t *testing.T) {
+		body := render("admin_shop_categories", shopCategoryListView{
+			PageData: base(),
+			Categories: []store.ShopCategory{
+				{ID: 5, Name: "Mounts", NameCN: "坐骑", Icon: "mount", Items: 57},
+				// No texture ships for this one, so the row has to say so.
+				{ID: 34, Name: "Toys", NameCN: "", Icon: "wormhole", Items: 0},
+			},
+		})
+		for _, want := range []string{
+			"Mounts", "坐骑", "mount", "wormhole",
+			`href="/admin/shop?category=5"`,     // item count links to the filtered list
+			`href="/admin/shop/categories/34"`,  // per-row edit
+			`href="/admin/shop/categories/new"`, // and the create button
+			tr.T("shop.cat.iconUnknown"),        // the missing texture is flagged
+			tr.T("shop.cat.aboutHint"),          // About is not a row in this table
+		} {
+			if !strings.Contains(body, want) {
+				t.Errorf("category list is missing %q", want)
+			}
+		}
+	})
+
+	t.Run("edit form", func(t *testing.T) {
+		body := render("admin_shop_category", shopCategoryFormView(base(), shopCategoryView{
+			Category:  store.ShopCategory{ID: 5, Name: "Mounts", NameCN: "坐骑", Icon: "mount", Items: 57},
+			ItemCount: 57,
+		}, shopCategoryIcons, false, false))
+		for _, want := range []string{
+			`action="/admin/shop/categories/5"`,
+			`name="name"`, `name="name_loc4"`, `name="icon"`,
+			`value="Mounts"`, `value="mount"`,
+			// The hint spells out the texture path the client builds; assert the
+			// stable part, since <icon> is escaped by html/template.
+			`Interface\ShopFrame\`,
+			`.blp`,
+			// 57 items point here, so the delete form must not be offered.
+			fmt.Sprintf("<strong>%d</strong>", 57),
+			tr.T("shop.cat.deleteBlocked"),
+		} {
+			if !strings.Contains(body, want) {
+				t.Errorf("category form is missing %q", want)
+			}
+		}
+		if strings.Contains(body, "/delete") {
+			t.Error("the form offers a delete for a category that still has items")
+		}
+		// The id is not editable: changing it would orphan the items.
+		if strings.Contains(body, `name="id"`) {
+			t.Error("the edit form offers to change the id")
+		}
+	})
+
+	t.Run("empty category can be deleted", func(t *testing.T) {
+		body := render("admin_shop_category", shopCategoryFormView(base(), shopCategoryView{
+			Category: store.ShopCategory{ID: 34, Name: "Toys", Icon: "toys"},
+		}, shopCategoryIcons, false, false))
+		if !strings.Contains(body, `action="/admin/shop/categories/34/delete"`) {
+			t.Error("a category nothing points at should offer a delete")
+		}
+		if strings.Contains(body, tr.T("shop.cat.deleteBlocked")) {
+			t.Error("an empty category is reported as in use")
+		}
+	})
+
+	t.Run("new form", func(t *testing.T) {
+		body := render("admin_shop_category", shopCategoryFormView(base(), shopCategoryView{
+			Category: store.ShopCategory{Icon: "default"},
+		}, shopCategoryIcons, false, true))
+		for _, want := range []string{
+			`action="/admin/shop/categories/new"`,
+			`name="id"`, // assignable on create so the tab order can be chosen
+			`value="default"`,
+			tr.T("shop.cat.idHint"),
+		} {
+			if !strings.Contains(body, want) {
+				t.Errorf("new category form is missing %q", want)
+			}
+		}
+		if strings.Contains(body, "/delete") {
+			t.Error("the new form offers a delete")
+		}
+		// Every known icon is offered, so a blank tab is a choice, not a guess.
+		for _, icon := range shopCategoryIcons {
+			if !strings.Contains(body, `value="`+icon+`"`) {
+				t.Errorf("icon %q is not suggested", icon)
+			}
+		}
+	})
+}
+
+// TestCategoryIDFromPath pins the narrowing: uint8(300) is 44, so the check has
+// to happen before the conversion rather than after it.
+func TestCategoryIDFromPath(t *testing.T) {
+	cases := []struct {
+		in    uint32
+		want  uint8
+		valid bool
+	}{
+		{0, 0, true}, // "create"
+		{1, 1, true},
+		{255, 255, true},
+		{256, 0, false}, // truncates to 0 - would look like "create"
+		{300, 0, false}, // truncates to 44 - a different category entirely
+		{4294967295, 0, false},
+	}
+	for _, tc := range cases {
+		got, ok := categoryIDFromPath(tc.in)
+		if ok != tc.valid {
+			t.Errorf("categoryIDFromPath(%d) valid = %v, want %v", tc.in, ok, tc.valid)
+			continue
+		}
+		if ok && got != tc.want {
+			t.Errorf("categoryIDFromPath(%d) = %d, want %d", tc.in, got, tc.want)
+		}
 	}
 }

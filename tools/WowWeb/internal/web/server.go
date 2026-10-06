@@ -150,6 +150,14 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /admin/shop/items/{id}", s.admin(s.handleAdminShopItemSubmit))
 	s.mux.HandleFunc("POST /admin/shop/items/{id}/delete", s.admin(s.handleAdminShopItemDelete))
 
+	// Shop categories. Deleting one is refused while items point at it.
+	s.mux.HandleFunc("GET /admin/shop/categories", s.admin(s.handleAdminShopCategories))
+	s.mux.HandleFunc("GET /admin/shop/categories/new", s.admin(s.handleAdminShopCategoryNewForm))
+	s.mux.HandleFunc("POST /admin/shop/categories/new", s.admin(s.handleAdminShopCategoryNewSubmit))
+	s.mux.HandleFunc("GET /admin/shop/categories/{id}", s.admin(s.handleAdminShopCategoryForm))
+	s.mux.HandleFunc("POST /admin/shop/categories/{id}", s.admin(s.handleAdminShopCategorySubmit))
+	s.mux.HandleFunc("POST /admin/shop/categories/{id}/delete", s.admin(s.handleAdminShopCategoryDelete))
+
 	s.mux.HandleFunc("GET /admin/announcement", s.admin(s.handleAdminAnnouncement))
 	s.mux.HandleFunc("POST /admin/announcement", s.admin(s.handleAdminAnnouncementSave))
 
