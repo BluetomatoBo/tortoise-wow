@@ -1709,6 +1709,31 @@ Rate.Drop.Item.Artifact = 1
 Rate.Drop.Item.Referenced = 1
 Rate.Drop.Money = 1
 
+# Loot.RetryEmptyDrops - 1 = when a creature's loot roll produces no item at all,
+# roll the template again until something drops, so a corpse is never empty.
+# 0 (default) = the configured chances are used as they are, and a corpse whose
+# rolls all missed simply has nothing on it.
+#
+# Why you might want it: a template like creature_loot_template 80117 has two
+# single-entry groups (30% and 70%). Both miss on 0.7 * 0.3 = 21% of kills, and
+# those corpses cannot be looted at all - the client is not even sent the
+# lootable flag. With this on, every kill yields at least one of the two, with
+# the same 30/70 split between them.
+#
+# What it does NOT affect:
+#   - quest drops (they are not rolled, and they are still added exactly once);
+#   - money (Rate.Drop.Money, and a creature's gold_min/gold_max);
+#   - anything but creature loot. Chests, fishing, pickpocketing, skinning,
+#     disenchanting and mail are untouched.
+# Note: because money is generated after the loot is rolled, a creature that only
+# ever dropped coin now also gets a guaranteed item.
+#
+# Re-rolling is capped (10 attempts, ~1e-7 of even reaching it), so a template
+# that can never produce a normal item - one that is all quest drops - cannot
+# spin: it is skipped entirely rather than retried forever.
+
+Loot.RetryEmptyDrops = 0
+
 # Rate.XP. XP rates (player's favorite, haha)
 
 Rate.XP.Kill = 1

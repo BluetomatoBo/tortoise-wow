@@ -1493,6 +1493,10 @@ void World::LoadConfigSettingsFromFile(bool reload)
     setConfig(CONFIG_BOOL_ENABLE_FACTION_BALANCE, "FactionBalance.Enable", false);
     setConfig(CONFIG_BOOL_BLOCK_ALL_HANZI, "Hanzi.BlockAll", false);
 
+    // Off by default: it changes drop rates for every creature whose template can
+    // roll nothing, so a realm that wants the old behaviour keeps it.
+    setConfig(CONFIG_BOOL_LOOT_RETRY_EMPTY_DROPS, "Loot.RetryEmptyDrops", false);
+
     setConfig(CONFIG_BOOL_BACKUP_CHARACTER_INVENTORY, "BackupCharacterInventory", false);
 
     setConfig(CONFIG_BOOL_ANALYSIS_STOP_ON_CORRECT_EXTENDED_DATA, "Analysis.StopOnCorrectExtendedData", false);

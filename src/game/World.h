@@ -707,6 +707,9 @@ enum eConfigBoolValues
     CONFIG_BOOL_ENABLE_FACTION_BALANCE,
     CONFIG_BOOL_BLOCK_ALL_HANZI,
     CONFIG_BOOL_HOLIDAY_EVENT,
+    // Re-roll a creature's loot when nothing dropped at all, so a corpse is
+    // never empty. See Loot::FillLoot.
+    CONFIG_BOOL_LOOT_RETRY_EMPTY_DROPS,
     CONFIG_BOOL_PERFORMANCE_ENABLE,
     CONFIG_BOOL_VALUE_COUNT
 };

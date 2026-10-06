@@ -32,6 +32,12 @@
 #include <vector>
 
 #define MAX_NR_LOOT_ITEMS 16
+
+// How many times Loot::FillLoot may re-roll a template that produced no item at
+// all. The cap is what makes the feature safe: a template that can never yield a
+// non-quest item would otherwise loop forever. 0.21^10 is ~1e-7, so no amount of
+// bad luck reaches it - it is there for templates, not for dice.
+#define MAX_EMPTY_LOOT_ROLL_ATTEMPTS 10
 // note: the client cannot show more than 16 items total
 #define MAX_NR_QUEST_ITEMS 32
 // unrelated to the number of quest items shown, just for reserve
@@ -179,8 +185,13 @@ typedef std::set<uint32> LootIdSet;
 class LootStore
 {
     public:
-        explicit LootStore(char const* name, char const* entryName, bool ratesAllowed)
-            : m_name(name), m_entryName(entryName), m_ratesAllowed(ratesAllowed) {}
+        // retryEmptyRolls is opt-in per store: re-rolling until something drops
+        // is a deliberate departure from the configured chances, so only the
+        // store that asked for it gets it (creature loot - see Loot::FillLoot).
+        explicit LootStore(char const* name, char const* entryName, bool ratesAllowed,
+                           bool retryEmptyRolls = false)
+            : m_name(name), m_entryName(entryName), m_ratesAllowed(ratesAllowed),
+              m_retryEmptyRolls(retryEmptyRolls) {}
         virtual ~LootStore() { Clear(); }
 
         void Verify() const;
@@ -200,6 +211,7 @@ class LootStore
         char const* GetName() const { return m_name; }
         char const* GetEntryName() const { return m_entryName; }
         bool IsRatesAllowed() const { return m_ratesAllowed; }
+        bool IsRetryEmptyRollsAllowed() const { return m_retryEmptyRolls; }
     protected:
         void LoadLootTable();
         void Clear();
@@ -208,6 +220,7 @@ class LootStore
         char const* m_name;
         char const* m_entryName;
         bool m_ratesAllowed;
+        bool m_retryEmptyRolls;
 };
 
 class LootTemplate
@@ -229,9 +242,16 @@ class LootTemplate
         // Checks integrity of the template
         void Verify(LootStore const& store, uint32 Id) const;
         void CheckLootRefs(LootIdSet* ref_set) const;
+
+        // False when every entry is a quest drop, i.e. the template can never
+        // put anything in Loot::items. Re-rolling such a template would only
+        // spin the attempt cap on every kill, so Loot::FillLoot skips it.
+        // References count as "maybe": what they expand to is not knowable here.
+        bool CanDropNonQuestItem() const { return m_hasNonQuestEntry; }
     private:
         LootStoreItemList Entries;                          // not grouped only
         LootGroups        Groups;                           // groups have own (optimised) processing, grouped entries go there
+        bool              m_hasNonQuestEntry = false;
 };
 
 //=====================================================
@@ -323,6 +343,7 @@ struct Loot
         m_allowedLooters.clear();
         m_personal = true;
         m_groupTeam = TEAM_CROSSFACTION;
+        m_suppressQuestItems = false;
     }
 
     void leaveOnlyQuestItems()
@@ -331,6 +352,11 @@ struct Loot
     }
 
     bool empty() const { return items.empty() && m_questItems.empty() && gold == 0; }
+
+    // While re-rolling an empty drop the quest items must not be collected a
+    // second time: every pass produces the same ones, so without this a corpse
+    // could end up with two of the same quest drop.
+    bool m_suppressQuestItems = false;
     bool isLooted() const { return gold == 0 && unlootedCount == 0; }
 
     void NotifyItemRemoved(uint8 lootIndex);

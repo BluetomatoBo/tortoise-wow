@@ -41,7 +41,7 @@ static eConfigFloatValues const qualityToRate[MAX_ITEM_QUALITY] =
     CONFIG_FLOAT_RATE_DROP_ITEM_ARTIFACT,                                // ITEM_QUALITY_ARTIFACT
 };
 
-LootStore LootTemplates_Creature(     "creature_loot_template",      "creature entry",                     true);
+LootStore LootTemplates_Creature(     "creature_loot_template",      "creature entry",                     true, true);
 LootStore LootTemplates_Disenchant(   "disenchant_loot_template",    "item disenchant id",                 true);
 LootStore LootTemplates_Fishing(      "fishing_loot_template",       "area id",                            true);
 LootStore LootTemplates_Gameobject(   "gameobject_loot_template",    "gameobject lootid",                  true);
@@ -495,7 +495,7 @@ void Loot::AddItem(LootStoreItem const & item)
 
     if (item.needs_quest)                                   // Quest drop
     {
-        if (m_questItems.size() < MAX_NR_QUEST_ITEMS)
+        if (!m_suppressQuestItems && m_questItems.size() < MAX_NR_QUEST_ITEMS)
             m_questItems.push_back(LootItem(item));
     }
     else if (items.size() < MAX_NR_LOOT_ITEMS)              // Non-quest drop
@@ -534,6 +534,27 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* loot_owner, 
     m_questItems.reserve(MAX_NR_QUEST_ITEMS);
 
     tab->Process(*this, store, store.IsRatesAllowed(), loot_owner); // Processing is done there, callback via Loot::AddItem()
+
+    // A template whose every roll can miss leaves a corpse with nothing on it -
+    // for 80117 that is 0.7 * 0.3 = 21% of kills. With Loot.RetryEmptyDrops on,
+    // roll the template again until something drops.
+    //
+    // Three things this has to get right:
+    //   - the pass that produced no items did produce the quest drops, so the
+    //     re-roll must not collect those again (m_suppressQuestItems);
+    //   - a template that can never yield a non-quest item would loop forever,
+    //     so CanDropNonQuestItem() skips it and the attempts are capped;
+    //   - money is not part of this. GenerateMoneyLoot runs after FillLoot, so a
+    //     creature that only ever dropped coin now also gets a guaranteed item.
+    if (sWorld.getConfig(CONFIG_BOOL_LOOT_RETRY_EMPTY_DROPS)
+        && store.IsRetryEmptyRollsAllowed() && tab->CanDropNonQuestItem()
+        && items.empty())
+    {
+        m_suppressQuestItems = true;
+        for (uint32 attempt = 0; attempt < MAX_EMPTY_LOOT_ROLL_ATTEMPTS && items.empty(); ++attempt)
+            tab->Process(*this, store, store.IsRatesAllowed(), loot_owner);
+        m_suppressQuestItems = false;
+    }
 
     // Setting access rights for group loot case
     Group* group = loot_owner->GetGroup();
@@ -1310,6 +1331,11 @@ void LootTemplate::LootGroup::CheckLootRefs(LootIdSet* ref_set) const
 // Adds an entry to the group (at loading stage)
 void LootTemplate::AddEntry(LootStoreItem& item)
 {
+    // A reference is counted as "maybe": what it expands to is not knowable from
+    // here, and being wrong in this direction only costs a re-roll that fails.
+    if (!item.needs_quest)
+        m_hasNonQuestEntry = true;
+
     if (item.group > 0 && item.mincountOrRef > 0)           // Group
     {
         if (item.group >= Groups.size())
