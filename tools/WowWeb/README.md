@@ -219,8 +219,24 @@ WEB_TRUST_PROXY=1                        # 否则所有玩家共用一个限流�
 不开这个，**登录失败限流会按同一个 IP 计数 —— 一个人连错几次密码就把所有人挡住**。
 
 这个域名**故意只走 HTTP**：客户端根本打不开 `https://` 的链接，所以它的链接必须留在
-80 端口。要给浏览器上 TLS，就另开一个 443 的 server 块并设 `SESSION_SECURE=true`，
-80 那个继续留给客户端。
+80 端口。
+
+要给浏览器上 TLS，注意**只有 `/alert` 不能被重定向**：
+
+* `/alert` 是**游戏客户端自己**用它的 HTTP 栈抓的，**没有人替它跟重定向** ——
+  302 过去，登录界面公告面板就静默变成空白
+* 其余地址（包括公告里的链接）重定向**没问题**：链接是**浏览器**打开的，
+  客户端早在写临时 Internet Shortcut 之前就校验完地址了，它看不到那个 302
+
+还有个 nginx 陷阱：**server 级的 `return 301` 在选 location 之前执行**，
+会连 `/alert` 一起重定向、绕过例外。要重定向就写在 location 里：
+
+```nginx
+location / { return 301 https://$host$request_uri; }
+location = /alert { proxy_pass http://172.18.1.6:8080; }   # 精确匹配优先，留在 HTTP
+```
+
+上了 TLS 之后，再给服务设 `SESSION_SECURE=true`。
 
 验证（在服务器上）：
 
@@ -716,8 +732,26 @@ address, so without it **the sign-in throttle counts everyone as one visitor - a
 person mistyping their password locks the whole server out**.
 
 This name is deliberately **plain HTTP**: the client cannot follow an `https://` link at all,
-so its links have to stay on port 80. If browsers should get TLS, add a second server block
-for 443, set `SESSION_SECURE=true`, and leave the port-80 name in place for the client.
+so its links have to stay on port 80.
+
+If browsers should get TLS, remember that **only `/alert` must not be redirected**:
+
+* `/alert` is fetched by the **game client itself** through its own HTTP stack. Nobody
+  follows a redirect on its behalf, so a 302 there leaves the login-screen panel silently
+  blank.
+* everything else may redirect, the announcement's links included: those are opened by the
+  **browser**, long after the client validated the address and wrote it into a temporary
+  Internet Shortcut. The client never sees the redirect.
+
+And one nginx trap: a **server-level `return 301` runs before a location is chosen**, so it
+would redirect `/alert` too and bypass the exception. Scope the redirect to a location:
+
+```nginx
+location / { return 301 https://$host$request_uri; }
+location = /alert { proxy_pass http://172.18.1.6:8080; }   # exact match wins, stays HTTP
+```
+
+With TLS in place, also set `SESSION_SECURE=true` for the service.
 
 To check it, on the server:
 
