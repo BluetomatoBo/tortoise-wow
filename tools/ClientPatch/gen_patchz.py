@@ -26,6 +26,7 @@
   注意：汉化包更新后要重跑本工具，否则 patch-Z 里的旧快照会盖住新版。
 """
 import ctypes
+import difflib
 import glob
 import json
 import os
@@ -292,6 +293,22 @@ def remove_frames(text, names):
     return text, actions
 
 
+def changed_line_count(before, after):
+    """两个版本相差几行。
+
+    一个补丁文件可能整份携带（GlobalStrings.lua 有 5900 行），把「实际改了哪几行」
+    说清楚，是唯一能让「其余部分与基准逐字节相同」这个保证看得见的方式。
+    """
+    n = 0
+    for line in difflib.unified_diff(before.splitlines(), after.splitlines(),
+                                     n=0, lineterm=''):
+        if line.startswith(('+++', '---', '@@')):
+            continue
+        if line[:1] in ('+', '-'):
+            n += 1
+    return n
+
+
 def stamp(text, name=''):
     """在文件头插入「本文件由工具生成」的说明，避免以后被手工改乱。
 
@@ -310,7 +327,8 @@ def stamp(text, name=''):
     if marker in text:
         return text
     note = (f'{marker}\n'
-            '-- [gen_patchz] 这里覆盖的是登录界面「系统公告」等由配置驱动的值。\n'
+            '-- [gen_patchz] 这里覆盖的是界面上的字符串（登录界面「系统公告」、\n'
+            '-- [gen_patchz] 商城窗口标题与「关于」正文等由配置驱动的值）。\n'
             '-- [gen_patchz] 改配置请编辑 overrides.json 后重跑 gen_patchz.py，\n'
             '-- [gen_patchz] 不要直接改这个文件（下次生成会被覆盖）。\n')
     return note + text
@@ -424,7 +442,8 @@ def main():
             base, source = b'', '(新建)'
         else:
             print(f'\n{arch_name}\n   基准来自：{source}（{len(base)} 字节）')
-        new_text = base.decode('utf-8', 'replace')
+        base_text = base.decode('utf-8', 'replace')
+        new_text = base_text
 
         if arch_name in assignments:
             new_text, actions = apply_assignments(new_text, assignments[arch_name])
@@ -437,6 +456,14 @@ def main():
             new_text, actions = remove_frames(new_text, names)
             for a in actions:
                 print(f'   {a}')
+
+        # 统计放在加戳之前：戳记是工具自己加的 4 行，不该算进「改了什么」。
+        n_changed = changed_line_count(base_text, new_text)
+        total = len(base_text.splitlines())
+        print(f'   与基准相比：{n_changed} 行不同（共 {total} 行）')
+        if base and n_changed == 0:
+            print('   ↑ 逐字节相同 —— 这个文件的值与基准当前完全一致，'
+                  '装上去不会有任何变化。')
 
         staged.append((arch_name, stamp(new_text, arch_name).encode('utf-8')))
 

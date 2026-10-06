@@ -281,6 +281,52 @@ HTTP，实测 `http://172.18.1.6:8080/alert` 可用。其余全部由 `LaunchURL
 > ⚠️ 只看 `interface.MPQ` 里那份老 `AccountLogin.xml` 会找错地方 —— 生效的是
 > **`patch-9.mpq`** 里那份（优先级更高）。
 
+### 改商城的界面文字：`GlobalStrings.lua`
+
+捐赠商城（客户端里的 `Turtle_shopUI`）的**界面文字**不在服务端，也不在你改的那几个
+文件里 —— 它在客户端的全局字符串表里，键名前缀 `DONO_SHOP_`：
+
+| 键 | 界面上的位置 |
+|---|---|
+| `DONO_SHOP_TITLE` | 窗口标题 |
+| `DONO_SHOP_ABOUT_TITLE` | 分类列表里那个「关于」标签 |
+| `DONO_SHOP_ABOUT_TEXT` | 「关于」标签的正文 |
+
+```jsonc
+{
+  "luaAssignments": {
+    "Interface\\FrameXML\\GlobalStrings.lua": {
+      "DONO_SHOP_TITLE": "捐赠商店",
+      "DONO_SHOP_ABOUT_TITLE": "关于",
+      "DONO_SHOP_ABOUT_TEXT": "第一段。\n\n第二段。"
+    }
+  }
+}
+```
+
+生效来源是**汉化包（`patch-X.mpq`）**里的 `Interface\FrameXML\GlobalStrings.lua`，
+里面本来就是中文；`patch-Z` 优先级更高，所以在这里放一份就能改。
+
+三件必须知道的事：
+
+1. **改动必须落在 `GlobalStrings.lua` 里，事后赋值来不及。** 窗口标题是 XML 的
+   `text="DONO_SHOP_TITLE"`，**在解析框架时就取值**了；等别的文件执行时框架早就建好了。
+   `GlobalStrings.lua` 是最先加载的那个，所以只有它能改。
+
+2. **换行要写 JSON 的 `\n`（真换行），不要写 `\\n`。** 工具会把真换行转成 Lua 的
+   `\n` 转义，与汉化包原文一致。写成 `\\n` 的话 Lua 会把反斜杠当字面字符输出，
+   「关于」正文里的 12 处换行会全部消失、连成一大段（不报错，只是文字坏了）。
+   要写真正的反斜杠才用 `\\`。
+
+3. **patch-Z 会整份携带这个文件**（约 300KB / 5900 行），因此会盖住汉化包里的同名文件。
+   工具每次都重新从**当前生效**的那份读取再改这几行，所以**汉化包更新后重跑一次**即可。
+   生成时会打印「与基准相比 N 行不同」；`N=0` 说明这几行与汉化包当前内容相同，
+   这个文件装上去不会有任何变化。`verify_client.py` 也会把生效来源、当前取值报出来，
+   并在「除这三个键外汉化包还有更新」时提示你重跑。
+
+商品名、分类名、价格在**服务端**（`shop_items` / `shop_categories` / `item_template`），
+不在这里改 —— 见 `tools/WowWeb/README.md` 的「捐赠商城」一节。
+
 ## 地址怎么选
 
 客户端在**哪台机器上跑**，就填那台机器能访问到的地址：
@@ -752,6 +798,57 @@ effective `AccountLogin.xml` inside `patch-9.mpq` both show them.
 
 > ⚠️ Looking at the older `AccountLogin.xml` in `interface.MPQ` finds the wrong file - the one
 > that loads is in **`patch-9.mpq`**, which has a higher priority.
+
+### Shop interface text: `GlobalStrings.lua`
+
+The donation shop (`Turtle_shopUI` in the client) keeps its **interface text** in the client's
+global string table - not on the server, and not in the files above. The keys are prefixed
+`DONO_SHOP_`:
+
+| Key | Where it shows |
+| --- | --- |
+| `DONO_SHOP_TITLE` | The window title |
+| `DONO_SHOP_ABOUT_TITLE` | The "About" tab in the category list |
+| `DONO_SHOP_ABOUT_TEXT` | The body of that tab |
+
+```jsonc
+{
+  "luaAssignments": {
+    "Interface\\FrameXML\\GlobalStrings.lua": {
+      "DONO_SHOP_TITLE": "Donation shop",
+      "DONO_SHOP_ABOUT_TITLE": "About",
+      "DONO_SHOP_ABOUT_TEXT": "First paragraph.\n\nSecond paragraph."
+    }
+  }
+}
+```
+
+The effective source is `Interface\FrameXML\GlobalStrings.lua` in the **localisation pack
+(`patch-X.mpq`)**, which already carries translated text; `patch-Z` outranks it, so shipping a
+copy here is what overrides it.
+
+Three things worth knowing:
+
+1. **The change has to land in `GlobalStrings.lua` itself.** The window title is the XML
+   attribute `text="DONO_SHOP_TITLE"`, read **when the frame is parsed**; by the time any other
+   file runs, the frame already exists. `GlobalStrings.lua` loads first, which is why it is the
+   only place this works.
+
+2. **Write newlines as JSON `\n` (a real newline), not `\\n`.** The generator turns real
+   newlines into Lua's `\n` escape, matching the pack's file. With `\\n`, Lua emits a literal
+   backslash and the twelve line breaks in the About body collapse into one paragraph - silently,
+   with no error. Use `\\` only when you want an actual backslash.
+
+3. **patch-Z carries the whole file** (~300 KB, 5900 lines), so it shadows the pack's copy. The
+   generator re-reads the currently effective version on every run and only edits those few
+   lines, so **re-run it after the pack updates**. It prints `与基准相比 N 行不同` (N lines
+   differ); `N=0` means these keys already match the pack and shipping the file changes nothing.
+   `verify_client.py` reports the effective source and current values, and tells you to re-run
+   when the pack has moved on in ways this file would hide.
+
+Item names, category names and prices live on the **server** (`shop_items` /
+`shop_categories` / `item_template`) and are not changed here - see the "donation shop" section
+of `tools/WowWeb/README.md`.
 
 ## Choosing the address
 

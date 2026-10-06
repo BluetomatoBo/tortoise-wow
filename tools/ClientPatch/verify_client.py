@@ -42,6 +42,13 @@ import patch_urllist as pu     # Pe / find_tables
 CONFIG = os.path.join(HERE, 'overrides.json')
 GLUE = 'Interface\\GlueXML\\GlueStrings.lua'
 
+# 商城界面的文字（窗口标题、按钮、「关于」正文）由客户端的全局字符串提供，
+# 汉化包给了中文，patch-Z 可以覆盖 —— 见 overrides.json 里的说明。
+GLOBALS = 'Interface\\FrameXML\\GlobalStrings.lua'
+SHOP_TEXT_KEYS = ('DONO_SHOP_TITLE', 'DONO_SHOP_ABOUT_TITLE', 'DONO_SHOP_ABOUT_TEXT')
+
+STAMP_MARK = '-- [gen_patchz]'
+
 OK, WARN, BAD = 'ok', 'warn', 'bad'
 MARK = {OK: '✓', WARN: '⚠', BAD: '✗'}
 
@@ -103,6 +110,34 @@ def effective_lua(data_dir, name=GLUE):
         if data is not None:
             return base, data.decode('utf-8', 'replace')
     return None, None
+
+
+def providers(data_dir, name):
+    """按优先级从高到低，列出提供这个文件的补丁 (名字, 内容)。"""
+    out = []
+    for _prio, base, path in reversed(gp.list_patches(data_dir)):
+        try:
+            arc = gp.Archive(path)
+        except OSError:
+            continue
+        try:
+            data = arc.read(name)
+        finally:
+            arc.close()
+        if data is not None:
+            out.append((base, data))
+    return out
+
+
+def body_without(text, keys):
+    """去掉戳记和这些键的赋值行。
+
+    比较「patch-Z 携带的那份是不是跟着汉化包走」时，要排除工具故意改的那几行，
+    否则自己的改动会被当成「汉化包更新了」。
+    """
+    pat = re.compile(r'^\s*(' + '|'.join(re.escape(k) for k in keys) + r')\s*=')
+    return '\n'.join(l for l in text.splitlines()
+                     if not l.startswith(STAMP_MARK) and not pat.match(l))
 
 
 def _mpq_names(path, mask):
@@ -386,6 +421,48 @@ def main():
     else:
         rep.add(OK, '实际生效的 GlueStrings.lua', f'来自 {source}')
         assigned = parse_assignments(text)
+
+    # --- 商城界面文字（客户端内置，patch-Z 可覆盖）---
+    prov = providers(data_dir, GLOBALS)
+    if not prov:
+        rep.add(WARN, '商城界面文字', f'所有补丁里都没有 {GLOBALS} '
+                                     '—— 商城窗口标题会原样显示成键名')
+    else:
+        src, blob = prov[0]
+        gtext = blob.decode('utf-8', 'replace')
+        vals = parse_assignments(gtext)
+        missing = [k for k in SHOP_TEXT_KEYS if k not in vals]
+        if missing:
+            rep.add(BAD, '商城界面文字', f'{src} 的 GlobalStrings.lua 里缺少 '
+                                        + '、'.join(missing) + ' —— 界面上会显示键名本身')
+        else:
+            about = vals['DONO_SHOP_ABOUT_TEXT']
+            rep.add(OK, '商城界面文字（客户端内置的 DONO_SHOP_*）',
+                    f'来自 {src}\n'
+                    f'        窗口标题：{vals["DONO_SHOP_TITLE"]}\n'
+                    f'        关于标题：{vals["DONO_SHOP_ABOUT_TITLE"]}\n'
+                    f'        关于正文：{about[:20]}…（{len(about)} 字）')
+            # patch-Z 整份携带这个文件，会盖住汉化包。两件事要能看出来：
+            # 一是这三个键改了没有，二是汉化包之后有没有更新别的内容被盖住。
+            if len(prov) > 1 and src.lower() == (cfg.get('outputPatch') or '').lower():
+                next_src, next_blob = prov[1]
+                ntext = next_blob.decode('utf-8', 'replace')
+                nvals = parse_assignments(ntext)
+                if all(nvals.get(k) == vals[k] for k in SHOP_TEXT_KEYS):
+                    rep.add(OK, '这三个键与汉化包当前内容相同',
+                            f'{src} 里的值跟 {next_src} 一致，所以现在装上去商城文字'
+                            '不会有变化；\n'
+                            '        改 overrides.json 后重跑 gen_patchz.py 才会生效')
+                else:
+                    rep.add(OK, '商城界面文字已被 patch-Z 覆盖', '改的就是这三个键')
+                # 排除这三个键再比：剩下的差异才说明汉化包往前走过了
+                other = gp.changed_line_count(body_without(gtext, SHOP_TEXT_KEYS),
+                                              body_without(ntext, SHOP_TEXT_KEYS))
+                if other:
+                    rep.add(WARN, f'{next_src} 的 GlobalStrings.lua 与 patch-Z 里的不一致',
+                            f'除这三个键外还有 {other} 行不同 —— patch-Z 整份携带这个文件，'
+                            '会盖住汉化包的更新；\n'
+                            '        重跑 gen_patchz.py 会以汉化包为基准重新生成')
 
     # 哪些键会被 LaunchURL 打开：扫调用点 + 判断按钮是否还在，不猜
     launched, evidence = scan_launch_url_keys(data_dir)

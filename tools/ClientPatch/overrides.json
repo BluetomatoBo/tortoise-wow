@@ -13,6 +13,21 @@
     "  汉化包里的 GlueLocalization.lua 只是一个空壳（Localize 函数体是空的），",
     "  所以这里不再写它，patch-Z 只装必须的那一份。",
     "",
+    "为什么改 GlobalStrings.lua（商城文字）：",
+    "  商城窗口标题、按钮、勾选框、「关于」面板正文都在客户端里，键名 DONO_SHOP_*，",
+    "  定义在 Interface\\FrameXML\\GlobalStrings.lua，由汉化包（patch-X.mpq）提供中文。",
+    "  patch-Z 优先级更高，所以在这里放一份就能改掉它们 —— 商品名/分类名在服务端，",
+    "  不在这里改。注意窗口标题是 XML 的 text=\"DONO_SHOP_TITLE\"，在解析框架时就取值，",
+    "  所以必须靠 GlobalStrings.lua（最先加载）来改，事后赋值的写法来不及。",
+    "  代价：patch-Z 会整份携带 GlobalStrings.lua（约 300KB / 5900 行）。工具每次",
+    "  都重新从当前生效的那份读取再改这三行，所以汉化包更新后重跑一次即可，",
+    "  生成时会打印「与基准相比 N 行不同」；N=0 说明这三行与汉化包当前内容相同，",
+    "  这个文件装上去不会有任何变化。",
+    "",
+    "值里的换行：JSON 里写 \\n（真换行），工具会转成 Lua 的 \\n 转义 —— 与汉化包",
+    "  原文件一致。若误写成 \\\\n，Lua 会把反斜杠当字面字符输出，「关于」正文里的",
+    "  12 处换行会全部消失、连成一大段。要写真正的反斜杠才用 \\\\。",
+    "",
     "改这些地址前先读 README 的「客户端能打开什么样的地址」：",
     "除 SERVER_ALERT_URL（客户端自己抓取，比较宽松）以外，",
     "所有 *_URL 都由 LaunchURL 打开，必须 http:// 开头、不能带端口、",
@@ -43,6 +58,11 @@
       "AUTH_PARENTAL_CONTROL_URL": "http://twow.home.boym.me/account/verify",
       "AUTH_TURTLE_WEBSITE": "http://twow.home.boym.me/",
       "TECH_SUPPORT_URL": "http://twow.home.boym.me/notice"
+    },
+    "Interface\\FrameXML\\GlobalStrings.lua": {
+      "DONO_SHOP_TITLE": "乌龟魔兽捐赠奖励",
+      "DONO_SHOP_ABOUT_TITLE": "关于",
+      "DONO_SHOP_ABOUT_TEXT": "所有捐赠奖励都是角色绑定的，而非账号绑定。\n\n非硬核角色有48小时的宽限期来请求退还捐赠奖励物品，部分物品可以前往暴风城63,73或奥格52,70鲍比男爵退还。\n\n一次性消耗品（如更改角色名称、种族变更、驻地契约、时尚硬币袋等）一经使用，即便在48小时宽限期内也无法退款。\n\n硬核角色死亡后捐赠的代币将自动退还。您可以创建一个硬核角色预览捐赠奖励。\n\n|CFFFF0000注意：删除非硬核角色不会退还代币。直接删除未死亡硬核角色不会退还代币。|R\n\n商城中的灰色条目代表其不适用于您的种族、职业或性别，请尽量不要兑换任何呈灰色条目的物品。\n\n如有任何问题，请使用/GM指令请求GM的协助。"
     }
   },
   "frameEdits": {
