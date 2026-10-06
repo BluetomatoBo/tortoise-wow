@@ -544,11 +544,13 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* loot_owner, 
     //     re-roll must not collect those again (m_suppressQuestItems);
     //   - a template that can never yield a non-quest item would loop forever,
     //     so CanDropNonQuestItem() skips it and the attempts are capped;
-    //   - money is not part of this. GenerateMoneyLoot runs after FillLoot, so a
-    //     creature that only ever dropped coin now also gets a guaranteed item.
+    //   - a corpse that already has coin on it is not empty, and is left alone.
+    //     Unit::Kill generates the money before calling this, so gold here is
+    //     what the corpse will actually have - a creature configured to drop
+    //     coin whose roll came out zero still gets the guaranteed item.
     if (sWorld.getConfig(CONFIG_BOOL_LOOT_RETRY_EMPTY_DROPS)
         && store.IsRetryEmptyRollsAllowed() && tab->CanDropNonQuestItem()
-        && items.empty())
+        && items.empty() && gold == 0)
     {
         m_suppressQuestItems = true;
         for (uint32 attempt = 0; attempt < MAX_EMPTY_LOOT_ROLL_ATTEMPTS && items.empty(); ++attempt)

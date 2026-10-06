@@ -1199,6 +1199,16 @@ void Unit::Kill(Unit* pVictim, SpellEntry const *spellProto, bool durabilityLoss
                 pCreatureVictim->lootForPickPocketed = false;
 
             loot->clear();
+
+            // Money first, so that a template reloaded for an empty drop (see
+            // Loot::FillLoot and Loot.RetryEmptyDrops) can tell whether the
+            // corpse already has something on it. Coin is not part of the roll,
+            // and nothing in FillLoot depends on gold still being zero, so this
+            // only decides whether a corpse with coin in it needs a guaranteed
+            // item as well. It stays here rather than in the other two callers
+            // (gameobject and item loot) because those stores do not opt in.
+            loot->GenerateMoneyLoot(pCreatureVictim->GetGoldMin(), pCreatureVictim->GetGoldMax());
+
             if (!(pCreatureVictim->AI() && pCreatureVictim->AI()->FillLoot(loot, looter)))
             {
                 if (uint32 lootid = pCreatureVictim->GetLootId())
@@ -1207,7 +1217,6 @@ void Unit::Kill(Unit* pVictim, SpellEntry const *spellProto, bool durabilityLoss
                     loot->FillLoot(lootid, LootTemplates_Creature, looter, false, false, pCreatureVictim);
                 }
             }
-            loot->GenerateMoneyLoot(pCreatureVictim->GetGoldMin(), pCreatureVictim->GetGoldMax());
         }
 
         if (pGroupTap)

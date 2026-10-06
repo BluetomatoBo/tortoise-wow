@@ -1725,8 +1725,10 @@ Rate.Drop.Money = 1
 #   - money (Rate.Drop.Money, and a creature's gold_min/gold_max);
 #   - anything but creature loot. Chests, fishing, pickpocketing, skinning,
 #     disenchanting and mail are untouched.
-# Note: because money is generated after the loot is rolled, a creature that only
-# ever dropped coin now also gets a guaranteed item.
+# A corpse that already has coin on it is left alone: it is not empty, so it does
+# not need a guaranteed item. The check is on the money the kill actually
+# produced, not on whether the creature is configured to drop any - a creature
+# with gold_max = 1 that rolls 0 coins is still empty and still gets the item.
 #
 # Re-rolling is capped (10 attempts, ~1e-7 of even reaching it), so a template
 # that can never produce a normal item - one that is all quest drops - cannot
