@@ -194,10 +194,12 @@ SELECT price AS updated_price, 'UPDATE' AS step,
   FROM shop_items WHERE id = @new_id;
 
 DELETE FROM shop_items WHERE id = @new_id;
--- ROW_COUNT() straight after the DELETE, with nothing in between: that is the
--- documented way to read it.
+-- Read the effect back rather than asking ROW_COUNT() how many rows it removed.
+-- MariaDB 10.6 evaluates ROW_COUNT() inside a SELECT against the SELECT itself
+-- (a result set, so -1) instead of the preceding DELETE, which reports a false
+-- FAIL. Asserting the observable outcome works on every version.
 SELECT 'DELETE' AS step,
-       IF(ROW_COUNT() = 1, 'PASS', 'FAIL') AS result;
+       IF((SELECT COUNT(*) FROM shop_items WHERE id = @new_id) = 0, 'PASS', 'FAIL') AS result;
 
 ROLLBACK;
 
