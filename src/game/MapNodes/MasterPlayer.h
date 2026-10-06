@@ -26,7 +26,11 @@ public:
 
     void Create(Player* player);
     void LoadPlayer(Player* player);
-    void SaveToDB();
+    // `direct` commits this transaction on the calling thread instead of
+    // queueing it for a DB worker. Callers that must have the rows visible
+    // immediately - a character is being created and the player may enter the
+    // world next - pass true; everything else leaves it queued.
+    void SaveToDB(bool direct = false);
     void Update();
 
     WorldSession* GetSession() const { return m_session; }

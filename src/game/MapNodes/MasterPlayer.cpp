@@ -52,12 +52,15 @@ void MasterPlayer::LoadPlayer(Player* player)
     m_ExtraFlags = player->GetExtraFlags();
 }
 
-void MasterPlayer::SaveToDB()
+void MasterPlayer::SaveToDB(bool direct)
 {
     CharacterDatabase.BeginTransaction(GetGUIDLow());
     SaveActions();
     SaveMails();
-    CharacterDatabase.CommitTransaction();
+    if (direct)
+        CharacterDatabase.CommitTransactionDirect();
+    else
+        CharacterDatabase.CommitTransaction();
 }
 
 void MasterPlayer::Update()

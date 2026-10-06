@@ -253,23 +253,23 @@ CharacterCreateOutcome CreateCharacter(uint32 accountId, CharacterCreateInfo con
     if (info.challengeMask)
         pNewChar->SetPlayerVariable(PlayerVariables::PendingChallengeMask, std::to_string(info.challengeMask));
 
-    // Commit this one synchronously (direct), not through the async queue.
+    // Both saves below commit synchronously (direct) instead of queueing for a
+    // DB worker, because the client reacts to CHAR_CREATE_SUCCESS immediately:
+    // it asks for a fresh character list (CharacterSelect.lua calls
+    // GetCharacterListUpdate() when that screen is shown), and the player may
+    // enter the world next.
     //
-    // The client asks for a fresh character list the moment it is told creation
-    // succeeded (CharacterSelect.lua calls GetCharacterListUpdate() when the
-    // screen is shown), and that SELECT is queued with AsyncPQuery - which goes
-    // to the general delay queue, while a queued commit goes to the per-guid
-    // serial queue. Two queues, no ordering: the SELECT could run first and the
-    // new character would be missing until the player reconnected.
-    //
-    // Committing on this thread makes the row exist before CHAR_CREATE_SUCCESS
-    // is sent, which is what the rest of this function already assumes.
+    // A queued commit races those reads. Queued writes go to the per-guid
+    // serial queue while AsyncPQuery reads go to the general delay queue, and
+    // two queues give no ordering: the new character could be missing from the
+    // list until the player reconnected, and the action bars could be missing
+    // when the player entered the world.
     if (!pNewChar->SaveToDB(false, true, true))
     {
         outcome.result = CHAR_CREATE_ERROR;
         return outcome;
     }
-    masterPlayer.SaveToDB();
+    masterPlayer.SaveToDB(true);
 
     sObjectMgr.InsertPlayerInCache(pNewChar.get());
     sObjectMgr.UpdatePlayerCachedPosition(pNewChar.get());
