@@ -295,15 +295,25 @@ curl -s  -H 'Host: twow.home.boym.me' http://172.18.1.6/notice | grep -o '<h1>[^
 #### 两个「看着像显示文字、其实不是」的列
 
 `shop_items.description` 和 `description_loc4` 世界服会读进内存，**然后再也不使用**。
-客户端显示的物品名和描述来自 **`item_template`**（中文服取 `locales_item` 的
-`_loc4`），条目字符串由核心自己拼：
+客户端显示的物品名和描述由核心从 `item_template` 取，条目字符串是核心自己拼的：
 
 ```
 Entries:<cat>=<subcat>=<物品名>=<价>=<description>=<entry>=<model>=<displayid>=<x>=<y>=<z>=<rot>=…
 ```
 
-所以表单把这两列标成「不被使用」——在那里改文字**不会**改变游戏里看到的内容。
-换个物品名得去改 `item_template` / `locales_item`。
+关键在这两格的来源**不一样**（`ObjectMgr.cpp:9665`）：
+
+| 字段 | 来源 |
+|---|---|
+| 物品名 | `NiHao=1` → `locales_item.name_loc4`（中文）；`NiHao=0` → `item_template.name`（英文） |
+| 描述 | **永远**是 `item_template.description`，**不做本地化**，两种区域都一样 |
+
+所以想让商城里显示中文：
+
+- **名称** → 翻 `locales_item.name_loc4`（前提是本服 `NiHao=1`）
+- **描述** → 只能翻 `item_template.description`。它没有 `_loc4` 版本可用，翻了之后英文客户端也会看到中文——这是核心的限制，不是后台能解决的
+
+在那两列里改文字**不会**改变游戏里看到的任何内容。
 
 #### 目前只做条目，不做分类
 
@@ -1019,16 +1029,27 @@ them:
 
 `shop_items.description` and `description_loc4` are read into memory by the world
 server and then **never used again**. The name and description the client shows
-come from **`item_template`** (from `locales_item` on a Chinese realm), assembled
-by the core into:
+come from `item_template`, assembled by the core into:
 
 ```
 Entries:<cat>=<subcat>=<name>=<price>=<description>=<entry>=<model>=<displayid>=<x>=<y>=<z>=<rot>=…
 ```
 
-The form labels both columns as unused for that reason: editing them there
-**changes nothing** in game. Renaming an item means editing
-`item_template` / `locales_item`.
+The two fields are not sourced the same way (`ObjectMgr.cpp:9665`), and that
+difference decides what you have to translate:
+
+| Field | Source |
+| --- | --- |
+| Name | `NiHao=1` → `locales_item.name_loc4`; `NiHao=0` → `item_template.name` |
+| Description | **always** `item_template.description` — no locale lookup, on either region |
+
+So Chinese text in the shop means translating `locales_item.name_loc4` for the
+name (and only when the realm has `NiHao=1`), and `item_template.description` for
+the description. The latter has no `_loc4` counterpart the core will use, so a
+translated description also shows to English clients — a core limitation, not
+something this page can fix.
+
+Editing those two columns **changes nothing** in game.
 
 #### Entries only, not categories
 
