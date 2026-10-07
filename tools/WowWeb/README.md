@@ -458,8 +458,22 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 | `/db/items` | 物品列表，可按品质、类别、物品等级区间筛选 |
 | `/db/items/{entry}` | 物品详情：属性、抗性、物品上的法术、售价、绑定、起始任务 |
 | `/db/spells`、`/db/spells/{id}` | 法术列表（按学派、等级筛选）与详情（含三个效果槽） |
-| `/db/quests`、`/db/quests/{entry}` | 任务列表与详情（需求物品/生物、奖励、任务文本） |
-| `/db/npcs`、`/db/npcs/{entry}` | 生物列表（按类型、等级筛选）与详情 |
+| `/db/quests`、`/db/quests/{entry}` | 任务列表与详情（需求物品/生物、奖励、任务文本、给予者与交付者） |
+| `/db/npcs`、`/db/npcs/{entry}` | 生物列表（按类型、等级筛选）与详情（含它开/交的任务、掉落、剥皮、偷窃、售货） |
+
+**交叉链接**（都在上面这些页面里，不需要额外的路由）：
+
+| 页面 | 区块 | 读的表 |
+|---|---|---|
+| 物品 | 掉落来源 / 从对象与容器开出 / 剥皮 / 偷窃 / 出售者 | `creature_loot_template`、`gameobject_loot_template`、`item_loot_template`、`skinning_loot_template`、`pickpocketing_loot_template`、`npc_vendor` |
+| 物品 | 任务需求 / 任务奖励 | `quest_template` 的 `ReqItemId1-4`、`RewItemId1-4`、`RewChoiceItemId1-6` |
+| 生物 | 开始的任务 / 交付的任务 | `creature_questrelation`、`creature_involvedrelation` |
+| 任务 | 任务给予者 / 任务交付者 | 上面两张表，加上 `gameobject_questrelation`、`gameobject_involvedrelation` |
+
+引用战利品（`mincountOrRef` 为负、`item` 列放的是 `reference_loot_template` 条目）会**递归展开**
+（深度上限 8，重复条目不重复进入，防止数据里的环），几率按路径相乘——与核心加载战利品时的算法
+一致。`groupid` 与 `condition_id` **不参与解释**：页面给的是那一行存的几率，也就是能拿去
+`creature_loot_template` 里对的那个数。
 
 要点：
 
@@ -476,6 +490,32 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 - 索引客户端 DBC 的字段（施法时间、持续时间、范围、图标、法术效果）**按原始数字显示**：
   要起名就得读客户端的 DBC 文件，而猜出来的标签比原始索引更糟。
 - **只读**：不建表、不写任何东西，权限沿用 `GRANT SELECT ON tw_world.*`。
+
+### 关于性能：那几条全表扫描
+
+关联查询用的是 `item` 列，而**战利品表的主键都从"谁掉"开始**（`creature_loot_template`
+是 `(entry, item, groupid)`），所以按物品查掉落没有索引可用，每次都是把整张表扫一遍：
+
+| 表 | 行数（本服） |
+|---|---|
+| `creature_loot_template` | 约 31 万 |
+| `npc_vendor` / `gameobject_loot_template` / `reference_loot_template` | 1–2 万 |
+| `item_loot_template`、`skinning_loot_template`、`pickpocketing_loot_template` | 约 3 千 |
+
+其余几张都很小，真正慢的只有第一张；一台私服的数据库页面上这通常在几十毫秒量级。想更快，
+可以在**你自己的库**上加一下索引（本站只读，不会替你改结构，也不依赖它）：
+
+```sql
+ALTER TABLE creature_loot_template     ADD INDEX idx_item (item);
+ALTER TABLE gameobject_loot_template   ADD INDEX idx_item (item);
+ALTER TABLE item_loot_template         ADD INDEX idx_item (item);
+ALTER TABLE skinning_loot_template     ADD INDEX idx_item (item);
+ALTER TABLE pickpocketing_loot_template ADD INDEX idx_item (item);
+ALTER TABLE npc_vendor                 ADD INDEX idx_item (item);
+ALTER TABLE reference_loot_template    ADD INDEX idx_item (item);
+```
+
+加不加都不影响正确性，也不影响核心本身（它启动时把战利品全部读进内存，运行期不查这些表）。
 
 ### 安全说明（要点）
 
@@ -1373,6 +1413,14 @@ same rows the client is being served from, so they cannot disagree with the game
 
 Worth knowing:
 
+* **Cross links**: the item page lists where an item comes from (loot tables,
+  vendors) and which quests want or hand it out; the creature page lists the
+  quests it starts and ends plus its loot; the quest page lists who gives it out
+  and who takes it back. Loot rows that point at a `reference_loot_template`
+  entry are expanded the way the core expands them - the chances along the path
+  are multiplied, depth is capped, and an entry already on the path is not
+  entered twice - so a drop that arrives through three levels of reference still
+  shows one usable number. `groupid` and `condition_id` are not interpreted.
 * **Language**: a Chinese visitor reads the `*_loc4` columns (this realm's Chinese
   lives there, and the shop module reads the same ones), everyone else the base
   columns, with `COALESCE` inside the query so a row with no translation still
@@ -1397,6 +1445,36 @@ Worth knowing:
   beyond the existing `GRANT SELECT ON tw_world.*`.
 
 ---
+
+## On the full table scans
+
+The relation queries filter on the `item` column, and every loot table's primary
+key starts at the loot's **owner** (`creature_loot_template` is
+`(entry, item, groupid)`). So there is no index to use and each lookup scans the
+table:
+
+| Table | Rows (this realm) |
+|---|---|
+| `creature_loot_template` | ~313k |
+| `npc_vendor` / `gameobject_loot_template` / `reference_loot_template` | 10-20k |
+| `item_loot_template`, `skinning_loot_template`, `pickpocketing_loot_template` | ~3k |
+
+Only the first is large; on a private server's database pages that is tens of
+milliseconds. If you want it faster, add the indexes on **your** database - this
+site is read-only, never changes the schema, and does not depend on them:
+
+```sql
+ALTER TABLE creature_loot_template     ADD INDEX idx_item (item);
+ALTER TABLE gameobject_loot_template   ADD INDEX idx_item (item);
+ALTER TABLE item_loot_template         ADD INDEX idx_item (item);
+ALTER TABLE skinning_loot_template     ADD INDEX idx_item (item);
+ALTER TABLE pickpocketing_loot_template ADD INDEX idx_item (item);
+ALTER TABLE npc_vendor                 ADD INDEX idx_item (item);
+ALTER TABLE reference_loot_template    ADD INDEX idx_item (item);
+```
+
+They change nothing about correctness, and nothing for the core itself - it reads
+every loot table into memory at startup and never queries these tables again.
 
 ## Security notes
 

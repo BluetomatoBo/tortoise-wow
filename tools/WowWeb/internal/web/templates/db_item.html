@@ -85,4 +85,124 @@
   <p class="hint">{{.T "db.itemSpellsHint"}}</p>
 </section>
 {{end}}
+
+{{with .Relations}}
+{{if .Truncated}}
+<section class="card">
+  <p class="hint">{{$.T "db.listTruncated"}}{{range $i, $k := .Truncated}}{{if $i}}、{{end}}{{$.T $k}}{{end}}</p>
+</section>
+{{end}}
+
+{{if .DroppedBy}}
+<section class="card">
+  <h2>{{$.T "db.droppedBy"}}</h2>
+  <table class="kv">
+    {{range .DroppedBy}}
+      <tr>
+        <th>{{template "droplink" dict "page" $ "kind" .Kind "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
+        <td class="right">{{template "dropchance" .}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .FoundIn}}
+<section class="card">
+  <h2>{{$.T "db.foundIn"}}</h2>
+  <table class="kv">
+    {{range .FoundIn}}
+      <tr>
+        <th>{{template "droplink" dict "page" $ "kind" .Kind "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
+        <td class="right">{{template "dropchance" .}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .ContainedIn}}
+<section class="card">
+  <h2>{{$.T "db.containedIn"}}</h2>
+  <table class="kv">
+    {{range .ContainedIn}}
+      <tr>
+        <th>{{template "droplink" dict "page" $ "kind" .Kind "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
+        <td class="right">{{template "dropchance" .}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .SkinnedFrom}}
+<section class="card">
+  <h2>{{$.T "db.skinnedFrom"}}</h2>
+  <table class="kv">
+    {{range .SkinnedFrom}}
+      <tr>
+        <th>{{template "droplink" dict "page" $ "kind" .Kind "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
+        <td class="right">{{template "dropchance" .}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .PickpocketedFrom}}
+<section class="card">
+  <h2>{{$.T "db.pickpocketedFrom"}}</h2>
+  <table class="kv">
+    {{range .PickpocketedFrom}}
+      <tr>
+        <th>{{template "droplink" dict "page" $ "kind" .Kind "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
+        <td class="right">{{template "dropchance" .}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .SoldBy}}
+<section class="card">
+  <h2>{{$.T "db.soldBy"}}</h2>
+  <table class="kv">
+    {{range .SoldBy}}
+      <tr>
+        <th>{{template "droplink" dict "page" $ "kind" .Kind "entry" .Entry "name" .Name}}</th>
+        <td class="right"></td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .RequiredBy}}
+<section class="card">
+  <h2>{{$.T "db.requiredBy"}}</h2>
+  <table class="kv">
+    {{range .RequiredBy}}
+      <tr>
+        <th><a href="/db/quests/{{.Entry}}">{{if .Title}}{{.Title}}{{else}}#{{.Entry}}{{end}}</a></th>
+        <td class="right">{{.Count}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .RewardedBy}}
+<section class="card">
+  <h2>{{$.T "db.rewardedBy"}}</h2>
+  <table class="kv">
+    {{range .RewardedBy}}
+      <tr>
+        <th><a href="/db/quests/{{.Entry}}">{{if .Title}}{{.Title}}{{else}}#{{.Entry}}{{end}}</a>{{if .Choice}} <span class="muted">· {{$.T "db.choiceReward"}}</span>{{end}}</th>
+        <td class="right">{{.Count}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+{{end}}
 {{end}}

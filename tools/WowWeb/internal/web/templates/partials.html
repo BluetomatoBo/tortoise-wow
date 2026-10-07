@@ -53,3 +53,20 @@
   </tbody>
 </table>
 {{end}}
+
+{{/* "droplink" and "dropchance" render one row of a relation list: the
+     entry's name as a link where a page exists for it, the markers for a drop
+     that only arrives through a reference table or only for a quest, and the
+     chance together with the stack size. They take a map built with dict, so
+     one block serves the item page, the creature page and the quest page. */}}
+{{define "droplink"}}
+  {{$page := .page}}{{$href := dbpath .kind .entry}}
+  {{if $href}}<a href="{{$href}}">{{end}}{{if .name}}{{.name}}{{else}}#{{.entry}}{{end}}{{if $href}}</a>{{end}}
+  {{if .via}}<span class="muted">· {{$page.T "db.viaReference"}} #{{.via}}</span>{{end}}
+  {{if .quest}}<span class="muted">· {{$page.T "db.questOnly"}}</span>{{end}}
+{{end}}
+
+{{define "dropchance"}}
+  {{if gt .Chance 0.0}}{{printf "%.2f%%" .Chance}}{{end}}
+  {{if gt .MaxCount 1}} <span class="muted">×{{.MaxCount}}</span>{{else if gt .MinCount 1}} <span class="muted">×{{.MinCount}}</span>{{end}}
+{{end}}

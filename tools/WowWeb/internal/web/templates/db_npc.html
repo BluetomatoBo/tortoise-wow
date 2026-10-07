@@ -28,4 +28,90 @@
   </table>
   <p class="hint">{{.T "db.npcHint"}}</p>
 </section>
+
+{{with .Relations}}
+{{if .Truncated}}
+<section class="card">
+  <p class="hint">{{$.T "db.listTruncated"}}{{range $i, $k := .Truncated}}{{if $i}}、{{end}}{{$.T $k}}{{end}}</p>
+</section>
+{{end}}
+
+{{if .StartsQuests}}
+<section class="card">
+  <h2>{{$.T "db.startsQuests"}}</h2>
+  <table class="kv">
+    {{range .StartsQuests}}
+      <tr><th><a href="/db/quests/{{.Entry}}">{{if .Title}}{{.Title}}{{else}}#{{.Entry}}{{end}}</a></th><td></td></tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .EndsQuests}}
+<section class="card">
+  <h2>{{$.T "db.endsQuests"}}</h2>
+  <table class="kv">
+    {{range .EndsQuests}}
+      <tr><th><a href="/db/quests/{{.Entry}}">{{if .Title}}{{.Title}}{{else}}#{{.Entry}}{{end}}</a></th><td></td></tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .Drops}}
+<section class="card">
+  <h2>{{$.T "db.drops"}}</h2>
+  <table class="kv">
+    {{range .Drops}}
+      <tr>
+        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
+        <td class="right">{{template "dropchance" .}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .Skins}}
+<section class="card">
+  <h2>{{$.T "db.skins"}}</h2>
+  <table class="kv">
+    {{range .Skins}}
+      <tr>
+        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
+        <td class="right">{{template "dropchance" .}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .Pickpockets}}
+<section class="card">
+  <h2>{{$.T "db.pickpockets"}}</h2>
+  <table class="kv">
+    {{range .Pickpockets}}
+      <tr>
+        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
+        <td class="right">{{template "dropchance" .}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .Sells}}
+<section class="card">
+  <h2>{{$.T "db.sells"}}</h2>
+  <table class="kv">
+    {{range .Sells}}
+      <tr>
+        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name}}</th>
+        <td class="right"></td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+{{end}}
 {{end}}

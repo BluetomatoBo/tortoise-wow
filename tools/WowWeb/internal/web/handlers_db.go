@@ -343,8 +343,13 @@ func (s *Server) handleDBItems(w http.ResponseWriter, r *http.Request, page *Pag
 
 type dbItemView struct {
 	PageData
-	Item  store.ContentItem
-	Query string
+	Item store.ContentItem
+	// Relations are the cross links (who drops it, who sells it, which quests
+	// want it). A failure to read them is not a failure of the page: the item
+	// itself is still worth showing, so the handler leaves this empty and the
+	// template skips the sections.
+	Relations *store.ItemRelations
+	Query     string
 }
 
 func (s *Server) handleDBItem(w http.ResponseWriter, r *http.Request, page *PageData) {
@@ -354,7 +359,8 @@ func (s *Server) handleDBItem(w http.ResponseWriter, r *http.Request, page *Page
 		return
 	}
 
-	item, err := s.store.ContentItem(r.Context(), dbLocale(page), entry)
+	loc := dbLocale(page)
+	item, err := s.store.ContentItem(r.Context(), loc, entry)
 	if err != nil {
 		if err == store.ErrNotFound {
 			s.notFound(w, r)
@@ -364,9 +370,15 @@ func (s *Server) handleDBItem(w http.ResponseWriter, r *http.Request, page *Page
 		return
 	}
 
+	relations, err := s.store.ItemRelations(r.Context(), loc, entry)
+	if err != nil {
+		s.serverError(w, r, "load item relations", err)
+		return
+	}
+
 	page.Title = item.Name
 	page.Active = "db"
-	s.rend.Render(w, http.StatusOK, "db_item", dbItemView{PageData: *page, Item: *item})
+	s.rend.Render(w, http.StatusOK, "db_item", dbItemView{PageData: *page, Item: *item, Relations: relations})
 }
 
 // ---------------------------------------------------------------------------
@@ -503,7 +515,9 @@ func (s *Server) handleDBQuests(w http.ResponseWriter, r *http.Request, page *Pa
 type dbQuestView struct {
 	PageData
 	Quest store.ContentQuest
-	Query string
+	// Relations are who hands the quest out and who takes it back.
+	Relations *store.QuestRelations
+	Query     string
 	// HasText lists the prose blocks that are present, so the page can skip the
 	// ones that are empty rather than printing empty headings.
 	HasDetails    bool
@@ -521,13 +535,20 @@ func (s *Server) handleDBQuest(w http.ResponseWriter, r *http.Request, page *Pag
 		return
 	}
 
-	quest, err := s.store.ContentQuest(r.Context(), dbLocale(page), entry)
+	loc := dbLocale(page)
+	quest, err := s.store.ContentQuest(r.Context(), loc, entry)
 	if err != nil {
 		if err == store.ErrNotFound {
 			s.notFound(w, r)
 			return
 		}
 		s.serverError(w, r, "load quest", err)
+		return
+	}
+
+	relations, err := s.store.QuestRelations(r.Context(), loc, entry)
+	if err != nil {
+		s.serverError(w, r, "load quest relations", err)
 		return
 	}
 
@@ -543,6 +564,7 @@ func (s *Server) handleDBQuest(w http.ResponseWriter, r *http.Request, page *Pag
 	s.rend.Render(w, http.StatusOK, "db_quest", dbQuestView{
 		PageData:      *page,
 		Quest:         *quest,
+		Relations:     relations,
 		HasDetails:    strings.TrimSpace(quest.Details) != "",
 		HasObjectives: strings.TrimSpace(quest.Objectives) != "",
 		HasReward:     strings.TrimSpace(quest.OfferRewardText) != "",
@@ -608,7 +630,9 @@ func (s *Server) handleDBCreatures(w http.ResponseWriter, r *http.Request, page 
 type dbCreatureView struct {
 	PageData
 	Creature store.ContentCreature
-	Query    string
+	// Relations are the quests it starts and ends plus its loot tables.
+	Relations *store.CreatureRelations
+	Query     string
 }
 
 func (s *Server) handleDBCreature(w http.ResponseWriter, r *http.Request, page *PageData) {
@@ -618,7 +642,8 @@ func (s *Server) handleDBCreature(w http.ResponseWriter, r *http.Request, page *
 		return
 	}
 
-	creature, err := s.store.ContentCreature(r.Context(), dbLocale(page), entry)
+	loc := dbLocale(page)
+	creature, err := s.store.ContentCreature(r.Context(), loc, entry)
 	if err != nil {
 		if err == store.ErrNotFound {
 			s.notFound(w, r)
@@ -628,7 +653,13 @@ func (s *Server) handleDBCreature(w http.ResponseWriter, r *http.Request, page *
 		return
 	}
 
+	relations, err := s.store.CreatureRelations(r.Context(), loc, entry)
+	if err != nil {
+		s.serverError(w, r, "load creature relations", err)
+		return
+	}
+
 	page.Title = creature.Name
 	page.Active = "db"
-	s.rend.Render(w, http.StatusOK, "db_npc", dbCreatureView{PageData: *page, Creature: *creature})
+	s.rend.Render(w, http.StatusOK, "db_npc", dbCreatureView{PageData: *page, Creature: *creature, Relations: relations})
 }

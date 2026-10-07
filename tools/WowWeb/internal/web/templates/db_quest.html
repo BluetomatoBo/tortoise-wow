@@ -107,4 +107,36 @@
   <p>{{questtext .Quest.EndText}}</p>
 </section>
 {{end}}
+
+{{with .Relations}}
+{{if or .Starts .Ends}}
+<section class="card">
+  <h2>{{$.T "db.questGivers"}}</h2>
+  {{if .Starts}}
+  <table class="kv">
+    {{range .Starts}}
+      <tr>
+        <th>{{template "droplink" dict "page" $ "kind" .Kind "entry" .Entry "name" .Name}}</th>
+        <td class="right">{{$.T (printf "db.kind.%s" .Kind)}}</td>
+      </tr>
+    {{end}}
+  </table>
+  {{else}}<p class="muted">{{$.T "db.none"}}</p>{{end}}
+</section>
+
+<section class="card">
+  <h2>{{$.T "db.questEnders"}}</h2>
+  {{if .Ends}}
+  <table class="kv">
+    {{range .Ends}}
+      <tr>
+        <th>{{template "droplink" dict "page" $ "kind" .Kind "entry" .Entry "name" .Name}}</th>
+        <td class="right">{{$.T (printf "db.kind.%s" .Kind)}}</td>
+      </tr>
+    {{end}}
+  </table>
+  {{else}}<p class="muted">{{$.T "db.none"}}</p>{{end}}
+</section>
+{{end}}
+{{end}}
 {{end}}

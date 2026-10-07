@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -126,6 +127,39 @@ func templateFuncs() template.FuncMap {
 		// breaks, so quest prose reads as sentences rather than as
 		// "word$B$Bword". See questtext.go for what it deliberately leaves.
 		"questtext": questText,
+
+		// dict builds a map from alternating key/value arguments, so a
+		// {{template}} call can carry more than the single value html/template
+		// allows. It reports a malformed call instead of rendering half a row.
+		"dict": func(kv ...any) (map[string]any, error) {
+			if len(kv)%2 != 0 {
+				return nil, fmt.Errorf("dict: got %d arguments, want key/value pairs", len(kv))
+			}
+			out := make(map[string]any, len(kv)/2)
+			for i := 0; i < len(kv); i += 2 {
+				key, ok := kv[i].(string)
+				if !ok {
+					return nil, fmt.Errorf("dict: key %v is not a string", kv[i])
+				}
+				out[key] = kv[i+1]
+			}
+			return out, nil
+		},
+
+		// Gameobjects have no browser yet, so they come back empty and the
+		// template renders them as plain text. The kind is taken as any
+		// because a template passes the literal "item" as a string while the
+		// store hands over a typed DropKind.
+		"dbpath": func(kind any, entry uint32) string {
+			switch store.DropKind(fmt.Sprint(kind)) {
+			case store.DropCreature:
+				return "/db/npcs/" + strconv.FormatUint(uint64(entry), 10)
+			case store.DropItem:
+				return "/db/items/" + strconv.FormatUint(uint64(entry), 10)
+			default:
+				return ""
+			}
+		},
 
 		// list renders a []string as a comma separated list, or a dash.
 		"list": func(items []string) string {

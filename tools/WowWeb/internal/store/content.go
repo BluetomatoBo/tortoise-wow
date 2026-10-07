@@ -780,13 +780,12 @@ func (s *Store) ContentQuest(ctx context.Context, loc ContentLocale, entry uint3
 
 // itemNamesQuery loads the names of the given item entries in one round trip.
 func itemNamesQuery(loc ContentLocale, ids []uint32) (string, []any) {
-	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(ids)), ",")
 	args := make([]any, 0, len(ids))
 	for _, id := range ids {
 		args = append(args, id)
 	}
 	return "SELECT i.entry, " + loc.localized("cl", "i", "name") + " FROM item_template i" +
-		loc.join("cl", "locales_item", "entry", "i") + " WHERE i.entry IN (" + placeholders + ")", args
+		loc.join("cl", "locales_item", "entry", "i") + " WHERE i.entry IN (" + placeholders(len(ids)) + ")", args
 }
 
 // fillItemNames adds the name of each referenced item so a quest page can link

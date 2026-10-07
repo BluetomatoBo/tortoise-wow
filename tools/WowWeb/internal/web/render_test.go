@@ -272,6 +272,24 @@ func TestTemplatesParse(t *testing.T) {
 			},
 		}}},
 		{"db_spell", dbSpellView{PageData: page, Spell: store.ContentSpell{Entry: 9, Name: "Frostbolt"}}},
+		{"db_item", dbItemView{
+			PageData: page,
+			Item:     store.ContentItem{Entry: 80119, Name: "Mechanical Drumstick", Quality: 2},
+			Relations: &store.ItemRelations{
+				DroppedBy:        []store.ContentDrop{{Entry: 80117, Name: "Haywire Battlechicken", Kind: store.DropCreature, Chance: 12.5, MinCount: 1, MaxCount: 2}},
+				FoundIn:          []store.ContentDrop{{Entry: 4001, Name: "Wanted Poster", Kind: store.DropGameObject, Chance: 100}},
+				ContainedIn:      []store.ContentDrop{{Entry: 50071, Name: "Sturdy Lockbox", Kind: store.DropItem, Chance: 3.5}},
+				SkinnedFrom:      []store.ContentDrop{{Entry: 80117, Name: "Haywire Battlechicken", Kind: store.DropCreature, Chance: 40}},
+				PickpocketedFrom: []store.ContentDrop{{Entry: 80117, Name: "Haywire Battlechicken", Kind: store.DropCreature, Chance: 5}},
+				SoldBy:           []store.ContentDrop{{Entry: 80117, Name: "Haywire Battlechicken", Kind: store.DropCreature}},
+				RequiredBy:       []store.ContentQuestRef{{Entry: 80104, Title: "The Other White Mech", Count: 5}},
+				RewardedBy: []store.ContentQuestRef{
+					{Entry: 80104, Title: "The Other White Mech", Count: 1},
+					{Entry: 5, Title: "A Quest", Count: 1, Choice: true},
+				},
+				Truncated: []string{"db.droppedBy", "db.soldBy"},
+			},
+		}},
 		{"db_quests", dbQuestsView{
 			PageData: page, Search: "mech", Total: 1, Page: 1, Pages: 1,
 			FilterMin: &minLevel, FilterMax: &maxLevel,
@@ -297,6 +315,13 @@ func TestTemplatesParse(t *testing.T) {
 				},
 				RewardItems: []store.ContentItemCount{{Entry: 80119, Count: 1, Name: "Mechanical Drumstick"}},
 				ChoiceItems: []store.ContentItemCount{{Entry: 50071, Count: 1}, {Entry: 50072, Count: 1, Name: "Other"}},
+			},
+			Relations: &store.QuestRelations{
+				Starts: []store.ContentSourceRef{
+					{Entry: 80117, Name: "Haywire Battlechicken", Kind: store.DropCreature},
+					{Entry: 4001, Name: "Wanted Poster", Kind: store.DropGameObject},
+				},
+				Ends: []store.ContentSourceRef{{Entry: 80117, Name: "Haywire Battlechicken", Kind: store.DropCreature}},
 			}}},
 		// The same page with nothing filled in at all.
 		{"db_quest", dbQuestView{PageData: page, Quest: store.ContentQuest{Entry: 5, Title: "A Quest"}}},
@@ -312,10 +337,22 @@ func TestTemplatesParse(t *testing.T) {
 		{"db_npc", dbCreatureView{PageData: page, Creature: store.ContentCreature{
 			Entry: 80117, Name: "Haywire Battlechicken", SubName: "Elite Chicken",
 			LevelMin: 2, LevelMax: 3, Rank: 1, Type: 9, Faction: 35, NPCFlags: 0x81,
-			LootID: 80117, GossipMenuID: 12, VendorID: 0, TrainerType: 0,
+			LootID: 80117, GossipMenuID: 12, VendorID: 80117, TrainerType: 0,
 			Scale: 1.25, GoldMin: 0, GoldMax: 25, Civilian: 1, RacialLeader: 0,
 			DynamicFlags: 0, AIName: "EventAI", ScriptName: "npc_haywire",
-		}}},
+		}, Relations: &store.CreatureRelations{
+			StartsQuests: []store.ContentQuestRef{{Entry: 80104, Title: "The Other White Mech"}},
+			EndsQuests:   []store.ContentQuestRef{{Entry: 5, Title: "A Quest"}},
+			Drops: []store.ContentLootItem{
+				{Entry: 80119, Name: "Mechanical Drumstick", Chance: 12.5, MinCount: 1, MaxCount: 2},
+				{Entry: 50071, Name: "Sturdy Lockbox", Chance: 0.5, MinCount: 1, MaxCount: 1, Via: 30016, QuestOnly: true},
+			},
+			Skins:       []store.ContentLootItem{{Entry: 2318, Name: "Light Leather", Chance: 100, MinCount: 1, MaxCount: 1}},
+			Pickpockets: []store.ContentLootItem{{Entry: 117, Name: "Tough Jerky", Chance: 25, MinCount: 1, MaxCount: 1}},
+			Sells:       []store.ContentLootItem{{Entry: 117, Name: "Tough Jerky", Chance: 100}, {Entry: 4540, Name: "Tough Hunk of Bread", Chance: 100}},
+			Truncated:   []string{"db.sells"},
+		},
+		}},
 		{"db_npc", dbCreatureView{PageData: page, Creature: store.ContentCreature{
 			Entry: 2, Name: "Spawn Point", LevelMin: 60, LevelMax: 60, Type: 7, Scale: 1,
 		}}},

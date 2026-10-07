@@ -46,7 +46,13 @@ var tablesNeeded = []string{
 	"item_instance", "mail", "mail_items",
 	// World content, read by the browser.
 	"item_template", "spell_template", "quest_template", "creature_template",
-	"locales_item", "locales_spell", "locales_quest", "locales_creature",
+	"gameobject_template",
+	"locales_item", "locales_spell", "locales_quest", "locales_creature", "locales_gameobject",
+	// Cross links, read by the relation lists on the item, creature and quest pages.
+	"creature_loot_template", "gameobject_loot_template", "item_loot_template",
+	"skinning_loot_template", "pickpocketing_loot_template", "reference_loot_template",
+	"npc_vendor", "creature_questrelation", "creature_involvedrelation",
+	"gameobject_questrelation", "gameobject_involvedrelation",
 }
 
 func testDSN(t *testing.T) string {
@@ -989,6 +995,43 @@ func TestIntegration(t *testing.T) {
 			 VALUES (2, 'Spawn Point', 60, 60, 7)`,
 			`INSERT INTO locales_creature (entry, name_loc4, subname_loc4)
 			 VALUES (80117, '发疯的战斗鸡', '')`,
+			`INSERT INTO gameobject_template (entry, type, displayId, name)
+			 VALUES (4001, 2, 1, 'Wanted Poster')`,
+			`INSERT INTO locales_gameobject (entry, name_loc4) VALUES (4001, '通缉告示')`,
+
+			// Loot, in all four shapes the walker has to tell apart:
+			//   a direct drop, a drop that only arrives through a reference, the
+			//   same item stored a second time inside a nested reference, and a
+			//   quest-only drop whose chance is stored negative.
+			`INSERT INTO creature_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
+			 VALUES (80117, 80119, 25, 0, 1, 2)`,
+			`INSERT INTO creature_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
+			 VALUES (80117, 30016, 50, 0, -30016, 1)`,
+			`INSERT INTO creature_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
+			 VALUES (80117, 30017, 40, 0, -30017, 1)`,
+			`INSERT INTO creature_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
+			 VALUES (80117, 2, -100, 0, 1, 1)`,
+			`INSERT INTO reference_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
+			 VALUES (30016, 80119, 100, 0, 1, 3)`,
+			`INSERT INTO reference_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
+			 VALUES (30017, 30016, 50, 0, -30016, 1)`,
+			`INSERT INTO skinning_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
+			 VALUES (80117, 2, 100, 0, 1, 1)`,
+			`INSERT INTO pickpocketing_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
+			 VALUES (80117, 1, 10, 0, 1, 1)`,
+			`INSERT INTO gameobject_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
+			 VALUES (4001, 1, 100, 0, 1, 1)`,
+			`INSERT INTO item_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
+			 VALUES (1, 2, 5, 0, 1, 1)`,
+			`INSERT INTO npc_vendor (entry, slot, item) VALUES (80117, 1, 1)`,
+			`INSERT INTO creature_questrelation (id, quest) VALUES (80117, 1)`,
+			`INSERT INTO creature_involvedrelation (id, quest) VALUES (80117, 1)`,
+			`INSERT INTO gameobject_questrelation (id, quest) VALUES (4001, 1)`,
+			// The quest hands out a choice reward as well, which is a second set
+			// of columns on the same row.
+			`INSERT INTO quest_template (entry, Title, QuestLevel, MinLevel, RewItemId1, RewItemCount1, RewChoiceItemId1, RewChoiceItemCount1)
+			 VALUES (2, 'A Quest', 5, 1, 2, 3, 1, 1)`,
+			`INSERT INTO locales_quest (entry, Title_loc4) VALUES (2, '一个任务')`,
 		} {
 			if _, err := db.ExecContext(ctx, stmt); err != nil {
 				t.Fatalf("seed %s: %v", stmt, err)
@@ -999,7 +1042,7 @@ func TestIntegration(t *testing.T) {
 
 		t.Run("Counts", func(t *testing.T) {
 			counts := st.ContentCountsFor(ctx)
-			if counts.Items != 3 || counts.Spells != 1 || counts.Quests != 1 || counts.Creatures != 2 {
+			if counts.Items != 3 || counts.Spells != 1 || counts.Quests != 2 || counts.Creatures != 2 {
 				t.Errorf("counts = %+v", counts)
 			}
 		})
@@ -1177,6 +1220,145 @@ func TestIntegration(t *testing.T) {
 			// A pasted entry has to work on every kind.
 			if got := kinds("80117"); got["creature"] != "发疯的战斗鸡" {
 				t.Errorf("entry search found %+v", got)
+			}
+		})
+
+		t.Run("ItemRelations", func(t *testing.T) {
+			rel, err := st.ItemRelations(ctx, store.ContentLocaleZH, 80119)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// One direct row and two that arrive through references: 30016 holds
+			// the item outright, and 30017 holds 30016, so the deeper row has to
+			// carry the product of both hops (40% x 50% = 20%).
+			if len(rel.DroppedBy) != 3 {
+				t.Fatalf("dropped by = %+v, want 3 rows", rel.DroppedBy)
+			}
+			byEntry := map[uint32]store.ContentDrop{}
+			for _, d := range rel.DroppedBy {
+				byEntry[d.Via] = d
+				if d.Name != "发疯的战斗鸡" {
+					t.Errorf("drop source %d name = %q, want the Chinese name", d.Entry, d.Name)
+				}
+			}
+			if got := byEntry[0]; got.Chance != 25 || got.MinCount != 1 || got.MaxCount != 2 {
+				t.Errorf("direct drop = %+v, want 25%% of 1-2", got)
+			}
+			if got := byEntry[30016]; got.Chance != 50 || got.MaxCount != 3 {
+				t.Errorf("single hop = %+v, want 50%% of up to 3", got)
+			}
+			if got := byEntry[30017]; got.Chance != 20 {
+				t.Errorf("nested hop chance = %v, want 20", got.Chance)
+			}
+
+			if len(rel.ContainedIn) != 1 || rel.ContainedIn[0].Entry != 1 {
+				t.Errorf("contained in = %+v, want the one container", rel.ContainedIn)
+			}
+			if len(rel.FoundIn) != 1 || rel.FoundIn[0].Name != "通缉告示" {
+				t.Errorf("found in = %+v, want the gameobject", rel.FoundIn)
+			}
+
+			// A vendor row has no chance to report.
+			if len(rel.SoldBy) != 1 || rel.SoldBy[0].Entry != 80117 || rel.SoldBy[0].Chance != 0 {
+				t.Errorf("sold by = %+v", rel.SoldBy)
+			}
+
+			// Quest 1 asks for five of the item, and quest 2 hands out three.
+			var required, rewarded uint16
+			for _, q := range rel.RequiredBy {
+				if q.Entry == 1 {
+					required = q.Count
+				}
+			}
+			for _, q := range rel.RewardedBy {
+				if q.Entry == 2 {
+					rewarded = q.Count
+				}
+			}
+			if required != 5 {
+				t.Errorf("required count = %d, want 5", required)
+			}
+			if rewarded != 3 {
+				t.Errorf("rewarded count = %d, want 3", rewarded)
+			}
+		})
+
+		t.Run("ItemRelationsChoiceReward", func(t *testing.T) {
+			// The choice columns are a second set of pairs on the same row, so
+			// this is the case that catches a scan reading them in the wrong
+			// order.
+			rel, err := st.ItemRelations(ctx, store.ContentLocaleBase, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var found bool
+			for _, q := range rel.RewardedBy {
+				if q.Entry == 2 && q.Choice && q.Count == 1 {
+					found = true
+				}
+			}
+			if !found {
+				t.Errorf("choice reward missing from %+v", rel.RewardedBy)
+			}
+		})
+
+		t.Run("CreatureRelations", func(t *testing.T) {
+			rel, err := st.CreatureRelations(ctx, store.ContentLocaleZH, 80117)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(rel.StartsQuests) != 1 || rel.StartsQuests[0].Title != "另一只白鸡" {
+				t.Errorf("starts = %+v", rel.StartsQuests)
+			}
+			if len(rel.EndsQuests) != 1 {
+				t.Errorf("ends = %+v", rel.EndsQuests)
+			}
+
+			// Direct rows first, then what the references expand to: two direct
+			// rows (the item and a quest-only one), then the item again from
+			// 30016 and once more through 30017.
+			if len(rel.Drops) != 4 {
+				t.Fatalf("drops = %+v, want 4 rows", rel.Drops)
+			}
+			if rel.Drops[0].Entry != 2 || !rel.Drops[0].QuestOnly || rel.Drops[0].Chance != 100 {
+				t.Errorf("quest-only drop = %+v", rel.Drops[0])
+			}
+			for _, it := range rel.Drops {
+				if it.Entry == 80119 && it.Name != "机械鸡腿" {
+					t.Errorf("loot item %d name = %q, want the Chinese name", it.Entry, it.Name)
+				}
+			}
+			if len(rel.Skins) != 1 || rel.Skins[0].Entry != 2 {
+				t.Errorf("skins = %+v", rel.Skins)
+			}
+			if len(rel.Pickpockets) != 1 || rel.Pickpockets[0].Entry != 1 {
+				t.Errorf("pickpockets = %+v", rel.Pickpockets)
+			}
+			if len(rel.Sells) != 1 || rel.Sells[0].Name != "精良的剑" {
+				t.Errorf("sells = %+v", rel.Sells)
+			}
+		})
+
+		t.Run("QuestRelations", func(t *testing.T) {
+			rel, err := st.QuestRelations(ctx, store.ContentLocaleZH, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var creatureGiver, goGiver bool
+			for _, s := range rel.Starts {
+				switch s.Kind {
+				case store.DropCreature:
+					creatureGiver = s.Entry == 80117 && s.Name == "发疯的战斗鸡"
+				case store.DropGameObject:
+					goGiver = s.Entry == 4001 && s.Name == "通缉告示"
+				}
+			}
+			if !creatureGiver || !goGiver {
+				t.Errorf("starts = %+v, want both a creature and a gameobject", rel.Starts)
+			}
+			if len(rel.Ends) != 1 || rel.Ends[0].Entry != 80117 {
+				t.Errorf("ends = %+v", rel.Ends)
 			}
 		})
 	})
