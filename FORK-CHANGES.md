@@ -26,7 +26,7 @@ git diff --stat 1181dev...1181-zhcn-localization -- src/
 | 服务端缺陷修复 | 3 处 | `src/game/` |
 | 新增功能 | 1 个 | `src/game/LootMgr.*` 等 |
 | 配置模板补文档 | 2 个键 | `src/mangosd/mangosd.conf.dist.in` |
-| 新增工具 | 2 套 | `tools/WowWeb/`、`tools/ClientPatch/` |
+| 新增工具 | 3 套 | `tools/WowWeb/`、`tools/ClientPatch/`、`tools/I18nKit/` |
 
 > 上游的东西**一个都没删**：120 个文件里 104 个是新增、16 个是修改，全部 18 行删除都是
 > 被替换掉的旧代码，没有删掉任何文件或功能。
@@ -241,7 +241,23 @@ Loot.RetryEmptyDrops = 1     # 默认 0 = 保持原配置的概率，可用 .rel
 - `deploy/nginx/twow.home.boym.me.conf` —— 80 端口反代（客户端只肯打开 80 端口的
   `http://域名` 链接，且 `/alert` 不能被重定向）
 
-**6.2 `tools/ClientPatch/` —— 客户端补丁生成器（Python，6 个文件）**
+**6.2 `tools/I18nKit/` —— 汉化缺口清单工具（Python）**
+
+把还缺中文的客户端可见文本导成待翻译清单。为什么需要它：任务文本只在服务端（1.12 客户端的
+DBC 不存任务文本），官方 zhCN 又只覆盖官方内容，所以 Turtle 自定义任务（Balor 等）**哪儿都没有
+中文可参考** —— 约 6700 个任务里 214 个连标题都没有中文。
+
+`export_missing_quests.py` 调系统里的 `mysql` 客户端（无需 Python 依赖），产出三份文件：
+
+- `quests-missing.md` —— 按**任务链**分组的可读清单，带等级、给予者、上交对象、前后置任务
+- `quests-missing.csv` —— 给电子表格
+- `quests-missing.template.sql` —— 可直接填空的 `INSERT ... ON DUPLICATE KEY UPDATE`，
+  英文原文放在注释里，填完导入即生效（**只写 `*_loc4` 列**）
+
+判定规则是「**英文有内容、`*_loc4` 为空**」—— 英文本来就空的列不算缺口。结果行数异常时会
+**报警并统计**，全部异常时直接失败退出（清单漏行比工具报错更糟）。
+
+**6.3 `tools/ClientPatch/` —— 客户端补丁生成器（Python，6 个文件）**
 
 按补丁优先级解析客户端 MPQ，从**当前生效**的那份基准生成 `patch-Z.mpq`：
 
@@ -543,7 +559,29 @@ guards against. Two operational files come with it:
 * `deploy/nginx/twow.home.boym.me.conf` — the port-80 reverse proxy the client needs
   (it only opens `http://domain` links on port 80, and `/alert` must not be redirected).
 
-**6.2 `tools/ClientPatch/` — the client patch builder (Python, 6 files)**
+**6.2 `tools/I18nKit/` — the translation-gap worklist tool (Python)**
+
+Turns client-visible text that has no Chinese yet into a worklist. It exists because quests
+fall outside both real sources: a 1.12 client keeps no quest text (it is server-side only) and
+official zhCN covers official content only, so a Turtle custom quest such as the Balor chains
+has **no Chinese anywhere to copy from** - 214 of roughly 6700 quests have no Chinese title at
+all.
+
+`export_missing_quests.py` drives the `mysql` client (no Python dependencies) and writes:
+
+* `quests-missing.md` - a readable sheet grouped by **quest chain**, with level, giver,
+  turn-in, and the previous and next quest
+* `quests-missing.csv` - the same rows for a spreadsheet
+* `quests-missing.template.sql` - ready-to-fill `INSERT ... ON DUPLICATE KEY UPDATE`
+  statements with the English in the comments; import it and the text is live (it only writes
+  the `*_loc4` columns)
+
+A column counts as a gap when the **English has text and `*_loc4` is empty**; columns that are
+empty in English are not gaps. Malformed result rows are **counted and reported**, and the run
+fails if every row is malformed - a worklist that quietly loses rows is worse than a tool that
+stops.
+
+**6.3 `tools/ClientPatch/` — the client patch builder (Python, 6 files)**
 
 Resolves the client's MPQ priority order and builds `patch-Z.mpq` from the currently
 effective base:
