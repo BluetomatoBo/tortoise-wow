@@ -13,13 +13,21 @@ Used by gen_icons.py and gen_dbc_names.py.
 import hashlib
 import json
 import os
+import re
 import struct
 import subprocess
 import sys
 import urllib.request
 
 class Client:
-    """The client files the manifest describes, cached and hash-checked."""
+    """The client files the manifest describes, cached and hash-checked.
+
+    A path is looked up the way the client itself resolves one: case does not
+    matter and either separator does. The manifest writes `Interface/Icons/x.blp`
+    while the client's own code and its MPQs write `Interface\\Icons\\x.blp`, and
+    a generator that asks with the other one has to be answered, not quietly told
+    the file is missing.
+    """
 
     def __init__(self, manifest_path, cache_dir, offline=False):
         self.offline = offline
@@ -35,9 +43,10 @@ class Client:
             if name and node.get("type") == "file" and node.get("mirrors"):
                 # The same path can be listed twice (base client and a patch);
                 # the newer mtime is the one the client currently loads.
-                old = self.entries.get(name)
+                key = client_key(name)
+                old = self.entries.get(key)
                 if old is None or node.get("mtime", 0) > old.get("mtime", 0):
-                    self.entries[name] = node
+                    self.entries[key] = node
             for value in node.values():
                 self._collect(value)
         elif isinstance(node, list):
@@ -50,10 +59,10 @@ class Client:
         The hash is checked on every call, not only on the first download: a file
         left truncated by an interrupted run would otherwise be trusted forever.
         """
-        entry = self.entries.get(path)
+        entry = self.entries.get(client_key(path))
         if entry is None:
             return None
-        local = os.path.join(self.cache, path.replace("/", "_"))
+        local = os.path.join(self.cache, safe_name(client_key(path)))
         want = entry["hash"].lower()
         if os.path.exists(local) and hashlib.sha256(open(local, "rb").read()).hexdigest() == want:
             return local
@@ -135,5 +144,18 @@ def safe_name(name):
     with another.
     """
     return re.sub(r"[^a-z0-9_.-]", "_", name)
+
+
+def client_key(path):
+    """A path as the client compares it: separators and case do not matter.
+
+    The manifest writes `Interface/WorldMap/Elwynn/Elwynn1.blp`, this tool's
+    generators ask in the client's own notation
+    (`Interface\\WorldMap\\Elwynn\\Elwynn1.blp`, the way WorldMapFrame.lua builds
+    it), and an MPQ would accept either. Normalising to one form is what lets a
+    single lookup answer all of them - the zone maps were missing from the CDN for
+    as long as the two notations were compared as strings.
+    """
+    return path.replace("\\", "/").lower()
 
 

@@ -248,13 +248,14 @@ pre {
 .tt-head { display: flex; gap: .5rem; align-items: flex-start; margin-bottom: .2rem; }
 
 /* ---- zone maps ----
-   The image is the client's own 256x256 zone map; the dots are placed in
-   percent by the server, so a map needs no script. */
+   The image is the client's own zone map, assembled from its twelve tiles and
+   shipped at half size (501x334, see gen_maps.py); the dots are placed in percent
+   by the server, so a map needs no script. */
 .maprow { display: flex; flex-wrap: wrap; gap: 1rem; }
 .map { margin: 0; }
 .map img {
   display: block;
-  width: 256px;
+  width: 480px;
   max-width: 100%;
   height: auto;
   border: 1px solid var(--border);

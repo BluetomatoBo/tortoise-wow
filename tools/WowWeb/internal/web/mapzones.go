@@ -16,6 +16,12 @@ import (
 // client's WorldMapArea.dbc (see gen_maps.py for how the four floats are read -
 // they are rotated against the axes, which is why the conversion below swaps them).
 //
+// The percentages are of the picture the client draws, which is the whole zone and
+// not one of its tiles: gen_maps.py assembles the twelve pieces the client keeps
+// (a 4x3 grid, see WorldMapFrame.xml) into the 1002x668 frame before scaling it
+// down. Drawing a percentage on a single corner tile - which this site did until
+// the maps were checked against that XML - puts every dot in the wrong place.
+//
 // The conversion is the one the AoWoW this site replaces used:
 //
 //	x% = 100 - (y - yMin) / (yMax - yMin) * 100
@@ -30,14 +36,20 @@ var mapZonesData string
 
 // zoneBox is one zone's map and the world box it covers.
 type zoneBox struct {
+	area                   uint32
 	dir                    string
 	mapID                  uint16
 	xmin, xmax, ymin, ymax float64
 }
 
 var (
-	zoneByArea  = map[uint32]zoneBox{}
-	areasPerMap = map[uint16][]uint32{}
+	// boxesByMap holds every box of a map id. A map can carry its own fallback
+	// row - area 0, "Azeroth" on map 0 and "Kalimdor" on map 1 - which is why the
+	// table is keyed by the map and not by the area: the same area id names a
+	// different box on each continent, and a lookup that ignored the map answered a
+	// Kalimdor point with Azeroth's box and Azeroth's picture.
+	boxesByMap = map[uint16][]zoneBox{}
+	boxCount   int
 )
 
 func init() {
@@ -57,7 +69,7 @@ func init() {
 		if err != nil {
 			continue
 		}
-		box := zoneBox{dir: field[1], mapID: uint16(mapID)}
+		box := zoneBox{area: uint32(area), dir: field[1], mapID: uint16(mapID)}
 		if box.xmin, err = strconv.ParseFloat(field[3], 64); err != nil {
 			continue
 		}
@@ -70,8 +82,8 @@ func init() {
 		if box.ymax, err = strconv.ParseFloat(field[6], 64); err != nil {
 			continue
 		}
-		zoneByArea[uint32(area)] = box
-		areasPerMap[box.mapID] = append(areasPerMap[box.mapID], uint32(area))
+		boxesByMap[box.mapID] = append(boxesByMap[box.mapID], box)
+		boxCount++
 	}
 }
 
@@ -94,13 +106,14 @@ func (b zoneBox) contains(x, y float64) bool {
 	return x >= b.xmin && x <= b.xmax && y >= b.ymin && y <= b.ymax
 }
 
-// inside reports whether the point falls inside b and b is smaller than best, so
-// that a scan can keep the most specific box.
+// better reports whether b is a more specific box than best, so that a scan can
+// keep the smallest one. (The name is extent, not area: `area` here is the zone's
+// id.)
 func (b zoneBox) better(best zoneBox) bool {
-	return b.area() < best.area()
+	return b.extent() < best.extent()
 }
 
-func (b zoneBox) area() float64 {
+func (b zoneBox) extent() float64 {
 	return (b.xmax - b.xmin) * (b.ymax - b.ymin)
 }
 
@@ -115,41 +128,36 @@ func (b zoneBox) marker(x, y float64) (float64, float64) {
 //
 // Several boxes can contain it - a zone and the continent it sits on, or two
 // neighbours that overlap at the edge - and the smallest is the one whose map the
-// client would show for that point.
-func ZoneAt(mapID uint16, x, y float64) (uint32, bool) {
+// client would show for that point. The box is returned rather than its area,
+// because an area id alone does not say which map it was matched on.
+func ZoneAt(mapID uint16, x, y float64) (zoneBox, bool) {
 	var (
-		best     zoneBox
-		bestArea uint32
-		found    bool
+		best  zoneBox
+		found bool
 	)
-	for _, area := range areasPerMap[mapID] {
-		box := zoneByArea[area]
+	for _, box := range boxesByMap[mapID] {
 		if !box.contains(x, y) {
 			continue
 		}
 		if !found || box.better(best) {
-			best, bestArea, found = box, area, true
+			best, found = box, true
 		}
 	}
-	if !found {
-		return 0, false
-	}
-	return bestArea, true
+	return best, found
 }
 
 // MapPoint is where a world point lands on the map of the zone it is in.
 // The percentages are what a template puts in style="left:..%;top:..%".
 func (p PageData) MapPoint(mapID uint16, x, y float64) (MapView, bool) {
-	area, ok := ZoneAt(mapID, x, y)
+	box, ok := ZoneAt(mapID, x, y)
 	if !ok {
 		return MapView{}, false
 	}
-	box := zoneByArea[area]
 	px, py := box.marker(x, y)
 	view := MapView{
-		Area:  area,
+		Area:  box.area,
 		Image: "/assets/maps/" + box.dir + ".png",
-		Name:  p.AreaName(area),
+		Name:  p.AreaName(box.area),
 	}
 	view.Markers = append(view.Markers, MapMarker{X: round2(px), Y: round2(py)})
 	return view, true
@@ -194,26 +202,25 @@ type mapPoint struct {
 // mapViews is the grouping both of the above share.
 func (p PageData) mapViews(points []mapPoint) []MapView {
 	var views []MapView
-	byArea := map[uint32]int{}
+	byBox := map[zoneBox]int{}
 
 	for _, point := range points {
-		area, ok := ZoneAt(point.Map, point.X, point.Y)
+		box, ok := ZoneAt(point.Map, point.X, point.Y)
 		if !ok {
 			continue
 		}
-		box := zoneByArea[area]
 		px, py := box.marker(point.X, point.Y)
 		marker := MapMarker{X: round2(px), Y: round2(py), Label: point.Label}
 
-		if at, seen := byArea[area]; seen {
+		if at, seen := byBox[box]; seen {
 			views[at].Markers = append(views[at].Markers, marker)
 			continue
 		}
-		byArea[area] = len(views)
+		byBox[box] = len(views)
 		views = append(views, MapView{
-			Area:    area,
+			Area:    box.area,
 			Image:   "/assets/maps/" + box.dir + ".png",
-			Name:    p.AreaName(area),
+			Name:    p.AreaName(box.area),
 			Markers: []MapMarker{marker},
 		})
 	}
@@ -222,13 +229,12 @@ func (p PageData) mapViews(points []mapPoint) []MapView {
 
 // MapPointLabel is the caption for a single quest objective point.
 func (p PageData) MapPointLabel(mapID uint16, x, y float64) string {
-	area, ok := ZoneAt(mapID, x, y)
+	box, ok := ZoneAt(mapID, x, y)
 	if !ok {
 		return ""
 	}
-	box := zoneByArea[area]
 	px, py := box.marker(x, y)
-	return p.AreaName(area) + " " + strconv.FormatFloat(round2(px), 'f', 1, 64) +
+	return p.AreaName(box.area) + " " + strconv.FormatFloat(round2(px), 'f', 1, 64) +
 		", " + strconv.FormatFloat(round2(py), 'f', 1, 64)
 }
 
@@ -239,4 +245,4 @@ func round2(v float64) float64 {
 }
 
 // MapZoneCount reports how many zones have a box, for the tests.
-func MapZoneCount() int { return len(zoneByArea) }
+func MapZoneCount() int { return boxCount }

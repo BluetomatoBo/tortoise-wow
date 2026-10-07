@@ -2,6 +2,9 @@ package web
 
 import (
 	"bytes"
+	"image"
+	"image/color"
+	"image/png"
 	"math"
 	"strings"
 	"testing"
@@ -10,16 +13,25 @@ import (
 	"tortoiseweb/internal/store"
 )
 
+// boxIn finds one zone's box, the way a test asks for a known one.
+func boxIn(t *testing.T, mapID uint16, area uint32) zoneBox {
+	t.Helper()
+	for _, box := range boxesByMap[mapID] {
+		if box.area == area {
+			return box
+		}
+	}
+	t.Fatalf("map %d has no box for area %d", mapID, area)
+	return zoneBox{}
+}
+
 // TestZoneBoxesLoad checks the table the map generator writes.
 func TestZoneBoxesLoad(t *testing.T) {
 	if n := MapZoneCount(); n < 100 {
 		t.Fatalf("only %d zones loaded; the generator did not run or the file is truncated", n)
 	}
 	// Elwynn Forest: area 12 on map 0, box from the client's WorldMapArea.dbc.
-	box, ok := zoneByArea[12]
-	if !ok {
-		t.Fatal("zone 12 (Elwynn) is missing")
-	}
+	box := boxIn(t, 0, 12)
 	if box.mapID != 0 || box.dir != "elwynn" {
 		t.Errorf("zone 12 = %+v", box)
 	}
@@ -77,37 +89,55 @@ func TestMapPointMatchesTheGame(t *testing.T) {
 // TestZoneAtPicksTheSmallest pins the tie-break: the Elwynn box and the continent
 // box both contain an Elwynn point, and the answer has to be Elwynn.
 func TestZoneAtPicksTheSmallest(t *testing.T) {
-	area, ok := ZoneAt(0, -9466.4, 21.4)
-	if !ok || area != 12 {
-		t.Errorf("ZoneAt(0, Goldshire) = %d, %v; want 12", area, ok)
+	box, ok := ZoneAt(0, -9466.4, 21.4)
+	if !ok || box.area != 12 {
+		t.Errorf("ZoneAt(0, Goldshire) = %d, %v; want 12", box.area, ok)
 	}
 
 	// A Kalimdor point has to answer with a Kalimdor zone - the map id in the
 	// lookup is what keeps the two continents apart. (The point used here is in
 	// Orgrimmar, whose own box is smaller than Durotar's, so the city is the
 	// expected answer; asserting the map is the part that matters.)
-	if area, ok := ZoneAt(1, 1600, -4400); !ok || zoneByArea[area].mapID != 1 {
-		t.Errorf("ZoneAt(1, Orgrimmar) = %d, %v (map %d); want a map-1 zone",
-			area, ok, zoneByArea[area].mapID)
+	if box, ok := ZoneAt(1, 1600, -4400); !ok || box.mapID != 1 {
+		t.Errorf("ZoneAt(1, Orgrimmar) = %+v, %v; want a map-1 zone", box, ok)
 	}
 
 	// Somewhere nothing covers: the middle of the ocean.
-	if area, ok := ZoneAt(1, 20000, 20000); ok {
-		t.Errorf("a point outside every box matched zone %d", area)
+	if box, ok := ZoneAt(1, 20000, 20000); ok {
+		t.Errorf("a point outside every box matched zone %d", box.area)
+	}
+}
+
+// TestContinentFallbackUsesItsOwnMap covers the row that catches everything a zone
+// box does not. Area 0 exists on both continents - "Azeroth" on map 0 and
+// "Kalimdor" on map 1 - and a table keyed by area alone keeps only one of them:
+// Kalimdor's row was overwritten by Azeroth's, so the page drew Azeroth's map for a
+// Kalimdor point that no zone box claimed.
+func TestContinentFallbackUsesItsOwnMap(t *testing.T) {
+	kalimdor := boxIn(t, 1, 0)
+	if kalimdor.dir != "kalimdor" {
+		t.Fatalf("map 1's area-0 row is %q, want the Kalimdor row", kalimdor.dir)
+	}
+	// The ocean south-west of Kalimdor: inside both continent boxes, and inside no
+	// zone box of map 1, so only the continent row can answer for it.
+	const x, y = -11733.0, -19199.0
+	if _, found := ZoneAt(0, x, y); !found {
+		t.Fatal("the point is not in any map-0 box: it does not exercise the fallback")
+	}
+	view, ok := namePage(t, i18n.ZH).MapPoint(1, x, y)
+	if !ok {
+		t.Fatalf("no map for the Kalimdor point %.0f, %.0f", x, y)
+	}
+	if view.Image != "/assets/maps/kalimdor.png" {
+		t.Errorf("a Kalimdor point fell back to %q", view.Image)
 	}
 }
 
 // TestZoneAtPrefersTheZoneOverTheContinent is the same tie-break stated the other
 // way round: the continent box is huge and must never win over the zone inside it.
 func TestZoneAtPrefersTheZoneOverTheContinent(t *testing.T) {
-	continent, ok := zoneByArea[0] // area 0 is the "Azeroth" row
-	if !ok {
-		t.Skip("no continent row")
-	}
-	zone, ok := zoneByArea[12]
-	if !ok {
-		t.Fatal("no Elwynn row")
-	}
+	continent := boxIn(t, 0, 0) // area 0 on map 0 is the "Azeroth" row
+	zone := boxIn(t, 0, 12)
 	if !continent.contains(-9466.4, 21.4) {
 		t.Skip("the continent box does not cover Elwynn in this data")
 	}
@@ -190,15 +220,91 @@ func TestPagesDrawMaps(t *testing.T) {
 	}
 }
 
-// TestMapFilesExist walks every zone box and checks its image is embedded: the
-// boxes and the images are generated separately, and a missing file is a broken
-// image on a live page.
-func TestMapFilesExist(t *testing.T) {
-	for area, box := range zoneByArea {
-		if _, err := templateFS.Open("assets/maps/" + box.dir + ".png"); err != nil {
-			t.Errorf("zone %d (%s) has no image: %v", area, box.dir, err)
+// TestMapImagesAreTheWholeZone is the check that the maps are the zone and not one
+// tile of it.
+//
+// The client keeps a zone map as twelve 256x256 tiles that it lays out in a 4x3
+// grid inside a 1002x668 frame (WorldMapFrame.xml). This site drew tile 1 alone
+// for a while, so an NPC page showed the north-west corner of the zone blown up to
+// the full width, and every dot - which the server places in percent of the whole
+// zone - landed somewhere that corner does not show.
+//
+// A single tile is square; the frame is not, and is bigger than a tile. Both
+// differences are asserted, so a generator that goes back to serving one tile
+// fails here.
+func TestMapImagesAreTheWholeZone(t *testing.T) {
+	checked := 0
+	seen := map[string]bool{}
+	for _, boxes := range boxesByMap {
+		for _, box := range boxes {
+			if seen[box.dir] {
+				continue
+			}
+			seen[box.dir] = true
+			checkZoneImage(t, box)
+			checked++
 		}
 	}
+	if checked < 100 {
+		t.Fatalf("only %d maps were checked", checked)
+	}
+}
+
+// checkZoneImage asserts one map is the whole zone: bigger than a tile, shaped
+// like the client's frame, and not blank.
+func checkZoneImage(t *testing.T, box zoneBox) {
+	t.Helper()
+	const frameRatio = 1002.0 / 668.0
+	f, err := templateFS.Open("assets/maps/" + box.dir + ".png")
+	if err != nil {
+		t.Errorf("zone %d (%s) has no image: %v", box.area, box.dir, err)
+		return
+	}
+	img, err := png.Decode(f)
+	f.Close()
+	if err != nil {
+		t.Errorf("zone %d (%s): %v", box.area, box.dir, err)
+		return
+	}
+	bounds := img.Bounds()
+	w, h := bounds.Dx(), bounds.Dy()
+	if w <= 256 || h <= 256 {
+		t.Errorf("zone %d (%s) is %dx%d: that is a tile, not a zone map",
+			box.area, box.dir, w, h)
+		return
+	}
+	if ratio := float64(w) / float64(h); math.Abs(ratio-frameRatio) > 0.02 {
+		t.Errorf("zone %d (%s) is %dx%d (ratio %.3f, the frame is %.3f)",
+			box.area, box.dir, w, h, ratio, frameRatio)
+	}
+	if colors, spread := imageColours(img); colors < 32 || spread < 8 {
+		t.Errorf("zone %d (%s) is nearly blank: %d colours, spread %.1f",
+			box.area, box.dir, colors, spread)
+	}
+}
+
+// imageColours counts the distinct colours of a map and the spread of its
+// luminance, which is how a blank or single-colour image is caught.
+func imageColours(img image.Image) (int, float64) {
+	seen := map[color.RGBA]struct{}{}
+	bounds := img.Bounds()
+	var sum, sumSq float64
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			c := color.RGBAModel.Convert(img.At(x, y)).(color.RGBA)
+			seen[c] = struct{}{}
+			l := 0.299*float64(c.R) + 0.587*float64(c.G) + 0.114*float64(c.B)
+			sum += l
+			sumSq += l * l
+		}
+	}
+	n := float64(bounds.Dx() * bounds.Dy())
+	mean := sum / n
+	variance := sumSq/n - mean*mean
+	if variance < 0 {
+		variance = 0
+	}
+	return len(seen), math.Sqrt(variance)
 }
 
 // TestTargetMapsLabelsDots covers the quest page's block: the dots have to be

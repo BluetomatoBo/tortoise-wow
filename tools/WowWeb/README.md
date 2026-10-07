@@ -546,13 +546,40 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
    是 42, 66；这个框算出来是 **43.6, 66.0**。（不换轴的话同一点会落在 66.0, 43.6——同一个区域里
    完全不同的位置，所以这条必须钉住。）
 
-2. **地图贴图**，从客户端的 `Interface\\WorldMap\\<区域>\\<区域>1.blp` 里取（文件清单 CDN 上没有
-   基础世界地图，只有补丁里那几个）。131 个区域，256×256，合计 10 MB。
+2. **地图贴图**，是客户端自己的区域地图——但**一个区域不是一个文件，而是 12 块 256×256**：客户端
+   按 **4 列 × 3 行**把它们拼进 `WorldMapDetailFrame`（1002×668）。依据是客户端自己的 FrameXML：
+   `WorldMapFrame.xml` 把 `WorldMapDetailTile1`…`4` 从左到右排、`5`…`8` 排在下一行、`9`…`12` 再
+   下一行；`WorldMapFrame.lua` 取图的路径是 `Interface\WorldMap\<地图>\<地图><1..12>`，点位算的是
+   `x * WorldMapDetailFrame:GetWidth()`。所以客户端画出来的就是那 1002×668：拼起来是 1024×768，
+   右边 22 像素、下边 100 像素客户端从不显示。
+
+   本站先前**只取了第 1 块当整张图**：NPC 页显示的是区域的西北角，而且**每个点是画错位置的**——
+   服务端给的是整张图的百分比，却画在十二分之一上。现在拼 12 块、裁到 1002×668、再按 2:1 缩一半
+   存盘：501×334，256 色调色板 + Floyd–Steinberg 抖动，131 张合计 17.6 MB（平均 138 KB），
+   每张的平均误差 2.x/255
+   （`gen_maps.py` 每张都会打出来）。判断「有没有拼错」用的是不透明内容的包围盒：每个区域的地图
+   都**刚好填满** 1002×668，不是就报出来。
+
+   贴图只是地形：**城镇是另画的一幅**。`WorldMapOverlay.dbc` 给每个区域的地标一行（`GADGETZAN`、
+   `CAVERNSOFTIME`…），写下名字、画出来的尺寸、在画布里的像素偏移，还有一个命中矩形。这几组字段的
+   顺序照 `GetMapOverlayInfo` 交给 `WorldMapFrame.lua` 的顺序读，**用命中矩形验过**：707 行里命中
+   矩形全都落在画出来的那块之内，换成别的列顺序则一行都不成立。名字在第 8 列——3 到 7 列解出来都是
+   半个名字（读到字符串块中间去了），只有第 8 列能在客户端里对上文件，707 行全中。
+   基础贴图在加扎赞那里只画了一片沙丘，镇子、城墙和名字都在 overlay 里；`WorldMapFrame.lua` 每次
+   都把当前区域的 overlay 画在贴图**上面**。少了它们，地图就是「有地形、没有地名」——这正是
+   「地图显示不出明细」的另一半。
+
+   顺带修掉一个「文件在 CDN 上却找不到」的 bug：清单里写 `Interface/WorldMap/...`，而本仓库的
+   生成器和客户端自己的 Lua 写 `Interface\WorldMap\...`，之前按字符串精确比较——于是 CDN 上的
+   区域地图一直算「没有」，贴图只能从本地客户端抽。现在 `clientfiles.py` 按客户端的规则查：
+   **大小写和分隔符都不重要**（`client_key`）。
 
 ```bash
-python3 tools/WowWeb/gen_maps.py                          # 需要先有图；会写出待取清单
+python3 tools/WowWeb/gen_maps.py                     # 直接生成：贴图从 CDN 取（首次约 1600 个文件）
+python3 tools/WowWeb/gen_maps.py --scale 1           # 想按原始 1002x668 存（文件大四倍）
+# 离线时：先用客户端把贴图抽出来，再让生成器只用本地文件
 python3 tools/WowWeb/extract_client_files.py --client <客户端目录>
-python3 tools/WowWeb/gen_maps.py                          # 重跑，图就画出来了
+python3 tools/WowWeb/gen_maps.py --no-client
 ```
 
 落点逻辑：一个世界点可能同时落在多个框里（区域、以及它所在的大陆），**取最小的那个框**——也就是
@@ -1680,14 +1707,51 @@ the client's own zone maps. That needs two things:
    (Without the swap the same point lands at 66.0, 43.6 - a different place in the same
    zone, which is why this is pinned by a test.)
 
-2. **The map artwork**, from the client's `Interface\\WorldMap\\<Zone>\\<Zone>1.blp` (the
-   verified file list only carries the handful in patches, not the base world maps).
-   131 zones, 256x256, 10 MB in total.
+2. **The map artwork**, the client's own zone map - and a zone is **not one file but twelve
+   256x256 tiles**: the client lays them out in a **4-wide, 3-tall** grid inside
+   `WorldMapDetailFrame`, which is 1002x668. That is the client's own FrameXML:
+   `WorldMapFrame.xml` anchors `WorldMapDetailTile1` through 4 left to right, 5 through 8
+   below them, 9 through 12 below those; `WorldMapFrame.lua` loads them as
+   `Interface\WorldMap\<map>\<map><1..12>` and puts a point at
+   `x * WorldMapDetailFrame:GetWidth()`. So what the client draws is that 1002x668: the
+   assembled grid is 1024x768, and the right 22 pixels and bottom 100 are never shown.
+
+   This site used to take **tile 1 alone as the whole map**, which showed the north-west
+   corner of a zone and put **every dot in the wrong place on it** - the server places a
+   point in percent of the whole zone, and it was being drawn on a twelfth of the picture.
+   Now the twelve are assembled, cropped to the frame and shipped at half size: 501x334,
+   256 colours with Floyd-Steinberg dithering, 131 zones, 17.6 MB in total (138 KB each),
+   a mean error of 2.x/255 per zone (`gen_maps.py` prints it per zone). "Did it assemble right?" is checked by the
+   bounding box of the drawn pixels: every zone map fills 1002x668 **exactly**, and one
+   that does not is reported.
+
+   The tiles are terrain, though - **a settlement is a painting of its own**.
+   `WorldMapOverlay.dbc` holds one row per landmark of a zone (`GADGETZAN`,
+   `CAVERNSOFTIME`, ...) with the name, the size the painting is drawn at, the pixel
+   offset in the frame and a hit rectangle. Those fields are read in the order
+   `GetMapOverlayInfo` hands them to `WorldMapFrame.lua`, and **the hit rectangle is
+   what proves the reading**: it lies inside the painted rectangle in all 707 rows,
+   and in none of them under any other arrangement of the same columns. The name is
+   column 8 - columns 3 to 7 decode to half a name (they land mid-string in the DBC's
+   string block) and name a file in no row, while column 8 does in all 707.
+   The base tiles paint bare dunes where Gadgetzan stands; the town, its walls and its
+   name are in the overlay, and `WorldMapFrame.lua` draws every overlay of the current
+   map area on top of the tiles. Without them a map is "terrain with no places on it",
+   which is the other half of "this map shows no details".
+
+   It also fixed a "the file is on the CDN but cannot be found" bug: the manifest writes
+   `Interface/WorldMap/...` while this tool's generators and the client's own Lua write
+   `Interface\WorldMap\...`, and those were compared as strings - so the CDN's zone maps
+   were treated as missing and the artwork could only come from a client install.
+   `clientfiles.py` now looks a path up the way the client does: **case and separators do
+   not matter** (`client_key`).
 
 ```bash
-python3 tools/WowWeb/gen_maps.py                          # needs the images; writes the list it wants
+python3 tools/WowWeb/gen_maps.py                     # draws everything; tiles come from the CDN
+python3 tools/WowWeb/gen_maps.py --scale 1           # keep the frame's own 1002x668 (four times the size)
+# offline: pull the tiles out of a client install first, then use only local files
 python3 tools/WowWeb/extract_client_files.py --client /path/to/wow-client
-python3 tools/WowWeb/gen_maps.py                          # run again, now it can draw
+python3 tools/WowWeb/gen_maps.py --no-client
 ```
 
 A world point can fall inside several boxes - a zone and the continent it sits on - and
