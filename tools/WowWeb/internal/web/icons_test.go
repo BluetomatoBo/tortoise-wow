@@ -2,10 +2,14 @@ package web
 
 import (
 	"bytes"
+	"io"
 	"io/fs"
+	"log/slog"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"tortoiseweb/internal/config"
 	"tortoiseweb/internal/i18n"
 	"tortoiseweb/internal/store"
 )
@@ -133,5 +137,41 @@ func TestPagesDrawIcons(t *testing.T) {
 	}
 	if !strings.Contains(got, "Rusty Screw") {
 		t.Errorf("the page lost the name:\n%s", first(got, 600))
+	}
+}
+
+// TestIconsAreServed is the other half of TestIconFilesExist: a file can be in
+// the binary and still be unreachable if the URL the templates build does not
+// match the route. This asks the real mux for one.
+func TestIconsAreServed(t *testing.T) {
+	srv, err := New(config.Config{RealmName: "Test", AdminMinRank: 4},
+		(*store.Store)(nil), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	page := PageData{}
+	url := page.ItemIcon(224)
+	if url == "" {
+		t.Fatal("no icon for display id 224")
+	}
+
+	rec := httptest.NewRecorder()
+	srv.mux.ServeHTTP(rec, httptest.NewRequest("GET", url, nil))
+	if rec.Code != 200 {
+		t.Fatalf("GET %s = %d", url, rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "image/png" {
+		t.Errorf("content type = %q, want image/png", ct)
+	}
+	if rec.Body.Len() == 0 {
+		t.Errorf("GET %s served an empty body", url)
+	}
+	// The PNG magic number, so the route is not answering a redirect page.
+	if !bytes.HasPrefix(rec.Body.Bytes(), []byte("\x89PNG")) {
+		t.Errorf("GET %s did not serve a PNG: % x", url, rec.Body.Bytes()[:8])
+	}
+	if cc := rec.Header().Get("Cache-Control"); cc == "" {
+		t.Errorf("no Cache-Control on an icon")
 	}
 }
