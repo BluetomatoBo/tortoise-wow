@@ -12,7 +12,9 @@
     <tr><th>{{.T "db.level"}}</th><td>{{.LevelRange .Creature.LevelMin .Creature.LevelMax}}</td></tr>
     <tr><th>{{.T "db.rank"}}</th><td>{{.CreatureRankName .Creature.Rank}}</td></tr>
     <tr><th>{{.T "db.type"}}</th><td>{{.CreatureTypeName .Creature.Type}}</td></tr>
-    <tr><th>{{.T "db.faction"}}</th><td>{{.Creature.Faction}}</td></tr>
+    <tr><th>{{.T "db.faction"}}</th><td>
+      {{with .FactionName .Creature.Faction}}{{.}} <span class="muted">(#{{$.Creature.Faction}})</span>{{else}}#{{.Creature.Faction}}{{end}}
+    </td></tr>
     {{if .Creature.NPCFlags}}<tr><th>{{.T "db.npcFlags"}}</th><td><code>{{.Creature.NPCFlags}}</code> <span class="muted">(0x{{printf "%x" .Creature.NPCFlags}})</span></td></tr>{{end}}
     {{if .Creature.LootID}}<tr><th>{{.T "db.lootID"}}</th><td><code>{{.Creature.LootID}}</code></td></tr>{{end}}
     {{if .Creature.GossipMenuID}}<tr><th>{{.T "db.gossipMenu"}}</th><td>{{.Creature.GossipMenuID}}</td></tr>{{end}}

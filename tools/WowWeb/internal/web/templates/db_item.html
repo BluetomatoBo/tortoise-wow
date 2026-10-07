@@ -13,7 +13,9 @@
   <table class="kv">
     <tr><th>{{.T "db.entry"}}</th><td><code>{{.Item.Entry}}</code></td></tr>
     <tr><th>{{.T "db.quality"}}</th><td class="{{.QualityClass .Item.Quality}}">{{.QualityName .Item.Quality}}</td></tr>
-    <tr><th>{{.T "db.itemclass"}}</th><td>{{.ItemClassName .Item.Class}} <span class="muted">({{.Item.SubClass}})</span></td></tr>
+    <tr><th>{{.T "db.itemclass"}}</th><td>
+      {{.ItemClassName .Item.Class}}{{with .SubClassName .Item.Class .Item.SubClass}} <span class="muted">· {{.}}</span>{{end}} <span class="muted">({{.Item.Class}}/{{.Item.SubClass}})</span>
+    </td></tr>
     {{if .Item.InventoryType}}<tr><th>{{.T "db.invtype"}}</th><td>{{.InvTypeName .Item.InventoryType}}</td></tr>{{end}}
     <tr><th>{{.T "db.itemLevel"}}</th><td>{{.Item.ItemLevel}}</td></tr>
     {{if .Item.RequiredLevel}}<tr><th>{{.T "db.requiredLevel"}}</th><td>{{.Item.RequiredLevel}}</td></tr>{{end}}
@@ -29,7 +31,9 @@
     <tr><th>{{.T "db.bonding"}}</th><td>{{.BondingName .Item.Bonding}}</td></tr>
     {{if .Item.BuyPrice}}<tr><th>{{.T "db.buyPrice"}}</th><td>{{coins .Item.BuyPrice}}</td></tr>{{end}}
     {{if .Item.SellPrice}}<tr><th>{{.T "db.sellPrice"}}</th><td>{{coins .Item.SellPrice}}</td></tr>{{end}}
-    {{if .Item.SetID}}<tr><th>{{.T "db.set"}}</th><td>{{.Item.SetID}}</td></tr>{{end}}
+    {{if .Item.SetID}}<tr><th>{{.T "db.set"}}</th><td>
+      {{with .ItemSetName .Item.SetID}}{{.}} <span class="muted">(#{{$.Item.SetID}})</span>{{else}}#{{.Item.SetID}}{{end}}
+    </td></tr>{{end}}
     {{if .Item.StartQuest}}<tr><th>{{.T "db.startsQuest"}}</th><td><a href="/db/quests/{{.Item.StartQuest}}">#{{.Item.StartQuest}}</a></td></tr>{{end}}
     {{if .Item.PageText}}<tr><th>{{.T "db.pageText"}}</th><td>{{.Item.PageText}}</td></tr>{{end}}
     <tr><th>{{.T "db.displayID"}}</th><td>{{.Item.DisplayID}}</td></tr>

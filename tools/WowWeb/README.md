@@ -494,8 +494,11 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 - **公开页面**，不需要登录：它显示的正是客户端本来就能拿到的内容。
 - 名称来自核心自己的枚举头文件（`ItemPrototype.h`、`SharedDefines.h`、`SpellDefines.h`），
   所以「品质 4」「学派 2」在页面与游戏里是同一件事；取不到名字时显示 `#数字`。
-- 索引客户端 DBC 的字段（施法时间、持续时间、范围、图标、法术效果）**按原始数字显示**：
-  要起名就得读客户端的 DBC 文件，而猜出来的标签比原始索引更糟。
+- **数字能起名的地方都起了名**：区域、任务排序、阵营、地图、物品类别/子类、套装，都取自客户端
+  自己的 DBC（见下面「把数字变成名字」一节），页面同时保留原始 id（`荆棘谷 (#33)`）——GM 要 grep
+  的是那个数字，玩家看的是名字。
+- 仍然**按原始数字显示**的只剩下客户端清单里没有的那几个 DBC：施法时间、持续时间、法术范围与
+  法术效果的索引。猜出来的标签比原始索引更糟，宁可不猜。
 - **只读**：不建表、不写任何东西，权限沿用 `GRANT SELECT ON tw_world.*`。
 
 ### 悬停 tooltip
@@ -512,6 +515,36 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 > 这段脚本是本项目第一个客户端脚本（`assets/db-tooltip.js`，只在 `/db` 页面上加载），
 > 也是唯一一处服务端之外的地方会往页面里插 HTML —— 插的是同源、由 `html/template`
 > 转义过的服务端片段，脚本里没有一处是自己拼字符串拼出来的。
+
+### 把数字变成名字
+
+数据库里存的是 id 的地方，玩家要看的是名字：任务有个 `ZoneOrSort`，生物有个 `faction`，
+物品有类别/子类和一个 `set_id`。名字在客户端的 DBC 里，而服务端从不加载它们。
+
+[`gen_dbc_names.py`](gen_dbc_names.py) 把这几张表读出来写成 `internal/web/dbcnames.txt`：
+
+| DBC | 用途 | 条数 |
+|---|---|---|
+| `AreaTable` | 任务的区域 | 1480 |
+| `QuestSort` | 任务的排序（`ZoneOrSort` 为负时取 `-值`） | 42 |
+| `Faction` | 生物的阵营 | 204 |
+| `Map` | 地图（坐标为后续功能铺路） | 57 |
+| `ItemSubClass` | 物品的类别/子类 | 78 |
+| `ItemSet` | 套装 | 359 |
+
+```bash
+python3 tools/WowWeb/gen_dbc_names.py      # 无需参数，也不需要本地有客户端
+```
+
+几点值得记下来：
+
+- **两种语言来自同一份文件**。客户端的 DBC 一条记录里带 8 个语言槽，英文名之后**第 4 格**就是
+  中文名（`AreaTable` 英文在 f11、中文在 f15；`Faction` 19→23；`Map` 4→8；`QuestSort` 1→5；
+  `ItemSet` 1→5；`ItemSubClass` 10→14）。所以站点按请求语言选，不需要翻译流程。
+- **布局是验出来的，不是猜的**：这几张表逐行与一份独立解析过的同名 DBC 比对过（1480/1480、
+  204/204、57/57、42/42、359/359 全部一致）。
+- **`ItemSubClass` 的键是 (类别, 子类)**，不是它自己的 id 列——那个 id 列在 79 行里有大量重复。
+- 认不出来的 id **返回空**，模板退回显示原始数字，与之前的行为一致。
 
 ### 图标
 
@@ -1528,9 +1561,13 @@ Worth knowing:
 * Names come from the core's own headers (`ItemPrototype.h`, `SharedDefines.h`,
   `SpellDefines.h`), so "quality 4" and "school 2" mean the same thing here as in
   the game; a value with no name shows as `#number`.
-* Fields that index the client's DBC files (casting time, duration, range, icons,
-  spell effects) are shown as **numbers**: naming them would mean reading the
-  client's data files, and a guessed label would be worse than the index.
+* **Every number the client can name, is named**: zone, quest sort, faction, map,
+  item class/subclass and set all come from the client's own DBCs (see "Names for
+  the numbers" below), and the page keeps the raw id next to it
+  (`Stranglethorn Vale (#33)`) - a GM greps for the number, a player reads the name.
+* What is still shown as a **number** is what the client's file list does not carry:
+  the indexes for casting time, duration, spell range and spell effects. A guessed
+  label would be worse than the index.
 * **Read-only**: it creates nothing and writes nothing, and needs no privileges
   beyond the existing `GRANT SELECT ON tw_world.*`.
 
@@ -1557,6 +1594,43 @@ template (no page shell), so the bow and the page can never disagree.
 > only on `/db` pages). It is also the only place outside the server that puts
 > HTML into a page — and what it inserts is a same-origin fragment the server
 > rendered and escaped. Nothing in the script builds markup out of strings.
+
+## Names for the numbers
+
+The database stores ids where a player expects a word: a quest has a `ZoneOrSort`, a
+creature a `faction`, an item a class/subclass pair and sometimes a `set_id`. The names
+live in the client's DBC files, which the server never loads.
+
+[`gen_dbc_names.py`](gen_dbc_names.py) reads those tables into
+`internal/web/dbcnames.txt`:
+
+| DBC | used for | rows |
+|---|---|---|
+| `AreaTable` | a quest's zone | 1480 |
+| `QuestSort` | a quest's sort (when `ZoneOrSort` is negative, it is `-value`) | 42 |
+| `Faction` | a creature's faction | 204 |
+| `Map` | maps (groundwork for coordinates) | 57 |
+| `ItemSubClass` | an item's class and subclass | 78 |
+| `ItemSet` | item sets | 359 |
+
+```bash
+python3 tools/WowWeb/gen_dbc_names.py      # no arguments, no client installation needed
+```
+
+Worth remembering:
+
+* **Both languages come out of one file.** A client DBC carries eight locale slots per
+  record, and **four slots after the English name sits the Chinese one** (`AreaTable`
+  11 -> 15, `Faction` 19 -> 23, `Map` 4 -> 8, `QuestSort` 1 -> 5, `ItemSet` 1 -> 5,
+  `ItemSubClass` 10 -> 14). The page picks by the visitor's language; there is no
+  translation step to keep in sync.
+* **The layout was verified, not guessed**: every table was compared row by row against
+  an independently parsed copy of the same DBCs (1480/1480, 204/204, 57/57, 42/42,
+  359/359 all identical).
+* **`ItemSubClass` is keyed by (class, subclass)**, not by its own id column - that
+  column repeats across many of its 79 rows.
+* An id with no name returns "" and the template falls back to the raw number, exactly
+  as every page behaved before.
 
 ## Icons
 

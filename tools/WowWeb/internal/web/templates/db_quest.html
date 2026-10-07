@@ -12,7 +12,9 @@
     <tr><th>{{.T "db.questLevel"}}</th><td>{{.Quest.QuestLevel}}</td></tr>
     <tr><th>{{.T "db.requiredLevel"}}</th><td>{{.Quest.MinLevel}}{{if .Quest.MaxLevel}} <span class="muted">&ndash; {{.Quest.MaxLevel}}</span>{{end}}</td></tr>
     {{if .Quest.Type}}<tr><th>{{.T "db.questType"}}</th><td>{{.Quest.Type}}</td></tr>{{end}}
-    {{if .Quest.ZoneOrSort}}<tr><th>{{.T "db.zoneOrSort"}}</th><td>{{.Quest.ZoneOrSort}}</td></tr>{{end}}
+    {{if .Quest.ZoneOrSort}}<tr><th>{{.T "db.zoneOrSort"}}</th><td>
+      {{with .ZoneOrSortName .Quest.ZoneOrSort}}{{.}} <span class="muted">(#{{$.Quest.ZoneOrSort}})</span>{{else}}#{{.Quest.ZoneOrSort}}{{end}}
+    </td></tr>{{end}}
     {{if .Quest.SuggestedPlayers}}<tr><th>{{.T "db.suggestedPlayers"}}</th><td>{{.Quest.SuggestedPlayers}}</td></tr>{{end}}
     {{if .Quest.QuestFlags}}<tr><th>{{.T "db.questFlags"}}</th><td><code>{{.Quest.QuestFlags}}</code></td></tr>{{end}}
     {{if .Quest.SpecialFlags}}<tr><th>{{.T "db.specialFlags"}}</th><td><code>{{.Quest.SpecialFlags}}</code></td></tr>{{end}}
