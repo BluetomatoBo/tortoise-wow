@@ -274,3 +274,11 @@ pre {
 }
 .map figcaption { margin-top: .35rem; font-size: .85rem; color: var(--muted); text-align: center; }
 
+
+/* ---- quest chain ----
+   The chain reads top to bottom in play order, with the quest the page is about
+   in bold and the other ways into the same step marked with an "or". */
+.chain { margin: .3rem 0 .1rem; padding-left: 1.4rem; }
+.chain li { margin: .1rem 0; }
+.chain-now { font-weight: 600; }
+.chain-alt { color: var(--muted); }

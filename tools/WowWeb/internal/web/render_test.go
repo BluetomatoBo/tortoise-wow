@@ -322,6 +322,25 @@ func TestTemplatesParse(t *testing.T) {
 					{Entry: 4001, Name: "Wanted Poster", Kind: store.DropGameObject},
 				},
 				Ends: []store.ContentSourceRef{{Entry: 80117, Name: "Haywire Battlechicken", Kind: store.DropCreature}},
+			},
+			Chain: &store.QuestChain{
+				Steps: []store.QuestChainStep{
+					{Entry: 80010, Title: "Drumsticks For Dinner"},
+					{Entry: 80011, Title: "Cluck For Your Life"},
+					{Entry: 80012, Title: "Not Enough Drumsticks", Alternate: true},
+					{Entry: 80104, Title: "The Other White Mech", Current: true},
+					{Entry: 80105, Title: "The Final Cluck"},
+				},
+				Requires: []store.QuestRequirement{
+					{Entry: 80099, Title: "A Chicken's Revenge", Finished: true},
+					{Entry: 80098, Title: "Two Birds, One Stone"},
+				},
+				Unlocks: []store.QuestRequirement{
+					{Entry: 80105, Title: "The Final Cluck", Finished: true},
+					{Entry: 80106, Title: "Eggs Over Easy"},
+				},
+				Group:    []store.QuestChainStep{{Entry: 80107, Title: "Or Cluck Twice"}},
+				GroupAll: true,
 			}}},
 		// The same page with nothing filled in at all.
 		{"db_quest", dbQuestView{PageData: page, Quest: store.ContentQuest{Entry: 5, Title: "A Quest"}}},

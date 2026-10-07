@@ -459,7 +459,7 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 | `/db/items/{entry}` | 物品详情：属性、抗性、物品上的法术、售价、绑定、起始任务 |
 | `/db/items/{entry}/tooltip` | 悬停用的片段（不是页面）：物品页那块内容的最小版本 |
 | `/db/spells`、`/db/spells/{id}` | 法术列表（按学派、等级筛选）与详情（含三个效果槽） |
-| `/db/quests`、`/db/quests/{entry}` | 任务列表与详情（需求物品/生物、奖励、任务文本、给予者与交付者） |
+| `/db/quests`、`/db/quests/{entry}` | 任务列表与详情（需求物品/生物、奖励、任务文本、任务链与前置/后续、互斥组、给予者与交付者） |
 | `/db/npcs`、`/db/npcs/{entry}` | 生物列表（按类型、等级筛选）与详情（含它开/交的任务、掉落、剥皮、偷窃、售货） |
 
 **交叉链接**（都在上面这些页面里，不需要额外的路由）：
@@ -609,6 +609,27 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 **任务页上真正会出现的是「这些目标在哪儿」**：本服**所有任务的 `PointMapId` 都是 0**（没有任何任务
 设了目标坐标），所以上面那套目标点逻辑在本服永远不会触发。任务页改为查它要求杀的生物/捡的物件
 （`ReqCreatureOrGOId`）的出生点，按区域分组画出来，每个点标注是哪只怪——这才是玩家真正要问的问题。
+
+### 任务链与前置任务
+
+任务页上有一块讲「这个任务在故事的哪一环」。服务端把两条**互不相同**的线索存在两组列里，
+本服 990 个同时设了两者的任务里**没有一个把两者设成同一个任务**——所以页面把它们分开讲：
+
+- **任务链**（`NextQuestInChain`）：故事线。一个任务指向下一个，核心也会**反向**读这条链
+  （`ObjectMgr.cpp` 把它推进后继任务的 `prevChainQuests`），并据此不让玩家在后续任务已经开始
+  或完成之后再回头接前一步（`Player::SatisfyQuestNextChain` / `SatisfyQuestPrevChain`）。
+- **前置与后续**（`PrevQuestId` / `NextQuestId`）：硬性条件。自己的 `PrevQuestId` 说明自己要什么；
+  别人的 `NextQuestId` 指向自己，说明**自己**是那个任务要的条件（`ObjectMgr.cpp` 把这一条推进
+  被指向任务的 `prevQuests`）。**正负号有含义**：正数要求对方**已完成**，负数只要求它**在进行中**
+  （`Player::SatisfyQuestPreviousQuest`）。只读自己那一列会漏掉存在另一端的条件——本服 82 个任务
+  把同一条要求写在两端。
+- **互斥任务组**（`ExclusiveGroup`）：正数组是「只能选一个」，负数组是「必须全做」。
+
+链是**从两端走**出来的：往后是单值（下一个只有一个），往前可能遇到分叉。本服 1724 个任务有上一环，
+其中 56 个有多于一个入口——例如 322「祝福之臂」既可接在 324「丢失的铁锭」之后，也可由
+526「光铸铁锭」引出，而只有 324 自己还有前文。页面**跟着有前文的那条主线**走，另一个作为
+「或」列在同一个位置，不会悄悄丢掉。最长的链是数据里的 15 环（暮色森林的斯温复仇线，
+95 → … → 55）；两个方向都走 40 步封顶、重复进入同一环即停——这些是数据表，数据里可能有环。
 
 ### 把数字变成名字
 
@@ -1617,7 +1638,7 @@ same rows the client is being served from, so they cannot disagree with the game
 | `/db/items` | Item list, filterable by quality, class and item-level range |
 | `/db/items/{entry}` | One item: stats, resistances, its spells, prices, binding, the quest it starts |
 | `/db/spells`, `/db/spells/{id}` | Spell list (by school and level) and one spell, including its effect slots |
-| `/db/quests`, `/db/quests/{entry}` | Quest list and one quest: required items and creatures, rewards, quest text |
+| `/db/quests`, `/db/quests/{entry}` | Quest list and one quest: required items and creatures, rewards, quest text, the chain and its requirements, exclusive groups |
 | `/db/npcs`, `/db/npcs/{entry}` | Creature list (by type and level) and one creature |
 
 Worth knowing:
@@ -1806,6 +1827,34 @@ in this realm has `PointMapId = 0`, so the objective-coordinate path above never
 here. The page instead looks up where the creatures and objects the quest asks for live
 (`ReqCreatureOrGOId`), groups them by zone and labels each dot with what it is - which is
 the question a player actually has.
+
+## The quest chain, and what a quest requires
+
+A quest page says where the quest sits in its story. The server keeps two **different** kinds of
+link in two sets of columns, and of the 990 quests here that set both, **not one sets them to the
+same quest** - so the page keeps them apart:
+
+- **The chain** (`NextQuestInChain`): the storyline. A quest names the next one, and the core reads
+  the link backwards too (`ObjectMgr.cpp` pushes a quest into its successor's `prevChainQuests`) and
+  refuses to hand out a step while its successor is already in the log
+  (`Player::SatisfyQuestNextChain` / `SatisfyQuestPrevChain`).
+- **Requires and unlocks** (`PrevQuestId` / `NextQuestId`): hard requirements. A quest's own
+  `PrevQuestId` names what it needs; another quest's `NextQuestId` names *this* quest as what that
+  quest needs (`ObjectMgr.cpp` pushes it into the named quest's `prevQuests`). **The sign carries
+  meaning**: positive means the named quest has to be rewarded, negative that it only has to be in
+  the log, not finished (`Player::SatisfyQuestPreviousQuest`). Reading only a quest's own column
+  loses whatever is stored on the other end - 82 quests here store one requirement on both ends.
+- **Exclusive groups** (`ExclusiveGroup`): a positive group is "pick one", a negative one is "all of
+  them".
+
+The chain is walked from **both** ends. Forward is single-valued; backward a quest can have several
+predecessors - 1724 quests here have a previous step and 56 of those have more than one way in. Quest
+322 (Blessed Arm), for instance, can be reached from 324 (The Lost Ingots) or from 526 (Lightforge
+Ingots), and only 324 has a story of its own in front of it. The page follows the trunk - the
+predecessor that has a predecessor - and keeps the others in place as "or" rather than dropping
+them. The longest chain in this realm's data is fifteen steps (Sven's revenge in Duskwood,
+95 -> ... -> 55); both directions stop after 40 steps or when a quest repeats, because these are
+data tables and data can contain a cycle.
 
 ## Names for the numbers
 

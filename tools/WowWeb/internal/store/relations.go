@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 )
 
@@ -1126,4 +1127,447 @@ func (s *Store) QuestRelations(ctx context.Context, loc ContentLocale, quest uin
 		}
 	}
 	return out, nil
+}
+
+// ---------------------------------------------------------------------------
+// Quest chains
+//
+// A quest page answers two different "what comes before and after" questions, and
+// the core keeps the answers in two different sets of columns. They never hold the
+// same value: of the 990 quests here that set both, not one sets them to the same
+// quest, because they mean different things.
+//
+//	NextQuestInChain  the storyline. A quest names the next one, and the core also
+//	                  reads the link backwards - ObjectMgr.cpp pushes a quest into
+//	                  its successor's `prevChainQuests` - and refuses to hand out a
+//	                  step while its successor is already in the log
+//	                  (Player::SatisfyQuestNextChain / SatisfyQuestPrevChain). This
+//	                  is the chain a player means by "the quest line".
+//
+//	PrevQuestId       a hard requirement, and it is stored on either end. A quest's
+//	NextQuestId       own PrevQuestId names what it needs; a quest's NextQuestId
+//	                  makes *it* something the named quest needs (ObjectMgr.cpp
+//	                  pushes it into that quest's `prevQuests`). The sign says
+//	                  which: positive means the named quest has to be rewarded,
+//	                  negative means it only has to be in the log, not finished
+//	                  (Player::SatisfyQuestPreviousQuest). Reading only this quest's
+//	                  own column loses every requirement stored on the other end.
+//
+//	ExclusiveGroup    quests one character cannot all do: a group id of 0 is "no
+//	                  group", a positive one is "pick one of them", a negative one
+//	                  is "all of them" (the same function as above).
+
+// questChainLimit bounds a walk. The longest chain in this realm is 15 steps;
+// this only has to be a number that cannot be reached by data with a loop in it.
+const questChainLimit = 40
+
+// QuestChainStep is one quest of a storyline, in reading order.
+type QuestChainStep struct {
+	Entry uint32
+	Title string
+	// Current marks the quest the page is about.
+	Current bool
+	// Alternate marks a step that is one of several ways into the quest after it:
+	// two quests can both chain into the same next one, and the line follows the
+	// one that has steps of its own in front of it.
+	Alternate bool
+}
+
+// QuestRequirement is a quest on one side of this one, with what the sign of the
+// link means: Finished says the quest has to be rewarded rather than merely
+// started.
+type QuestRequirement struct {
+	Entry    uint32
+	Title    string
+	Finished bool
+}
+
+// QuestChain is everything the quest page shows about the quests around this one.
+type QuestChain struct {
+	Steps    []QuestChainStep
+	Requires []QuestRequirement
+	Unlocks  []QuestRequirement
+	Group    []QuestChainStep
+	// GroupAll is true for a negative group id: every quest in the group is needed
+	// rather than one of them.
+	GroupAll bool
+}
+
+// questChainNextQuery reads the storyline link of one quest.
+func questChainNextQuery() string {
+	return "SELECT NextQuestInChain FROM quest_template WHERE entry = ?"
+}
+
+// questChainPrevQuery reads the quests that chain into one, which can be more
+// than one.
+func questChainPrevQuery(loc ContentLocale) string {
+	return "SELECT q.entry, " + loc.localized("cl", "q", "Title") +
+		" FROM quest_template q" + loc.join("cl", "locales_quest", "entry", "q") +
+		" WHERE q.NextQuestInChain = ? ORDER BY q.entry"
+}
+
+// questOwnLinksQuery reads this quest's own chain columns.
+func questOwnLinksQuery() string {
+	return "SELECT PrevQuestId, NextQuestId, ExclusiveGroup FROM quest_template WHERE entry = ?"
+}
+
+// questLinkQuery reads every quest joined to this one by a hard requirement, from
+// either end and in either direction: the sign of each link says which way round
+// it is.
+func questLinkQuery(loc ContentLocale) string {
+	return "SELECT q.entry, " + loc.localized("cl", "q", "Title") + ", q.PrevQuestId, q.NextQuestId" +
+		" FROM quest_template q" + loc.join("cl", "locales_quest", "entry", "q") +
+		" WHERE q.PrevQuestId IN (?, ?) OR q.NextQuestId IN (?, ?) ORDER BY q.entry"
+}
+
+// questGroupQuery reads the other quests of this one's exclusive group, and the
+// group id itself so the page can say which kind of group it is.
+func questGroupQuery(loc ContentLocale) string {
+	return "SELECT o.entry, " + loc.localized("cl", "o", "Title") + ", g.ExclusiveGroup" +
+		" FROM quest_template q" +
+		" JOIN quest_template o ON o.ExclusiveGroup = q.ExclusiveGroup" +
+		" JOIN quest_template g ON g.entry = q.entry" +
+		loc.join("cl", "locales_quest", "entry", "o") +
+		" WHERE q.entry = ? AND o.entry <> ? AND q.ExclusiveGroup <> 0 ORDER BY o.entry"
+}
+
+// questTitlesQuery reads several quest titles at once.
+func questTitlesQuery(loc ContentLocale, n int) string {
+	return "SELECT q.entry, " + loc.localized("cl", "q", "Title") +
+		" FROM quest_template q" + loc.join("cl", "locales_quest", "entry", "q") +
+		" WHERE q.entry IN (" + strings.TrimSuffix(strings.Repeat("?,", n), ",") + ")"
+}
+
+// questOwnLinks is this quest's own chain columns.
+type questOwnLinks struct {
+	prev  int32
+	next  int32
+	group int32
+}
+
+// questLinkRow is one row of questLinkQuery.
+type questLinkRow struct {
+	Entry       uint32
+	Title       string
+	PrevQuestID int32
+	NextQuestID int32
+}
+
+// questWalker reads the two directions of the storyline. It is a pair of
+// functions rather than a store method so the walk below can be tested on a
+// fixed set of links, which is where the ordering rules live.
+type questWalker struct {
+	next   func(uint32) (uint32, error)
+	prevs  func(uint32) ([]QuestChainStep, error)
+	titles func([]uint32) (map[uint32]string, error)
+}
+
+// QuestChain gathers the storyline a quest belongs to, what it needs, what it
+// opens up, and the quests it excludes.
+func (s *Store) QuestChain(ctx context.Context, loc ContentLocale, quest uint32) (*QuestChain, error) {
+	out := &QuestChain{}
+
+	var own questOwnLinks
+	err := s.World.QueryRowContext(ctx, questOwnLinksQuery(), quest).
+		Scan(&own.prev, &own.next, &own.group)
+	if errors.Is(err, sql.ErrNoRows) {
+		return out, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("quest %d links: %w", quest, err)
+	}
+
+	links, err := s.questLinkRows(ctx, loc, quest)
+	if err != nil {
+		return nil, err
+	}
+
+	// Titles for the two quests this one names itself. The data stores a link on
+	// one end only, so the other end is not necessarily in the rows above and has
+	// to be looked up.
+	titles, err := s.questTitles(ctx, loc, ownNames(own))
+	if err != nil {
+		return nil, err
+	}
+
+	out.Requires, out.Unlocks = questRequirementLists(quest, own, links, titles)
+
+	if own.group != 0 {
+		out.Group, err = s.questGroup(ctx, loc, quest)
+		if err != nil {
+			return nil, err
+		}
+		out.GroupAll = own.group < 0
+	}
+
+	out.Steps, err = chainSteps(quest, questWalker{
+		next: func(entry uint32) (uint32, error) {
+			var next uint32
+			err := s.World.QueryRowContext(ctx, questChainNextQuery(), entry).Scan(&next)
+			if errors.Is(err, sql.ErrNoRows) {
+				return 0, nil
+			}
+			if err != nil {
+				return 0, fmt.Errorf("quest %d next in chain: %w", entry, err)
+			}
+			return next, nil
+		},
+		prevs: func(entry uint32) ([]QuestChainStep, error) {
+			return s.questChainPredecessors(ctx, loc, entry)
+		},
+		titles: func(entries []uint32) (map[uint32]string, error) {
+			return s.questTitles(ctx, loc, entries)
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// questRequirementLists sorts the hard requirement links into the two lists the
+// page prints, reading the sign the way the core does: a positive link means the
+// named quest has to be finished, a negative one that it only has to be in the
+// log (Player::SatisfyQuestPreviousQuest).
+func questRequirementLists(quest uint32, own questOwnLinks, links []questLinkRow, titles map[uint32]string) (requires, unlocks []QuestRequirement) {
+	entry := int32(quest)
+	if own.prev != 0 {
+		id := uint32(absInt32(own.prev))
+		requires = append(requires, QuestRequirement{Entry: id, Title: titles[id], Finished: own.prev > 0})
+	}
+	if own.next != 0 {
+		id := uint32(absInt32(own.next))
+		unlocks = append(unlocks, QuestRequirement{Entry: id, Title: titles[id], Finished: own.next > 0})
+	}
+
+	for _, l := range links {
+		// This quest's PrevQuestId names what it needs; another quest's NextQuestId
+		// is that quest naming this one as what *it* needs, which is stored on the
+		// other end and reads the same way.
+		switch l.PrevQuestID {
+		case entry:
+			unlocks = append(unlocks, QuestRequirement{Entry: l.Entry, Title: l.Title, Finished: true})
+		case -entry:
+			unlocks = append(unlocks, QuestRequirement{Entry: l.Entry, Title: l.Title})
+		}
+		switch l.NextQuestID {
+		case entry:
+			requires = append(requires, QuestRequirement{Entry: l.Entry, Title: l.Title, Finished: true})
+		case -entry:
+			requires = append(requires, QuestRequirement{Entry: l.Entry, Title: l.Title})
+		}
+	}
+	return dedupeRequirements(requires), dedupeRequirements(unlocks)
+}
+
+// ownNames lists the quests this one names itself, for the title lookup.
+func ownNames(own questOwnLinks) []uint32 {
+	var out []uint32
+	for _, id := range []int32{own.prev, own.next} {
+		if id != 0 {
+			out = append(out, uint32(absInt32(id)))
+		}
+	}
+	return out
+}
+
+// chainSteps walks the storyline both ways from the quest.
+//
+// Forward is straight: NextQuestInChain names one quest. Backward a quest can
+// have several predecessors, and then the line follows the one that has steps of
+// its own in front of it - the others are ways into the same quest rather than
+// the trunk - and those are kept in the list, marked as alternates, instead of
+// being dropped.
+func chainSteps(quest uint32, walk questWalker) ([]QuestChainStep, error) {
+	// Forward first, collecting entries only: the titles of the whole line are
+	// then one query instead of one per step.
+	var forward []uint32
+	cur := quest
+	for i := 0; i < questChainLimit; i++ {
+		next, err := walk.next(cur)
+		if err != nil {
+			return nil, err
+		}
+		if next == 0 {
+			break
+		}
+		forward = append(forward, next)
+		cur = next
+	}
+
+	names, err := walk.titles(append([]uint32{quest}, forward...))
+	if err != nil {
+		return nil, err
+	}
+	steps := make([]QuestChainStep, 0, len(forward))
+	for _, entry := range forward {
+		steps = append(steps, QuestChainStep{Entry: entry, Title: names[entry]})
+	}
+
+	back := []QuestChainStep{{Entry: quest, Title: names[quest]}}
+	cur = quest
+	for i := 0; i < questChainLimit; i++ {
+		prevs, err := walk.prevs(cur)
+		if err != nil {
+			return nil, err
+		}
+		if len(prevs) == 0 {
+			break
+		}
+		main, rest := prevs[0], prevs[1:]
+		if len(prevs) > 1 {
+			main, rest = pickChainTrunk(walk, prevs)
+		}
+		// An alternate leads into the same quest as the trunk step that follows
+		// it, so it is collected between the trunk step and that quest.
+		for _, alt := range rest {
+			back = append(back, QuestChainStep{Entry: alt.Entry, Title: alt.Title, Alternate: true})
+		}
+		back = append(back, QuestChainStep{Entry: main.Entry, Title: main.Title})
+		cur = main.Entry
+	}
+
+	// back was collected outwards from the quest, so it reads the other way round
+	// once reversed - and there the alternate sits just before the trunk step it
+	// leads into, which is where it was collected.
+	prefix := make([]QuestChainStep, 0, len(back))
+	for i := len(back) - 1; i >= 0; i-- {
+		step := back[i]
+		step.Current = step.Entry == quest
+		prefix = append(prefix, step)
+	}
+	return append(prefix, steps...), nil
+}
+
+// pickChainTrunk chooses which of several predecessors continues the line: the
+// lowest entry that has a predecessor of its own, and the lowest entry when none
+// of them does.
+func pickChainTrunk(walk questWalker, prevs []QuestChainStep) (QuestChainStep, []QuestChainStep) {
+	rest := func(chosen uint32) []QuestChainStep {
+		out := make([]QuestChainStep, 0, len(prevs)-1)
+		for _, other := range prevs {
+			if other.Entry != chosen {
+				out = append(out, other)
+			}
+		}
+		return out
+	}
+	for _, cand := range prevs {
+		earlier, err := walk.prevs(cand.Entry)
+		if err == nil && len(earlier) > 0 {
+			return cand, rest(cand.Entry)
+		}
+	}
+	return prevs[0], rest(prevs[0].Entry)
+}
+
+// questLinkRows reads every quest joined to this one by a hard requirement, from
+// either end and in either direction.
+func (s *Store) questLinkRows(ctx context.Context, loc ContentLocale, quest uint32) ([]questLinkRow, error) {
+	id := int64(quest)
+	rows, err := s.World.QueryContext(ctx, questLinkQuery(loc), id, -id, id, -id)
+	if err != nil {
+		return nil, fmt.Errorf("quest %d requirement links: %w", quest, err)
+	}
+	defer rows.Close()
+	var out []questLinkRow
+	for rows.Next() {
+		var r questLinkRow
+		if err := rows.Scan(&r.Entry, &r.Title, &r.PrevQuestID, &r.NextQuestID); err != nil {
+			return nil, fmt.Errorf("scan quest requirement links: %w", err)
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) questGroup(ctx context.Context, loc ContentLocale, quest uint32) ([]QuestChainStep, error) {
+	rows, err := s.World.QueryContext(ctx, questGroupQuery(loc), quest, quest)
+	if err != nil {
+		return nil, fmt.Errorf("quest %d exclusive group: %w", quest, err)
+	}
+	defer rows.Close()
+	var out []QuestChainStep
+	for rows.Next() {
+		var step QuestChainStep
+		var group int32
+		if err := rows.Scan(&step.Entry, &step.Title, &group); err != nil {
+			return nil, fmt.Errorf("scan quest group: %w", err)
+		}
+		out = append(out, step)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) questChainPredecessors(ctx context.Context, loc ContentLocale, quest uint32) ([]QuestChainStep, error) {
+	rows, err := s.World.QueryContext(ctx, questChainPrevQuery(loc), quest)
+	if err != nil {
+		return nil, fmt.Errorf("quest %d previous in chain: %w", quest, err)
+	}
+	defer rows.Close()
+	var out []QuestChainStep
+	for rows.Next() {
+		var step QuestChainStep
+		if err := rows.Scan(&step.Entry, &step.Title); err != nil {
+			return nil, fmt.Errorf("scan chain step: %w", err)
+		}
+		out = append(out, step)
+	}
+	return out, rows.Err()
+}
+
+// questTitles reads the titles of several quests at once.
+func (s *Store) questTitles(ctx context.Context, loc ContentLocale, entries []uint32) (map[uint32]string, error) {
+	out := map[uint32]string{}
+	if len(entries) == 0 {
+		return out, nil
+	}
+	args := make([]any, 0, len(entries))
+	for _, entry := range entries {
+		args = append(args, entry)
+	}
+	rows, err := s.World.QueryContext(ctx, questTitlesQuery(loc, len(entries)), args...)
+	if err != nil {
+		return nil, fmt.Errorf("quest titles %v: %w", entries, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var entry uint32
+		var title string
+		if err := rows.Scan(&entry, &title); err != nil {
+			return nil, fmt.Errorf("scan quest title: %w", err)
+		}
+		out[entry] = title
+	}
+	return out, rows.Err()
+}
+
+// dedupeRequirements removes duplicates and orders by entry. A quest can be
+// linked from both of its columns, in which case the stricter reading wins: a
+// requirement to have finished it beats a requirement to have started it.
+func dedupeRequirements(in []QuestRequirement) []QuestRequirement {
+	out := in[:0]
+	at := map[uint32]int{}
+	for _, r := range in {
+		if i, ok := at[r.Entry]; ok {
+			if r.Finished {
+				out[i].Finished = true
+			}
+			if out[i].Title == "" {
+				out[i].Title = r.Title
+			}
+			continue
+		}
+		at[r.Entry] = len(out)
+		out = append(out, r)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Entry < out[j].Entry })
+	return out
+}
+
+func absInt32(v int32) int32 {
+	if v < 0 {
+		return -v
+	}
+	return v
 }

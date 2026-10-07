@@ -34,13 +34,70 @@
     {{if .Quest.SuggestedPlayers}}<tr><th>{{.T "db.suggestedPlayers"}}</th><td>{{.Quest.SuggestedPlayers}}</td></tr>{{end}}
     {{if .Quest.QuestFlags}}<tr><th>{{.T "db.questFlags"}}</th><td><code>{{.Quest.QuestFlags}}</code></td></tr>{{end}}
     {{if .Quest.SpecialFlags}}<tr><th>{{.T "db.specialFlags"}}</th><td><code>{{.Quest.SpecialFlags}}</code></td></tr>{{end}}
-    {{if .Quest.PrevQuestID}}<tr><th>{{.T "db.prevQuest"}}</th><td><a href="/db/quests/{{.Quest.PrevQuestID}}">#{{.Quest.PrevQuestID}}</a></td></tr>{{end}}
-    {{if .Quest.NextQuestID}}<tr><th>{{.T "db.nextQuest"}}</th><td><a href="/db/quests/{{.Quest.NextQuestID}}">#{{.Quest.NextQuestID}}</a></td></tr>{{end}}
     {{if .Quest.PointMapID}}<tr><th>{{.T "db.coords"}}</th><td>
       {{with $.MapPointLabel $.Quest.PointMapID $.Quest.PointX $.Quest.PointY}}{{.}} <span class="muted">(#{{$.Quest.PointMapID}})</span>{{else}}#{{$.Quest.PointMapID}}{{end}}
     </td></tr>{{end}}
   </table>
 </section>
+
+{{with .Chain}}
+{{if gt (len .Steps) 1}}
+<section class="card">
+  <h2>{{$.T "db.questChain"}}</h2>
+  <ol class="chain">
+    {{range .Steps}}
+      <li{{if .Current}} class="chain-now"{{else if .Alternate}} class="chain-alt"{{end}}>
+        {{if .Alternate}}<span class="muted">{{$.T "db.questChainOr"}}</span> {{end}}
+        {{if .Current}}<strong>{{if .Title}}{{.Title}}{{else}}#{{.Entry}}{{end}}</strong>{{else}}<a href="/db/quests/{{.Entry}}">{{if .Title}}{{.Title}}{{else}}#{{.Entry}}{{end}}</a>{{end}}
+        <span class="muted">#{{.Entry}}</span>
+      </li>
+    {{end}}
+  </ol>
+</section>
+{{end}}
+
+{{if or .Requires .Unlocks}}
+<section class="card">
+  <h2>{{$.T "db.questLinks"}}</h2>
+  {{if .Requires}}
+  <h3>{{$.T "db.questRequires"}}</h3>
+  <table class="kv">
+    {{range .Requires}}
+      <tr>
+        <th><a href="/db/quests/{{.Entry}}">{{if .Title}}{{.Title}}{{else}}#{{.Entry}}{{end}}</a> <span class="muted">#{{.Entry}}</span></th>
+        <td class="right">{{if .Finished}}{{$.T "db.questNeedDone"}}{{else}}{{$.T "db.questNeedStarted"}}{{end}}</td>
+      </tr>
+    {{end}}
+  </table>
+  {{end}}
+  {{if .Unlocks}}
+  <h3>{{$.T "db.questUnlocks"}}</h3>
+  <table class="kv">
+    {{range .Unlocks}}
+      <tr>
+        <th><a href="/db/quests/{{.Entry}}">{{if .Title}}{{.Title}}{{else}}#{{.Entry}}{{end}}</a> <span class="muted">#{{.Entry}}</span></th>
+        <td class="right">{{if .Finished}}{{$.T "db.questNeedsThisDone"}}{{else}}{{$.T "db.questNeedsThisStarted"}}{{end}}</td>
+      </tr>
+    {{end}}
+  </table>
+  {{end}}
+</section>
+{{end}}
+
+{{if .Group}}
+<section class="card">
+  <h2>{{$.T "db.questGroup"}}</h2>
+  <p class="muted">{{if .GroupAll}}{{$.T "db.questGroupAll"}}{{else}}{{$.T "db.questGroupOne"}}{{end}}</p>
+  <table class="kv">
+    {{range .Group}}
+      <tr>
+        <th><a href="/db/quests/{{.Entry}}">{{if .Title}}{{.Title}}{{else}}#{{.Entry}}{{end}}</a> <span class="muted">#{{.Entry}}</span></th>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+{{end}}
 
 {{if .HasDetails}}
 <section class="card">

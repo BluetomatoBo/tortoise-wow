@@ -696,6 +696,9 @@ type dbQuestView struct {
 	Quest store.ContentQuest
 	// Relations are who hands the quest out and who takes it back.
 	Relations *store.QuestRelations
+	// Chain is the storyline the quest belongs to, what it requires, what it
+	// opens up and what it excludes.
+	Chain *store.QuestChain
 	// Point is the objective on a map, when the quest has one. On this realm no
 	// quest sets those coordinates, so Targets is the block that usually shows.
 	Point *MapView
@@ -737,6 +740,12 @@ func (s *Server) handleDBQuest(w http.ResponseWriter, r *http.Request, page *Pag
 		return
 	}
 
+	chain, err := s.store.QuestChain(r.Context(), loc, entry)
+	if err != nil {
+		s.serverError(w, r, "load quest chain", err)
+		return
+	}
+
 	var objectiveText []string
 	for _, t := range quest.ObjectiveText {
 		if strings.TrimSpace(t) != "" {
@@ -772,6 +781,7 @@ func (s *Server) handleDBQuest(w http.ResponseWriter, r *http.Request, page *Pag
 		PageData:      *page,
 		Quest:         *quest,
 		Relations:     relations,
+		Chain:         chain,
 		Point:         point,
 		Targets:       targets,
 		HasDetails:    strings.TrimSpace(quest.Details) != "",

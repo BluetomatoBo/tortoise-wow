@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"regexp"
 	"strings"
 	"testing"
@@ -121,6 +122,12 @@ func relationQueries() map[string]string {
 		}
 		q, _ = questsOfActorQuery(loc, "creature_questrelation", 3)
 		out[string(loc)+" actor quests"] = q
+		out[string(loc)+" chain next"] = questChainNextQuery()
+		out[string(loc)+" chain prev"] = questChainPrevQuery(loc)
+		out[string(loc)+" own links"] = questOwnLinksQuery()
+		out[string(loc)+" requirement links"] = questLinkQuery(loc)
+		out[string(loc)+" exclusive group"] = questGroupQuery(loc)
+		out[string(loc)+" quest titles"] = questTitlesQuery(loc, 3)
 		for _, p := range [][]string{questItemPrefixes("required"), questItemPrefixes("rewarded"), questItemPrefixes("choice")} {
 			slots := 4
 			if p[0] == "RewChoiceItemId" {
@@ -286,4 +293,216 @@ func TestLootSourceQueryLinksTheOwner(t *testing.T) {
 			t.Errorf("%s does not order by the owner's entry:\n%s", tc.table, q)
 		}
 	}
+}
+
+// TestQuestChainWalkFollowsTheTrunk walks the longest chain in this realm's data
+// - Sven's revenge, fifteen quests in Duskwood - from a fixed copy of its links.
+//
+// Two of those links matter for the shape: quest 322 (Blessed Arm) is chained into
+// by both 324 (The Lost Ingots) and 526 (Lightforge Ingots), and only 324 has
+// steps of its own in front of it. The walk has to follow 324 - the trunk - and
+// keep 526 in the list as the other way in, which is what the game shows too.
+func TestQuestChainWalkFollowsTheTrunk(t *testing.T) {
+	// The real NextQuestInChain edges (quest_template in this realm's data).
+	edge := map[uint32]uint32{
+		95: 230, 230: 262, 262: 265, 265: 266, 266: 453, 453: 268, 268: 323,
+		323: 269, 269: 270, 270: 321, 321: 324, 324: 322, 526: 322, 322: 325, 325: 55,
+	}
+	walk := questWalker{
+		next: func(entry uint32) (uint32, error) { return edge[entry], nil },
+		prevs: func(entry uint32) ([]QuestChainStep, error) {
+			// The query reads the predecessors by entry, which is the order the
+			// walk sees them in.
+			var out []QuestChainStep
+			for from := uint32(1); from <= 700; from++ {
+				if edge[from] == entry {
+					out = append(out, QuestChainStep{Entry: from})
+				}
+			}
+			return out, nil
+		},
+		titles: func(entries []uint32) (map[uint32]string, error) {
+			out := map[uint32]string{}
+			for _, entry := range entries {
+				out[entry] = "quest " + itoa(entry)
+			}
+			return out, nil
+		},
+	}
+
+	steps, err := chainSteps(322, walk)
+	if err != nil {
+		t.Fatalf("walk: %v", err)
+	}
+	want := []uint32{95, 230, 262, 265, 266, 453, 268, 323, 269, 270, 321, 324, 526, 322, 325, 55}
+	if len(steps) != len(want) {
+		t.Fatalf("walked %d steps, want %d: %+v", len(steps), len(want), entries(steps))
+	}
+	for i, entry := range want {
+		if steps[i].Entry != entry {
+			t.Errorf("step %d is %d, want %d (whole walk: %v)", i, steps[i].Entry, entry, entries(steps))
+		}
+	}
+	for _, step := range steps {
+		switch step.Entry {
+		case 322:
+			if !step.Current {
+				t.Error("the quest the walk started from is not marked current")
+			}
+		case 526:
+			if !step.Alternate {
+				t.Error("526 is the other way into 322 and has to be marked an alternate")
+			}
+		default:
+			if step.Current || step.Alternate {
+				t.Errorf("step %d is marked current or alternate: %+v", step.Entry, step)
+			}
+		}
+	}
+	if steps[len(steps)-1].Entry != 55 {
+		t.Errorf("the walk does not end at the last step: %v", entries(steps))
+	}
+}
+
+// TestQuestChainWalkStopsOnALoop covers the reason the walk is bounded: these are
+// data tables and data can contain a cycle, which would otherwise hang a request.
+func TestQuestChainWalkStopsOnALoop(t *testing.T) {
+	edge := map[uint32]uint32{1: 2, 2: 3, 3: 1}
+	walk := questWalker{
+		next: func(entry uint32) (uint32, error) { return edge[entry], nil },
+		prevs: func(entry uint32) ([]QuestChainStep, error) {
+			var out []QuestChainStep
+			for from := uint32(1); from <= 3; from++ {
+				if edge[from] == entry {
+					out = append(out, QuestChainStep{Entry: from})
+				}
+			}
+			return out, nil
+		},
+		titles: func(entries []uint32) (map[uint32]string, error) {
+			out := map[uint32]string{}
+			for _, entry := range entries {
+				out[entry] = "quest " + itoa(entry)
+			}
+			return out, nil
+		},
+	}
+	steps, err := chainSteps(1, walk)
+	if err != nil {
+		t.Fatalf("walk: %v", err)
+	}
+	if len(steps) > 2*questChainLimit+1 {
+		t.Errorf("a loop produced %d steps; the walk is not bounded", len(steps))
+	}
+}
+
+// TestQuestChainErrorsAreReported keeps a failing lookup from being read as "the
+// chain ends here", which would silently truncate a line.
+func TestQuestChainErrorsAreReported(t *testing.T) {
+	boom := errors.New("boom")
+	walk := questWalker{
+		next:   func(uint32) (uint32, error) { return 0, boom },
+		prevs:  func(uint32) ([]QuestChainStep, error) { return nil, nil },
+		titles: func([]uint32) (map[uint32]string, error) { return nil, nil },
+	}
+	if _, err := chainSteps(1, walk); !errors.Is(err, boom) {
+		t.Errorf("a failed forward lookup was swallowed: %v", err)
+	}
+	walk.next = func(uint32) (uint32, error) { return 0, nil }
+	walk.prevs = func(uint32) ([]QuestChainStep, error) { return nil, boom }
+	if _, err := chainSteps(1, walk); !errors.Is(err, boom) {
+		t.Errorf("a failed backward lookup was swallowed: %v", err)
+	}
+	walk.prevs = func(uint32) ([]QuestChainStep, error) { return nil, nil }
+	walk.titles = func([]uint32) (map[uint32]string, error) { return nil, boom }
+	if _, err := chainSteps(1, walk); !errors.Is(err, boom) {
+		t.Errorf("a failed title lookup was swallowed: %v", err)
+	}
+}
+
+// TestQuestRequirementSigns pins what the sign of a requirement means, on rows
+// taken from the real data.
+//
+// A positive link means the named quest has to be rewarded; a negative one means
+// it only has to be in the log. The core reads it that way in
+// Player::SatisfyQuestPreviousQuest, and both ends of the link are stored: a quest
+// names its own predecessor in PrevQuestId, and a quest names the quest it leads
+// into in NextQuestId, which is the same requirement written from the other side.
+func TestQuestRequirementSigns(t *testing.T) {
+	// Quest 322 (Blessed Arm) names 324 (The Lost Ingots) in its own PrevQuestId.
+	// A positive link: the named quest has to be finished, not merely taken.
+	requires, unlocks := questRequirementLists(322, questOwnLinks{prev: 324}, nil,
+		map[uint32]string{324: "The Lost Ingots"})
+	if len(requires) != 1 {
+		t.Fatalf("322 requires %d quests, want 1: %+v", len(requires), requires)
+	}
+	if requires[0].Entry != 324 || !requires[0].Finished {
+		t.Errorf("322 requires %+v; a positive link means it has to be finished", requires[0])
+	}
+	if len(unlocks) != 0 {
+		t.Errorf("322 unlocks something it does not lead into: %+v", unlocks)
+	}
+
+	// Quest 687 stores the same requirement on both ends - its own PrevQuestId
+	// names 653, and 653 names 687 in its NextQuestId (82 quests here do that) -
+	// so the two have to be recognised as one requirement, not two.
+	requires, _ = questRequirementLists(687, questOwnLinks{prev: 653}, []questLinkRow{
+		{Entry: 653, Title: "Myzraels Allies", NextQuestID: 687},
+	}, map[uint32]string{653: "Myzraels Allies"})
+	if len(requires) != 1 || requires[0].Entry != 653 {
+		t.Fatalf("a requirement stored on both ends came out as %+v", requires)
+	}
+	if !requires[0].Finished {
+		t.Errorf("the stricter reading wins: %+v", requires[0])
+	}
+
+	// Quests 7161 and 7162 both name 7163 with a negative NextQuestId: either of
+	// them merely has to have been taken.
+	requires, unlocks = questRequirementLists(7163, questOwnLinks{}, []questLinkRow{
+		{Entry: 7161, Title: "Proving Grounds", NextQuestID: -7163},
+		{Entry: 7162, Title: "Proving Grounds", NextQuestID: -7163},
+	}, nil)
+	if len(requires) != 2 {
+		t.Fatalf("7163 has %d requirements, want 2: %+v", len(requires), requires)
+	}
+	for _, r := range requires {
+		if r.Finished {
+			t.Errorf("a negative link was read as \"must be finished\": %+v", r)
+		}
+	}
+	if len(unlocks) != 0 {
+		t.Errorf("7163 unlocks something it does not lead into: %+v", unlocks)
+	}
+
+	// The other direction: a quest that names the page's quest leads nowhere yet.
+	requires, unlocks = questRequirementLists(324, questOwnLinks{prev: 321, next: 322}, nil,
+		map[uint32]string{321: "Lightforge Iron", 322: "Blessed Arm"})
+	if len(requires) != 1 || requires[0].Entry != 321 {
+		t.Errorf("324 requires %+v, want 321", requires)
+	}
+	if len(unlocks) != 1 || unlocks[0].Entry != 322 || !unlocks[0].Finished {
+		t.Errorf("324 unlocks %+v, want 322 as something it has to be finished for", unlocks)
+	}
+}
+
+func entries(steps []QuestChainStep) []uint32 {
+	out := make([]uint32, 0, len(steps))
+	for _, step := range steps {
+		out = append(out, step.Entry)
+	}
+	return out
+}
+
+func itoa(v uint32) string {
+	if v == 0 {
+		return "0"
+	}
+	var buf [12]byte
+	i := len(buf)
+	for v > 0 {
+		i--
+		buf[i] = byte('0' + v%10)
+		v /= 10
+	}
+	return string(buf[i:])
 }
