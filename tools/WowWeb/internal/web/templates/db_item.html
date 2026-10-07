@@ -89,7 +89,7 @@
 {{with .Relations}}
 {{if .Truncated}}
 <section class="card">
-  <p class="hint">{{$.T "db.listTruncated"}}{{range $i, $k := .Truncated}}{{if $i}}、{{end}}{{$.T $k}}{{end}}</p>
+  <p class="hint">{{$.T "db.listTruncated"}}{{range $i, $k := .Truncated}}{{if $i}}{{$.T "common.listSep"}}{{end}}{{$.T $k}}{{end}}</p>
 </section>
 {{end}}
 

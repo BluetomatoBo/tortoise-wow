@@ -841,5 +841,6 @@
   "db.questOnly": "仅任务",
   "db.choiceReward": "可选",
   "db.listTruncated": "以下列表超过 200 条，这里只显示了一部分：",
-  "db.kind.gameobject": "游戏对象"
+  "db.kind.gameobject": "游戏对象",
+  "common.listSep": "、"
 }

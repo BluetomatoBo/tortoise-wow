@@ -840,6 +840,7 @@
   "db.viaReference": "via reference",
   "db.questOnly": "quest only",
   "db.choiceReward": "choice",
-  "db.listTruncated": "These lists are longer than 200 rows; only part of them is shown:",
-  "db.kind.gameobject": "Gameobject"
+  "db.listTruncated": "These lists are longer than 200 rows; only part of them is shown: ",
+  "db.kind.gameobject": "Gameobject",
+  "common.listSep": ", "
 }
