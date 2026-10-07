@@ -122,6 +122,11 @@ func templateFuncs() template.FuncMap {
 			return time.Unix(sec, 0).Format("2006-01-02 15:04")
 		},
 
+		// questtext turns the client's line-break tokens ($B/$b) into real
+		// breaks, so quest prose reads as sentences rather than as
+		// "word$B$Bword". See questtext.go for what it deliberately leaves.
+		"questtext": questText,
+
 		// list renders a []string as a comma separated list, or a dash.
 		"list": func(items []string) string {
 			if len(items) == 0 {

@@ -25,14 +25,14 @@
 {{if .HasDetails}}
 <section class="card">
   <h2>{{.T "db.questDetails"}}</h2>
-  <p>{{.Quest.Details}}</p>
+  <p>{{questtext .Quest.Details}}</p>
 </section>
 {{end}}
 
 {{if .HasObjectives}}
 <section class="card">
   <h2>{{.T "db.questObjectives"}}</h2>
-  <p>{{.Quest.Objectives}}</p>
+  <p>{{questtext .Quest.Objectives}}</p>
 </section>
 {{end}}
 
@@ -90,21 +90,21 @@
 {{if .ObjectiveText}}
 <section class="card">
   <h2>{{.T "db.objectiveText"}}</h2>
-  {{range .ObjectiveText}}<p>{{.}}</p>{{end}}
+  {{range .ObjectiveText}}<p>{{questtext .}}</p>{{end}}
 </section>
 {{end}}
 
 {{if .HasReward}}
 <section class="card">
   <h2>{{.T "db.offerReward"}}</h2>
-  <p>{{.Quest.OfferRewardText}}</p>
+  <p>{{questtext .Quest.OfferRewardText}}</p>
 </section>
 {{end}}
 
 {{if .HasEnd}}
 <section class="card">
   <h2>{{.T "db.endText"}}</h2>
-  <p>{{.Quest.EndText}}</p>
+  <p>{{questtext .Quest.EndText}}</p>
 </section>
 {{end}}
 {{end}}

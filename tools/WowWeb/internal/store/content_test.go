@@ -107,6 +107,43 @@ func TestContentLocaleColumns(t *testing.T) {
 	}
 }
 
+// TestContentQuestTextIsLocalized guards the quest page's prose columns.
+//
+// The quest columns are the ones that drifted once already: Title went through
+// localized() while Details, Objectives, OfferRewardText, RequestItemsText,
+// EndText and the four ObjectiveTexts were read straight from quest_template,
+// so a Chinese page showed a Chinese title above an English body. Each of those
+// columns has a slot in locales_quest, so each of them has to be read through
+// localized() in the zh locale and through the base column otherwise.
+func TestContentQuestTextIsLocalized(t *testing.T) {
+	text := []string{
+		"Title", "Details", "Objectives", "OfferRewardText",
+		"RequestItemsText", "EndText",
+		"ObjectiveText1", "ObjectiveText2", "ObjectiveText3", "ObjectiveText4",
+	}
+
+	zh := questColumns(ContentLocaleZH)
+	for _, col := range text {
+		want := "COALESCE(cl." + col + "_loc4, q." + col + ", '')"
+		if !strings.Contains(zh, want) {
+			t.Errorf("zh quest columns are missing %s: %s", want, zh)
+		}
+	}
+	if strings.Contains(zh, "COALESCE(q.Details") {
+		t.Errorf("zh quest columns still read the untranslated body: %s", zh)
+	}
+
+	base := questColumns(ContentLocaleBase)
+	for _, col := range text {
+		if !strings.Contains(base, "COALESCE(q."+col+", '')") {
+			t.Errorf("base quest columns are missing %s: %s", col, base)
+		}
+		if strings.Contains(base, col+"_loc4") {
+			t.Errorf("base quest columns name a locale slot: %s", base)
+		}
+	}
+}
+
 // TestContentSearchClause covers the search box: the shown name, the
 // untranslated name, and an exact entry match when the term is a number.
 func TestContentSearchClause(t *testing.T) {

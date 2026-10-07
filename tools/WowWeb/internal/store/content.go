@@ -630,10 +630,11 @@ func questWhere(loc ContentLocale, f ContentQuestFilter) (string, []any) {
 
 func questColumns(loc ContentLocale) string {
 	return "q.entry, " + loc.localized("cl", "q", "Title") + ", " +
-		"COALESCE(q.Details, ''), COALESCE(q.Objectives, ''), COALESCE(q.OfferRewardText, ''), " +
-		"COALESCE(q.RequestItemsText, ''), COALESCE(q.EndText, ''), " +
-		"COALESCE(q.ObjectiveText1, ''), COALESCE(q.ObjectiveText2, ''), " +
-		"COALESCE(q.ObjectiveText3, ''), COALESCE(q.ObjectiveText4, ''), " + `
+		loc.localized("cl", "q", "Details") + ", " + loc.localized("cl", "q", "Objectives") + ", " +
+		loc.localized("cl", "q", "OfferRewardText") + ", " +
+		loc.localized("cl", "q", "RequestItemsText") + ", " + loc.localized("cl", "q", "EndText") + ", " +
+		loc.localized("cl", "q", "ObjectiveText1") + ", " + loc.localized("cl", "q", "ObjectiveText2") + ", " +
+		loc.localized("cl", "q", "ObjectiveText3") + ", " + loc.localized("cl", "q", "ObjectiveText4") + ", " + `
 		q.MinLevel, q.MaxLevel, q.QuestLevel, q.Type, q.ZoneOrSort, q.SuggestedPlayers,
 		q.QuestFlags, q.SpecialFlags, q.PrevQuestId, q.NextQuestId,
 		q.RewXP, q.RewOrReqMoney, q.RewMoneyMaxLevel,

@@ -465,6 +465,11 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 
 - **语言**：站点语言是中文时读 `*_loc4` 列（本服的中文就在这一列，商城模块也是这么读的），
   其它语言读基础列；表达式里用 `COALESCE` 回退，所以没有翻译的行照样显示，不会空白。
+  任务的正文（详情、目标、交还、结束语、目标文本）同样走这条路径 —— 这几列一度只读了
+  `quest_template` 的英文列，于是中文站点上出现「中文标题 + 英文正文」，现已修正。
+- **任务正文里的换行标记**：`$B`/`$b` 在客户端是换行，页面渲染成 `<br>`（单个就单个、
+  `$B$B` 就是空一行，与客户端一致）。`$N`（角色名）、`$C`（职业）、`$R`（种族）需要读者
+  自己的角色才能代入，匿名访客没有，因此**原样保留**，不猜。
 - **公开页面**，不需要登录：它显示的正是客户端本来就能拿到的内容。
 - 名称来自核心自己的枚举头文件（`ItemPrototype.h`、`SharedDefines.h`、`SpellDefines.h`），
   所以「品质 4」「学派 2」在页面与游戏里是同一件事；取不到名字时显示 `#数字`。
@@ -1371,7 +1376,15 @@ Worth knowing:
 * **Language**: a Chinese visitor reads the `*_loc4` columns (this realm's Chinese
   lives there, and the shop module reads the same ones), everyone else the base
   columns, with `COALESCE` inside the query so a row with no translation still
-  reads instead of coming out blank.
+  reads instead of coming out blank. Quest prose (details, objectives, offer
+  reward, end text, objective texts) goes through the same path — those columns
+  once read only the English ones in `quest_template`, which is how a Chinese
+  page ended up with a Chinese title over an English body.
+* **Quest line breaks**: `$B`/`$b` are the client's line breaks and render as
+  `<br>` (one token, one break, so `$B$B` is the blank line the client draws).
+  `$N` (character name), `$C` (class) and `$R` (race) need the reader's own
+  character, which an anonymous visitor does not have, so they are left exactly
+  as written rather than guessed at.
 * **Public**, no session required: everything it shows is content the client is
   already sent.
 * Names come from the core's own headers (`ItemPrototype.h`, `SharedDefines.h`,
