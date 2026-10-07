@@ -1,0 +1,39 @@
+{{define "content"}}
+{{- /* The hover tooltip for one item: /db/items/{entry}/tooltip.
+       Rendered as a bare fragment (no layout) by RenderFragment, so the markup
+       starts at the box. The line order follows the game's own tooltip, which is
+       what a player reading it expects: name, binding, slot, what it does, what
+       it adds, what it costs. */ -}}
+<div class="tt" role="tooltip">
+  <div class="tt-name {{.QualityClass .Item.Quality}}">{{.Item.Name}}</div>
+
+  {{if .Item.Bonding}}<div class="tt-bind">{{.BondingName .Item.Bonding}}</div>{{end}}
+  {{if .Unique}}<div class="tt-bind">{{.T "db.unique"}}</div>{{end}}
+  {{if .Item.InventoryType}}<div class="tt-slot">{{.InvTypeName .Item.InventoryType}}</div>{{end}}
+
+  {{if .Item.DamageMin}}
+    <div class="tt-line">{{.DamageRange .Item}}</div>
+    <div class="tt-line tt-muted">{{.T "db.speed"}} {{.Speed .Item}} &middot; {{.T "db.dps"}} {{.DPS .Item}}</div>
+  {{end}}
+  {{if .Item.Armor}}<div class="tt-line">+{{.Item.Armor}} {{.T "db.armor"}}</div>{{end}}
+  {{if .Item.Block}}<div class="tt-line">+{{.Item.Block}} {{.T "db.block"}}</div>{{end}}
+
+  {{range .Item.Stats}}
+    <div class="tt-line">{{if gt .Value 0}}+{{end}}{{.Value}} {{$.StatName .Type}}</div>
+  {{end}}
+  {{range .Item.Resistances}}
+    <div class="tt-line">+{{.Value}} {{$.ResistanceName .School}}</div>
+  {{end}}
+
+  {{range .Spells}}
+    <div class="tt-line"><span class="tt-trigger">{{$.TriggerName .Trigger}}:</span>
+      <span class="tt-spell">{{if .Name}}{{.Name}}{{else}}#{{.SpellID}}{{end}}</span>
+    </div>
+  {{end}}
+
+  {{if .Item.Description}}<div class="tt-flavor">&ldquo;{{.Item.Description}}&rdquo;</div>{{end}}
+
+  {{if .Item.RequiredLevel}}<div class="tt-line">{{.T "db.requiresLevel"}} {{.Item.RequiredLevel}}</div>{{end}}
+  {{if .Item.SellPrice}}<div class="tt-line"><span class="tt-muted">{{.T "db.sellPrice"}}</span> {{coins .Item.SellPrice}}</div>{{end}}
+</div>
+{{end}}

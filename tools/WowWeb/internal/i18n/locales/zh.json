@@ -842,5 +842,8 @@
   "db.choiceReward": "可选",
   "db.listTruncated": "以下列表超过 200 条，这里只显示了一部分：",
   "db.kind.gameobject": "游戏对象",
-  "common.listSep": "、"
+  "common.listSep": "、",
+  "db.unique": "唯一",
+  "db.requiresLevel": "需要等级",
+  "db.tooltip.hint": "鼠标停在物品链接上会浮出它的属性；键盘 Tab 到链接也一样。"
 }

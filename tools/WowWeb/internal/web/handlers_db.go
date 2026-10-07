@@ -381,6 +381,71 @@ func (s *Server) handleDBItem(w http.ResponseWriter, r *http.Request, page *Page
 	s.rend.Render(w, http.StatusOK, "db_item", dbItemView{PageData: *page, Item: *item, Relations: relations})
 }
 
+// dbTooltipView is the hover tooltip for one item.
+//
+// It is deliberately smaller than the item page: a tooltip that repeats every
+// number the page already shows would be a worse tooltip. What it carries is
+// what the game's own tooltip carries, in the same order, so a player reading it
+// recognises it.
+type dbTooltipView struct {
+	PageData
+	Item store.ContentItem
+	// Spells are the "use" and "equip" lines, in slot order. The name is looked
+	// up rather than the id, because a tooltip that says "#133" is not worth
+	// hovering for.
+	Spells []dbTooltipSpell
+	// Unique is the game's own "unique" line: at most one of the item may be
+	// carried, which the core stores as max_count = 1.
+	Unique bool
+}
+
+// dbTooltipSpell is one line of an item's spell list in a tooltip.
+type dbTooltipSpell struct {
+	SpellID uint32
+	Name    string
+	Trigger uint8
+}
+
+func (s *Server) handleDBItemTooltip(w http.ResponseWriter, r *http.Request, page *PageData) {
+	entry, ok := s.parseUintPath(r, "entry")
+	if !ok {
+		s.notFound(w, r)
+		return
+	}
+
+	item, err := s.store.ContentItem(r.Context(), dbLocale(page), entry)
+	if err != nil {
+		if err == store.ErrNotFound {
+			s.notFound(w, r)
+			return
+		}
+		s.serverError(w, r, "load item tooltip", err)
+		return
+	}
+
+	view := dbTooltipView{PageData: *page, Item: *item, Unique: item.MaxCount == 1}
+	if len(item.Spells) > 0 {
+		ids := make([]uint32, 0, len(item.Spells))
+		for _, sp := range item.Spells {
+			ids = append(ids, sp.SpellID)
+		}
+		names, err := s.store.SpellNames(r.Context(), dbLocale(page), ids)
+		if err != nil {
+			s.serverError(w, r, "load tooltip spell names", err)
+			return
+		}
+		for _, sp := range item.Spells {
+			view.Spells = append(view.Spells, dbTooltipSpell{
+				SpellID: sp.SpellID,
+				Name:    names[sp.SpellID],
+				Trigger: sp.Trigger,
+			})
+		}
+	}
+
+	s.rend.RenderFragment(w, "db_item_tooltip", view)
+}
+
 // ---------------------------------------------------------------------------
 // Spells
 // ---------------------------------------------------------------------------

@@ -596,27 +596,6 @@ func scanQuestRefs(rows *sql.Rows, prefixes []string, slots int, item uint32) ([
 	return out, rows.Err()
 }
 
-// itemNames reads the shown name of each item entry in one round trip.
-func (s *Store) itemNames(ctx context.Context, loc ContentLocale, ids []uint32) (map[uint32]string, error) {
-	q, args := itemNamesQuery(loc, ids)
-	rows, err := s.World.QueryContext(ctx, q, args...)
-	if err != nil {
-		return nil, fmt.Errorf("item names: %w", err)
-	}
-	defer rows.Close()
-
-	out := make(map[uint32]string, len(ids))
-	for rows.Next() {
-		var entry uint32
-		var name string
-		if err := rows.Scan(&entry, &name); err != nil {
-			return nil, fmt.Errorf("scan item name: %w", err)
-		}
-		out[entry] = name
-	}
-	return out, rows.Err()
-}
-
 // fillLootNames fills in the names of the items a loot list holds.
 func (s *Store) fillLootNames(ctx context.Context, loc ContentLocale, lists ...[]ContentLootItem) error {
 	seen := map[uint32]bool{}

@@ -189,3 +189,43 @@ pre {
 .q4 { color: #a335ee; }
 .q5 { color: #ff8000; }
 .q6 { color: #e6cc80; }
+
+/* ---- hover tooltip ----
+   The box that assets/db-tooltip.js fills and positions. It is not interactive
+   (pointer-events: none) on purpose: the link underneath stays the thing you
+   click, and the script never has to decide whether the pointer moved into the
+   tooltip or away from the link. The colours are the game's own: a spell name
+   behind "Use:" is green, flavour text is gold. */
+/* Two elements, not one: the host is what the script positions, the .tt box is
+   what the tooltip fragment renders. Keeping them apart is not cosmetic - a
+   positioned .tt nested inside a positioned host escapes the host's box, and the
+   host then collapses to nothing because its only child is out of flow. */
+.tt-host {
+  position: fixed;
+  z-index: 60;
+  display: none;
+  /* A fixed width, like the game's own tooltips: shrink-to-fit makes the box
+     narrower the closer the pointer is to the right edge, and the script then
+     cannot measure a width to place against. The cap keeps it inside a narrow
+     window. */
+  width: 19rem;
+  max-width: calc(100vw - 2rem);
+  pointer-events: none;
+}
+.tt {
+  padding: .6rem .7rem;
+  background: #05070b;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .55);
+  font-size: .82rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+.tt-name { font-weight: 600; margin-bottom: .15rem; }
+.tt-bind, .tt-slot { color: #ffffff; }
+.tt-line { margin-top: .15rem; }
+.tt-muted, .tt .tt-muted { color: var(--muted); }
+.tt-trigger { color: var(--muted); }
+.tt-spell { color: #1eff00; }
+.tt-flavor { margin-top: .35rem; color: #ffd100; font-style: italic; }

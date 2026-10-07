@@ -111,6 +111,9 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /db/search", s.public(s.handleDBSearch))
 	s.mux.HandleFunc("GET /db/items", s.public(s.handleDBItems))
 	s.mux.HandleFunc("GET /db/items/{entry}", s.public(s.handleDBItem))
+	// The hover tooltip. A fragment rather than a page: it is fetched by
+	// assets/db-tooltip.js and dropped next to the link being hovered.
+	s.mux.HandleFunc("GET /db/items/{entry}/tooltip", s.public(s.handleDBItemTooltip))
 	s.mux.HandleFunc("GET /db/spells", s.public(s.handleDBSpells))
 	s.mux.HandleFunc("GET /db/spells/{entry}", s.public(s.handleDBSpell))
 	s.mux.HandleFunc("GET /db/quests", s.public(s.handleDBQuests))

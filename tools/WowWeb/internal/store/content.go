@@ -174,15 +174,21 @@ type ContentItem struct {
 	// Fixed-width scan buffers. The tables store these as numbered columns
 	// (stat_type1..10, spellid_1..3), which sql.Rows cannot scan into a slice, so
 	// they are collected into the slices above after the scan.
-	holyRes      int16
-	fireRes      int16
-	natureRes    int16
-	frostRes     int16
-	shadowRes    int16
-	arcaneRes    int16
-	statType     [10]int16
-	statValue    [10]int16
-	spellID      [3]uint32
+	holyRes   int16
+	fireRes   int16
+	natureRes int16
+	frostRes  int16
+	shadowRes int16
+	arcaneRes int16
+	statType  [10]int16
+	statValue [10]int16
+	// spellID is signed on purpose. The column is unsigned, so a stored value is
+	// never negative - but the sql/ releases write -1 in some rows ("no spell"
+	// in the old layout), and a server that imported them in a lenient mode
+	// stores 0 while one that did not keeps the row out. Scanning into a signed
+	// buffer means such a row shows up as an item with one fewer spell line
+	// instead of failing the whole item with an out-of-range error.
+	spellID      [3]int32
 	spellTrigger [3]int16
 	spellCharges [3]int16
 }
@@ -308,11 +314,12 @@ func (it *ContentItem) collect() {
 		}
 	}
 	for i := range it.spellID {
-		if it.spellID[i] != 0 {
-			it.Spells = append(it.Spells, ContentItemSpell{
-				Slot: i + 1, SpellID: it.spellID[i], Trigger: uint8(it.spellTrigger[i]), Charges: it.spellCharges[i],
-			})
+		if it.spellID[i] <= 0 {
+			continue
 		}
+		it.Spells = append(it.Spells, ContentItemSpell{
+			Slot: i + 1, SpellID: uint32(it.spellID[i]), Trigger: uint8(it.spellTrigger[i]), Charges: it.spellCharges[i],
+		})
 	}
 }
 
@@ -786,6 +793,57 @@ func itemNamesQuery(loc ContentLocale, ids []uint32) (string, []any) {
 	}
 	return "SELECT i.entry, " + loc.localized("cl", "i", "name") + " FROM item_template i" +
 		loc.join("cl", "locales_item", "entry", "i") + " WHERE i.entry IN (" + placeholders(len(ids)) + ")", args
+}
+
+// itemNames reads the shown name of each item entry in one round trip. A name
+// that no longer exists comes back as an empty string, which the callers render
+// as the entry number rather than as a blank.
+func (s *Store) itemNames(ctx context.Context, loc ContentLocale, ids []uint32) (map[uint32]string, error) {
+	return s.nameLookup(ctx, "item", ids, func() (string, []any) { return itemNamesQuery(loc, ids) })
+}
+
+// SpellNames reads the shown name of each spell entry in one round trip. It is
+// exported because the item tooltip builds its "use"/"equip" lines from these.
+func (s *Store) SpellNames(ctx context.Context, loc ContentLocale, ids []uint32) (map[uint32]string, error) {
+	return s.nameLookup(ctx, "spell", ids, func() (string, []any) { return spellNamesQuery(loc, ids) })
+}
+
+// nameLookup runs one of the (entry, name) queries above. They all return the
+// same shape, so the scanning lives here once instead of three times.
+func (s *Store) nameLookup(ctx context.Context, what string, ids []uint32, build func() (string, []any)) (map[uint32]string, error) {
+	if len(ids) == 0 {
+		return map[uint32]string{}, nil
+	}
+	q, args := build()
+	rows, err := s.World.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("%s names: %w", what, err)
+	}
+	defer rows.Close()
+
+	out := make(map[uint32]string, len(ids))
+	for rows.Next() {
+		var entry uint32
+		var name string
+		if err := rows.Scan(&entry, &name); err != nil {
+			return nil, fmt.Errorf("scan %s name: %w", what, err)
+		}
+		out[entry] = name
+	}
+	return out, rows.Err()
+}
+
+// spellNamesQuery loads the names of the given spell entries in one round trip.
+// The tooltip needs this because an item's "use" and "equip" lines are stored as
+// spell ids, and a tooltip that says "#133" instead of "Fireball" is not worth
+// hovering for.
+func spellNamesQuery(loc ContentLocale, ids []uint32) (string, []any) {
+	args := make([]any, 0, len(ids))
+	for _, id := range ids {
+		args = append(args, id)
+	}
+	return "SELECT s.entry, " + loc.localized("cl", "s", "name") + " FROM spell_template s" +
+		loc.join("cl", "locales_spell", "entry", "s") + " WHERE s.entry IN (" + placeholders(len(ids)) + ")", args
 }
 
 // fillItemNames adds the name of each referenced item so a quest page can link

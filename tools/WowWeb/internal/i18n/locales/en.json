@@ -842,5 +842,8 @@
   "db.choiceReward": "choice",
   "db.listTruncated": "These lists are longer than 200 rows; only part of them is shown: ",
   "db.kind.gameobject": "Gameobject",
-  "common.listSep": ", "
+  "common.listSep": ", ",
+  "db.unique": "Unique",
+  "db.requiresLevel": "Requires Level",
+  "db.tooltip.hint": "Hovering an item link shows what the item does; tabbing to it with the keyboard works too."
 }

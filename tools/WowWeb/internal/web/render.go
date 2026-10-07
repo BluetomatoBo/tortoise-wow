@@ -88,6 +88,32 @@ func (r *renderer) Render(w http.ResponseWriter, status int, page string, data a
 	_, _ = buf.WriteTo(w)
 }
 
+// RenderFragment writes a page template's content block on its own, without the
+// layout around it.
+//
+// That is what the hover tooltips are: the same markup a page would show, but as
+// a piece of HTML a script can drop next to a link. It is a separate method
+// rather than a flag on Render so a fragment can never accidentally come out as
+// a full page, which would nest <html> inside <div>.
+func (r *renderer) RenderFragment(w http.ResponseWriter, page string, data any) {
+	r.mu.RLock()
+	tmpl, ok := r.cache[page]
+	r.mu.RUnlock()
+	if !ok {
+		http.Error(w, "template "+page+" not found", http.StatusInternalServerError)
+		return
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&buf, "content", data); err != nil {
+		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = buf.WriteTo(w)
+}
+
 func templateFuncs() template.FuncMap {
 	return template.FuncMap{
 		// Presentation-only helpers. Display names (rank, race, class, flags)

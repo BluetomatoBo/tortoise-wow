@@ -457,6 +457,7 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 | `/db/search?q=` | 一次搜四类（每类最多 10 条），名称或条目编号都可以 |
 | `/db/items` | 物品列表，可按品质、类别、物品等级区间筛选 |
 | `/db/items/{entry}` | 物品详情：属性、抗性、物品上的法术、售价、绑定、起始任务 |
+| `/db/items/{entry}/tooltip` | 悬停用的片段（不是页面）：物品页那块内容的最小版本 |
 | `/db/spells`、`/db/spells/{id}` | 法术列表（按学派、等级筛选）与详情（含三个效果槽） |
 | `/db/quests`、`/db/quests/{entry}` | 任务列表与详情（需求物品/生物、奖励、任务文本、给予者与交付者） |
 | `/db/npcs`、`/db/npcs/{entry}` | 生物列表（按类型、等级筛选）与详情（含它开/交的任务、掉落、剥皮、偷窃、售货） |
@@ -496,6 +497,21 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 - 索引客户端 DBC 的字段（施法时间、持续时间、范围、图标、法术效果）**按原始数字显示**：
   要起名就得读客户端的 DBC 文件，而猜出来的标签比原始索引更糟。
 - **只读**：不建表、不写任何东西，权限沿用 `GRANT SELECT ON tw_world.*`。
+
+### 悬停 tooltip
+
+物品链接（列表页、掉落来源、任务需求/奖励里那些）鼠标停上去会浮出这个物品的属性框，
+键盘 Tab 到链接也一样。它取的是 `/db/items/{entry}/tooltip` —— 和物品页同一套模板渲染出来的
+一段**片段**（不带页面外壳），所以两处永远不会显示得不一样。
+
+- **等指针停稳再请求**（140ms）：战利品表一页两百条，扫过去的鼠标不该发两百个请求。
+- **按条目缓存**，指针移开时**中断**在途请求 —— 否则慢一点的响应会让旧行的 tooltip 冒出来。
+- **触屏不加载**：没有悬停这回事，点一下本来就会进物品页。
+- **渐进增强**：脚本挂了、被拦了、浏览器不支持，链接和页面一切照旧。
+
+> 这段脚本是本项目第一个客户端脚本（`assets/db-tooltip.js`，只在 `/db` 页面上加载），
+> 也是唯一一处服务端之外的地方会往页面里插 HTML —— 插的是同源、由 `html/template`
+> 转义过的服务端片段，脚本里没有一处是自己拼字符串拼出来的。
 
 ### 关于性能：那几条全表扫描
 
@@ -1459,6 +1475,28 @@ Worth knowing:
   beyond the existing `GRANT SELECT ON tw_world.*`.
 
 ---
+
+## Hover tooltips
+
+Resting the pointer on an item link — in a list, a loot source, a quest reward —
+floats a box with that item's stats; tabbing to the link with the keyboard does
+the same. It is served by `/db/items/{entry}/tooltip`, a **fragment** of the item
+template (no page shell), so the bow and the page can never disagree.
+
+* **The fetch waits for the pointer to rest** (140ms): a loot table lists two
+  hundred items and sweeping across it must not fire two hundred requests.
+* **Cached per entry**, and a request in flight is **aborted** when the pointer
+  moves on — otherwise a slow answer pops up the tooltip of the row the pointer
+  left three rows ago.
+* **Not loaded on a touch screen**: there is no hover to answer and a tap already
+  follows the link.
+* **Progressive enhancement**: if the script fails to load, is blocked, or the
+  browser is too old, the links and the pages behave exactly as before.
+
+> This is the project's first client-side script (`assets/db-tooltip.js`, loaded
+> only on `/db` pages). It is also the only place outside the server that puts
+> HTML into a page — and what it inserts is a same-origin fragment the server
+> rendered and escaped. Nothing in the script builds markup out of strings.
 
 ## On the full table scans
 

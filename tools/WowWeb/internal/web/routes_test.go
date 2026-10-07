@@ -49,12 +49,15 @@ func TestRoutesAreRegistered(t *testing.T) {
 		{"GET", "/account/no-time"},
 		{"GET", "/account/verify"},
 		{"GET", "/assets/style.css"},
+		{"GET", "/assets/db-tooltip.js"},
 
 		// The database browser: public, and one detail route per kind.
 		{"GET", "/db"},
 		{"GET", "/db/search"},
 		{"GET", "/db/items"},
 		{"GET", "/db/items/1234"},
+		// The hover tooltip: a fragment of the item page, fetched by the script.
+		{"GET", "/db/items/1234/tooltip"},
 		{"GET", "/db/spells"},
 		{"GET", "/db/spells/133"},
 		{"GET", "/db/quests"},
