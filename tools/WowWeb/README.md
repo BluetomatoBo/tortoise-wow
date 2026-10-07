@@ -515,32 +515,50 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 
 ### 图标
 
-物品与法术的图标来自 `assets/icons/*.png`，栏目对应关系在 `icondata.txt` 里。两者都由
-[`gen_icons.py`](gen_icons.py) 从 **Turtlehead 的 AoWoW 泄露转储**（`Winfidonarleyan/turtle-wow`）生成：
-那个项目已经把客户端的 `ItemDisplayInfo.dbc` / `SpellIcon.dbc` 解析成了两张表
-（`aowow_icons` / `aowow_spellicons`），图标也已经从 MPQ 转成了 PNG，所以不必自己解 DBC 或 BLP。
+物品要有图标，需要两样东西：**id 到图标名的对应关系**，以及**图本身**。
+
+**对应关系来自客户端自己的 DBC。** `item_template.display_id` 与 `spell_template.spellIconId`
+存的是 id，名字在客户端的 `ItemDisplayInfo.dbc` / `SpellIcon.dbc` 里——服务端从不加载这两个
+文件。好在 [`tools/dbc_verification/`](../dbc_verification/) 那份客户端文件清单记录了每个文件的
+sha256 与 CDN 地址，所以这两个 DBC 是**下载下来、校验哈希之后**解析的，不需要你本地有客户端。
+转储（`Winfidonarleyan/turtle-wow`）的两张表仍然用，但只用来补当前客户端没有的 id——它取自更早的
+客户端，全信它会显示出游戏里已经不用的图。
+
+**图来自两处**：转储已经把大部分客户端图标转成了 PNG；转储没有的（Turtle 自制的那些）从清单
+CDN 取客户端自己的 BLP，并**在本脚本里解码**（BLP1 调色板、BLP2 的 DXT1/DXT3/DXT5 与裸数据）。
 
 ```bash
+# 1. 转储的图标集（只取图标，sparse checkout 不会拉下整个仓库）
 git clone --depth 1 --filter=blob:none --sparse \
     https://github.com/Winfidonarleyan/turtle-wow /tmp/twdump
 cd /tmp/twdump && git sparse-checkout set \
     "Dumps/Source Code/18 - Development_Turtlehead Current/main/images/icons"
+curl -sL -o /tmp/aowow.sql "https://raw.githubusercontent.com/Winfidonarleyan/turtle-wow/main/Dumps/Source%20Code/18%20-%20Development_Turtlehead%20Current/main/dbs/aowow.sql"
 
+# 2. 生成（下载两个 DBC 与补缺的 BLP，全部校验 sha256）
 python3 tools/WowWeb/gen_icons.py \
     --dump "/tmp/twdump/Dumps/Source Code/18 - Development_Turtlehead Current/main" \
-    --sql  /tmp/aowow.sql --size medium
+    --sql /tmp/aowow.sql --size medium
+
+# 3. 还有缺的？从你自己的客户端里抽（需要 StormLib）
+python3 tools/WowWeb/extract_client_icons.py --client /path/to/wow-client
+python3 tools/WowWeb/gen_icons.py --dump ... --sql /tmp/aowow.sql   # 重跑，自动用上
 ```
 
-`--size medium` 是 36×36（11.9 MB，默认），页面平时按 18px 画，所以在 2x 屏上是实打实的像素；
-`--size small`（18×18，4 MB）是四分之一大小。
+`--size medium` 是 36×36（11.9 MB，默认），页面按 18px 画，2x 屏上有实打实的像素；
+`--size small`（18×18，4 MB）是四分之一。`--no-client` 不联网，只用转储的表。
 
-**覆盖率据实说明**：映射表来自那次转储，因此**转储之后新增的 Turtle 自制 id 不在里面**。
-按本服数据算，物品用到的 display id 有 91.6% 能出图，法术的 spellIconId 是 76%。没有对应的
-条目**不画图**（模板判断 URL 为空就跳过），不会出现 404 的 `<img>`；`icons_test.go` 里有一条
-测试逐个核对「映射里的每个名字都有文件」，这正是最容易出错的地方。
+**覆盖率（按本服数据实测）**：
 
-补那部分缺口的正路是从**客户端 MPQ** 补：读 `ItemDisplayInfo.dbc` / `SpellIcon.dbc` 得到新 id 的名字，
-名字没有对应 PNG 的再从 MPQ 解 BLP。这条路需要客户端文件，尚未做。
+| | 有映射 | 其中有图 |
+|---|---|---|
+| 物品 display_id | 12209 / 12250（99.7%） | 11918（97.3%） |
+| 法术 spellIconId | 1219 / 1220（99.9%） | 1097（89.9%） |
+
+缺图的那批是**客户端自己也没有的图**：DBC 里登记了名字，但客户端从来没有发布过对应的 BLP
+（多为资料片图标名）。没有图就**不画图标**——模板判断 URL 为空直接跳过，不会出现 404 的 `<img>`。
+`icons_test.go` 有一条测试逐个核对「映射里的每个名字都有文件」，这正是「表与目录分开生成」
+最容易出的错。
 
 ### 静态资源的缓存指纹
 
@@ -1538,37 +1556,56 @@ template (no page shell), so the bow and the page can never disagree.
 
 ## Icons
 
-Item and spell icons are `assets/icons/*.png`, with the id-to-name table in
-`icondata.txt`. Both are produced by [`gen_icons.py`](gen_icons.py) from the
-**Turtlehead AoWoW dump** (`Winfidonarleyan/turtle-wow`): that project has already
-resolved the client's `ItemDisplayInfo.dbc` and `SpellIcon.dbc` into two tables
-(`aowow_icons`, `aowow_spellicons`) and converted the icons from MPQ to PNG, so
-nothing here has to decode a DBC or a BLP.
+An icon needs two things: the **id-to-name mapping**, and the **artwork**.
+
+**The mapping comes from the client's own DBCs.** `item_template.display_id` and
+`spell_template.spellIconId` hold ids; the names live in the client's
+`ItemDisplayInfo.dbc` and `SpellIcon.dbc`, which the server never loads. The client
+file list in [`tools/dbc_verification/`](../dbc_verification/) records a sha256 and a
+CDN mirror for every client file, so those two DBCs are **downloaded, verified
+against that hash, and parsed** - no client installation needed. The AoWoW dump's
+tables are still used, but only for ids the current client no longer has: they came
+from an older client, and trusting them first would draw art the game no longer uses.
+
+**The artwork comes from two places**: the dump, which already converted most of the
+client's icons to PNG, and - for what the dump lacks, which is Turtle's own content -
+the client's BLP files from the same CDN, **decoded here** (BLP1 paletted, BLP2
+DXT1/DXT3/DXT5 and raw).
 
 ```bash
+# 1. the dump's icon set (sparse checkout: it does not pull the whole repository)
 git clone --depth 1 --filter=blob:none --sparse \
     https://github.com/Winfidonarleyan/turtle-wow /tmp/twdump
 cd /tmp/twdump && git sparse-checkout set \
     "Dumps/Source Code/18 - Development_Turtlehead Current/main/images/icons"
+curl -sL -o /tmp/aowow.sql "https://raw.githubusercontent.com/Winfidonarleyan/turtle-wow/main/Dumps/Source%20Code/18%20-%20Development_Turtlehead%20Current/main/dbs/aowow.sql"
 
+# 2. build (fetches the two DBCs and the missing BLPs, all hash-checked)
 python3 tools/WowWeb/gen_icons.py \
     --dump "/tmp/twdump/Dumps/Source Code/18 - Development_Turtlehead Current/main" \
-    --sql  /tmp/aowow.sql --size medium
+    --sql /tmp/aowow.sql --size medium
+
+# 3. still missing some? pull them out of your own client (needs StormLib)
+python3 tools/WowWeb/extract_client_icons.py --client /path/to/wow-client
+python3 tools/WowWeb/gen_icons.py --dump ... --sql /tmp/aowow.sql   # rerun, it picks them up
 ```
 
 `--size medium` is the 36x36 set (11.9 MB, the default); the pages draw icons at
-18px, so a 2x screen has real pixels to use. `--size small` is a quarter of that.
+18px, so a 2x screen has real pixels. `--size small` is a quarter of that.
+`--no-client` skips the network and uses the dump's tables alone.
 
-**Coverage, stated plainly**: the table comes from that one dump, so **Turtle's
-own ids added after it was taken are not in it**. Against this realm's data, 91.6%
-of the item display ids and 76% of the spell icon ids resolve. An id with no entry
-draws **nothing** (the templates skip an empty URL), so there is no 404ing `<img>`;
-`icons_test.go` walks every mapped name and checks the file is in the binary, which
-is the failure mode of shipping a table and a directory that are built separately.
+**Coverage, measured against this realm's data**:
 
-Filling the gap properly means going to the **client MPQ**: read
-`ItemDisplayInfo.dbc` / `SpellIcon.dbc` for the newer ids, and decode the BLPs whose
-names have no PNG. That needs the client files and has not been done.
+| | mapped | with a file |
+|---|---|---|
+| item display ids | 12209 / 12250 (99.7%) | 11918 (97.3%) |
+| spell icon ids | 1219 / 1220 (99.9%) | 1097 (89.9%) |
+
+What is still missing is art **the client itself does not have**: the DBCs name it,
+but no BLP was ever shipped for it (mostly later-expansion icon names). An id with no
+file draws **nothing** - the templates skip an empty URL, so there is no 404ing
+`<img>`. `icons_test.go` walks every mapped name and checks the file is in the binary,
+which is the failure mode of building the table and the directory separately.
 
 ## Cache busting for the static assets
 
