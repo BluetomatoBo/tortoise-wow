@@ -253,3 +253,37 @@ func TestVendorQueries(t *testing.T) {
 		t.Errorf("items query = %s", items)
 	}
 }
+
+// TestLootSourceQueryLinksTheOwner pins the entry a drop-source row carries.
+//
+// The loot tables are keyed by a loot id, and the page turns that column into a
+// link to a creature page. Selecting the loot table's own entry links to the loot
+// id instead: this realm has loot ids that belong to no creature at all (the page
+// 404s) and loot ids that are some *other* creature's entry (the page opens the
+// wrong creature). The owner's entry is the only correct answer.
+func TestLootSourceQueryLinksTheOwner(t *testing.T) {
+	cases := []struct {
+		table   string
+		wantCol string
+	}{
+		{"creature_loot_template", "c.entry"},
+		{"skinning_loot_template", "c.entry"},
+		{"pickpocketing_loot_template", "c.entry"},
+		{"gameobject_loot_template", "g.entry"},
+		// For items the owner key *is* the item entry, so the two agree; naming
+		// the owner keeps the rule uniform.
+		{"item_loot_template", "i.entry"},
+	}
+	for _, tc := range cases {
+		q, _ := lootSourceQuery(ContentLocaleBase, tc.table, 7, nil)
+		if !strings.HasPrefix(q, "SELECT "+tc.wantCol) {
+			t.Errorf("%s selects something other than the owner's entry:\n%s", tc.table, q)
+		}
+		if strings.Contains(q, "SELECT t.entry") {
+			t.Errorf("%s still selects the loot table's own entry:\n%s", tc.table, q)
+		}
+		if !strings.Contains(q, "ORDER BY "+tc.wantCol) {
+			t.Errorf("%s does not order by the owner's entry:\n%s", tc.table, q)
+		}
+	}
+}

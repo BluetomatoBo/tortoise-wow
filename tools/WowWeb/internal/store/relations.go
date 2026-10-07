@@ -197,7 +197,7 @@ func ownerJoin(owner, key, lootAlias string) string {
 // contains it. refs may be empty, in which case only direct rows match.
 func lootSourceQuery(loc ContentLocale, table string, item uint32, refs []uint32) (string, []any) {
 	own := lootOwners[table]
-	from, localeJoin, name, _ := lootSource(loc, own.kind)
+	from, localeJoin, name, owner := lootSource(loc, own.kind)
 	where := "(t.mincountOrRef > 0 AND t.item = ?)"
 	args := []any{item}
 	if len(refs) > 0 {
@@ -214,12 +214,19 @@ func lootSourceQuery(loc ContentLocale, table string, item uint32, refs []uint32
 		extra = " AND (" + own.extra + ")"
 		where = "(" + where + ")"
 	}
-	// t.item is selected too: on a reference row it holds the entry being
+	// The entry selected is the *owner's*, not the loot table's: the loot table is
+	// keyed by a loot id, and the page turns this column into a link. Selecting
+	// t.entry links to the loot id, which is a creature only by coincidence - this
+	// realm has loot ids that belong to nothing (2000213, whose loot data exists)
+	// and loot ids that are another creature's entry, so the link either 404s or
+	// opens the wrong creature.
+	//
+	// t.item is selected as well: on a reference row it holds the entry being
 	// pointed at, which is what the chance has to be resolved against.
-	q := "SELECT t.entry, " + name + ", t.ChanceOrQuestChance, t.mincountOrRef, t.maxcount, t.item" +
+	q := "SELECT " + owner + ".entry, " + name + ", t.ChanceOrQuestChance, t.mincountOrRef, t.maxcount, t.item" +
 		" FROM " + table + " t" +
 		ownerJoin(from, own.key, "t") + localeJoin +
-		" WHERE " + where + extra + " ORDER BY t.entry, t.item LIMIT ?"
+		" WHERE " + where + extra + " ORDER BY " + owner + ".entry, t.item LIMIT ?"
 	return q, append(args, relationLimit)
 }
 
