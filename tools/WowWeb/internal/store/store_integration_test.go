@@ -988,8 +988,9 @@ func TestIntegration(t *testing.T) {
 				ReqCreatureOrGOId2, ReqCreatureOrGOCount2, RewChoiceItemId1, RewChoiceItemCount1)
 			 VALUES (1, 'The Other White Mech', 30, 28, 80119, 5, 80117, 5, -1234, 1, 80119, 1)`,
 			`INSERT INTO locales_quest (entry, Title_loc4) VALUES (1, '另一只白鸡')`,
-			`INSERT INTO creature_template (entry, name, subname, level_min, level_max, type, loot_id)
-			 VALUES (80117, 'Haywire Battlechicken', '', 2, 2, 7, 80117)`,
+			`INSERT INTO creature_template (entry, name, subname, level_min, level_max, type,
+				loot_id, skinning_loot_id, pickpocket_loot_id)
+			 VALUES (80117, 'Haywire Battlechicken', '', 2, 2, 7, 90117, 90118, 90119)`,
 			// A NULL subname: the page must print nothing rather than fail to scan.
 			`INSERT INTO creature_template (entry, name, level_min, level_max, type)
 			 VALUES (2, 'Spawn Point', 60, 60, 7)`,
@@ -998,29 +999,34 @@ func TestIntegration(t *testing.T) {
 			`INSERT INTO gameobject_template (entry, type, displayId, name)
 			 VALUES (4001, 2, 1, 'Wanted Poster')`,
 			`INSERT INTO locales_gameobject (entry, name_loc4) VALUES (4001, '通缉告示')`,
+			// A chest: only type 3 and 25 expose data1 as a loot id, so this is
+			// the gameobject the loot query may match, and 4001 above is not.
+			`INSERT INTO gameobject_template (entry, type, displayId, name, data1)
+			 VALUES (4002, 3, 2, 'Wanted Chest', 4002)`,
+			`INSERT INTO locales_gameobject (entry, name_loc4) VALUES (4002, '通缉宝箱')`,
 
 			// Loot, in all four shapes the walker has to tell apart:
 			//   a direct drop, a drop that only arrives through a reference, the
 			//   same item stored a second time inside a nested reference, and a
 			//   quest-only drop whose chance is stored negative.
 			`INSERT INTO creature_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
-			 VALUES (80117, 80119, 25, 0, 1, 2)`,
+			 VALUES (90117, 80119, 25, 0, 1, 2)`,
 			`INSERT INTO creature_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
-			 VALUES (80117, 30016, 50, 0, -30016, 1)`,
+			 VALUES (90117, 30016, 50, 0, -30016, 1)`,
 			`INSERT INTO creature_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
-			 VALUES (80117, 30017, 40, 0, -30017, 1)`,
+			 VALUES (90117, 30017, 40, 0, -30017, 1)`,
 			`INSERT INTO creature_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
-			 VALUES (80117, 2, -100, 0, 1, 1)`,
+			 VALUES (90117, 2, -100, 0, 1, 1)`,
 			`INSERT INTO reference_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
 			 VALUES (30016, 80119, 100, 0, 1, 3)`,
 			`INSERT INTO reference_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
 			 VALUES (30017, 30016, 50, 0, -30016, 1)`,
 			`INSERT INTO skinning_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
-			 VALUES (80117, 2, 100, 0, 1, 1)`,
+			 VALUES (90118, 2, 100, 0, 1, 1)`,
 			`INSERT INTO pickpocketing_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
-			 VALUES (80117, 1, 10, 0, 1, 1)`,
+			 VALUES (90119, 1, 10, 0, 1, 1)`,
 			`INSERT INTO gameobject_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
-			 VALUES (4001, 1, 100, 0, 1, 1)`,
+			 VALUES (4002, 1, 100, 0, 1, 1)`,
 			`INSERT INTO item_loot_template (entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount)
 			 VALUES (1, 2, 5, 0, 1, 1)`,
 			`INSERT INTO npc_vendor (entry, slot, item) VALUES (80117, 1, 1)`,
@@ -1255,8 +1261,8 @@ func TestIntegration(t *testing.T) {
 			if len(rel.ContainedIn) != 1 || rel.ContainedIn[0].Entry != 1 {
 				t.Errorf("contained in = %+v, want the one container", rel.ContainedIn)
 			}
-			if len(rel.FoundIn) != 1 || rel.FoundIn[0].Name != "通缉告示" {
-				t.Errorf("found in = %+v, want the gameobject", rel.FoundIn)
+			if len(rel.FoundIn) != 1 || rel.FoundIn[0].Name != "通缉宝箱" {
+				t.Errorf("found in = %+v, want the chest gameobject", rel.FoundIn)
 			}
 
 			// A vendor row has no chance to report.
@@ -1329,8 +1335,11 @@ func TestIntegration(t *testing.T) {
 					t.Errorf("loot item %d name = %q, want the Chinese name", it.Entry, it.Name)
 				}
 			}
+			// The creature's loot lives under loot_id/skinning_loot_id/
+			// pickpocket_loot_id, none of which equals its entry here, so an
+			// implementation that queries by entry finds nothing at all.
 			if len(rel.Skins) != 1 || rel.Skins[0].Entry != 2 {
-				t.Errorf("skins = %+v", rel.Skins)
+				t.Errorf("skins = %+v, want the row under skinning_loot_id 90118", rel.Skins)
 			}
 			if len(rel.Pickpockets) != 1 || rel.Pickpockets[0].Entry != 1 {
 				t.Errorf("pickpockets = %+v", rel.Pickpockets)

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -136,8 +137,36 @@ func placeholders(n int) string {
 	return strings.TrimSuffix(strings.Repeat("?,", n), ",")
 }
 
-// lootSource names the table that owns the entries a loot table hangs off, with
-// the join and the expression that read that name in the visitor's language.
+// lootOwner says how a loot table hangs off the thing that owns its rows.
+//
+// Key is the owner's column that names the loot entry, and it is not the owner's
+// own entry: the core reads creature_template.loot_id for
+// creature_loot_template, skinning_loot_id for skinning_loot_template and
+// pickpocket_loot_id for pickpocketing_loot_template. The two values coincide by
+// habit rather than by rule - 5231 of this realm's 5404 loot-bearing creatures
+// happen to have loot_id == entry - so joining on entry looks right on most rows
+// and is wrong on the rest.
+//
+// Extra is a predicate the core also applies while resolving the loot id:
+// gameobjects expose one only for chests and fishing holes (GameObject.h,
+// GetLootId), where data1 is that id. For any other type data1 means something
+// else, so matching on it alone would invent drops.
+type lootOwner struct {
+	kind  DropKind
+	key   string
+	extra string
+}
+
+var lootOwners = map[string]lootOwner{
+	"creature_loot_template":      {DropCreature, "loot_id", ""},
+	"skinning_loot_template":      {DropCreature, "skinning_loot_id", ""},
+	"pickpocketing_loot_template": {DropCreature, "pickpocket_loot_id", ""},
+	"gameobject_loot_template":    {DropGameObject, "data1", "g.type IN (3, 25)"},
+	"item_loot_template":          {DropItem, "entry", ""},
+}
+
+// lootSource names the table that owns a loot table's entries, with the join and
+// the expression that read that name in the visitor's language.
 func lootSource(loc ContentLocale, kind DropKind) (from, join, name, owner string) {
 	switch kind {
 	case DropGameObject:
@@ -152,11 +181,21 @@ func lootSource(loc ContentLocale, kind DropKind) (from, join, name, owner strin
 	}
 }
 
+// ownerJoin is the clause that binds a loot table to the table that owns its
+// rows. It is what makes the owner's name in the SELECT list mean anything:
+// without it the query names an alias that is not in the FROM clause, and the
+// server rejects the whole statement with "Unknown column 'c.name' in 'field
+// list'".
+func ownerJoin(owner, key, lootAlias string) string {
+	return " JOIN " + owner + " ON " + strings.Fields(owner)[1] + "." + key + " = " + lootAlias + ".entry"
+}
+
 // lootSourceQuery lists the rows of one loot table that can produce the item:
 // the rows that name it, plus the rows pointing at a reference entry that
 // contains it. refs may be empty, in which case only direct rows match.
-func lootSourceQuery(loc ContentLocale, table string, kind DropKind, item uint32, refs []uint32) (string, []any) {
-	_, join, name, _ := lootSource(loc, kind)
+func lootSourceQuery(loc ContentLocale, table string, item uint32, refs []uint32) (string, []any) {
+	own := lootOwners[table]
+	from, localeJoin, name, _ := lootSource(loc, own.kind)
 	where := "(t.mincountOrRef > 0 AND t.item = ?)"
 	args := []any{item}
 	if len(refs) > 0 {
@@ -165,11 +204,20 @@ func lootSourceQuery(loc ContentLocale, table string, kind DropKind, item uint32
 			args = append(args, r)
 		}
 	}
+	// The extra predicate has to be ANDed onto the whole match, not onto the
+	// last branch of it: "a OR b AND c" parses as "a OR (b AND c)" in SQL, which
+	// would let the direct rows through without the type check.
+	extra := ""
+	if own.extra != "" {
+		extra = " AND (" + own.extra + ")"
+		where = "(" + where + ")"
+	}
 	// t.item is selected too: on a reference row it holds the entry being
 	// pointed at, which is what the chance has to be resolved against.
 	q := "SELECT t.entry, " + name + ", t.ChanceOrQuestChance, t.mincountOrRef, t.maxcount, t.item" +
-		" FROM " + table + " t" + join +
-		" WHERE " + where + " ORDER BY t.entry, t.item LIMIT ?"
+		" FROM " + table + " t" +
+		ownerJoin(from, own.key, "t") + localeJoin +
+		" WHERE " + where + extra + " ORDER BY t.entry, t.item LIMIT ?"
 	return q, append(args, relationLimit)
 }
 
@@ -616,17 +664,16 @@ func (s *Store) ItemRelations(ctx context.Context, loc ContentLocale, item uint3
 	out := &ItemRelations{}
 	for _, g := range []struct {
 		table string
-		kind  DropKind
 		into  *[]ContentDrop
 		key   string
 	}{
-		{"creature_loot_template", DropCreature, &out.DroppedBy, "db.droppedBy"},
-		{"gameobject_loot_template", DropGameObject, &out.FoundIn, "db.foundIn"},
-		{"item_loot_template", DropItem, &out.ContainedIn, "db.containedIn"},
-		{"skinning_loot_template", DropCreature, &out.SkinnedFrom, "db.skinnedFrom"},
-		{"pickpocketing_loot_template", DropCreature, &out.PickpocketedFrom, "db.pickpocketedFrom"},
+		{"creature_loot_template", &out.DroppedBy, "db.droppedBy"},
+		{"gameobject_loot_template", &out.FoundIn, "db.foundIn"},
+		{"item_loot_template", &out.ContainedIn, "db.containedIn"},
+		{"skinning_loot_template", &out.SkinnedFrom, "db.skinnedFrom"},
+		{"pickpocketing_loot_template", &out.PickpocketedFrom, "db.pickpocketedFrom"},
 	} {
-		list, err := s.loadLootSources(ctx, loc, g.table, g.kind, item, refs)
+		list, err := s.loadLootSources(ctx, loc, g.table, item, refs)
 		if err != nil {
 			return nil, err
 		}
@@ -682,8 +729,8 @@ func (s *Store) ItemRelations(ctx context.Context, loc ContentLocale, item uint3
 
 // loadLootSources reads one loot table for the item page and resolves whatever
 // came through a reference into a chance for the item itself.
-func (s *Store) loadLootSources(ctx context.Context, loc ContentLocale, table string, kind DropKind, item uint32, refs []uint32) ([]ContentDrop, error) {
-	q, args := lootSourceQuery(loc, table, kind, item, refs)
+func (s *Store) loadLootSources(ctx context.Context, loc ContentLocale, table string, item uint32, refs []uint32) ([]ContentDrop, error) {
+	q, args := lootSourceQuery(loc, table, item, refs)
 	rows, err := s.World.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("%s for item %d: %w", table, item, err)
@@ -693,7 +740,7 @@ func (s *Store) loadLootSources(ctx context.Context, loc ContentLocale, table st
 	var out []ContentDrop
 	var roots []uint32
 	for rows.Next() {
-		d := ContentDrop{Kind: kind}
+		d := ContentDrop{Kind: lootOwners[table].kind}
 		var chance float64
 		var mincountOrRef int32
 		var maxcount uint32
@@ -767,15 +814,26 @@ func (s *Store) CreatureRelations(ctx context.Context, loc ContentLocale, creatu
 		*g.into = list
 	}
 
+	// The loot tables are keyed by the creature's loot ids, which are separate
+	// columns and are not the creature's own entry, so they have to be read
+	// first. A zero means the creature has no loot of that kind.
+	ids, err := s.creatureLootIDs(ctx, creature)
+	if err != nil {
+		return nil, err
+	}
 	for _, g := range []struct {
 		table string
+		id    uint32
 		into  *[]ContentLootItem
 	}{
-		{"creature_loot_template", &out.Drops},
-		{"skinning_loot_template", &out.Skins},
-		{"pickpocketing_loot_template", &out.Pickpockets},
+		{"creature_loot_template", ids.loot, &out.Drops},
+		{"skinning_loot_template", ids.skinning, &out.Skins},
+		{"pickpocketing_loot_template", ids.pickpocket, &out.Pickpockets},
 	} {
-		list, err := s.scanLootItems(ctx, g.table, creature)
+		if g.id == 0 {
+			continue
+		}
+		list, err := s.scanLootItems(ctx, g.table, g.id)
 		if err != nil {
 			return nil, err
 		}
@@ -810,6 +868,32 @@ func (s *Store) CreatureRelations(ctx context.Context, loc ContentLocale, creatu
 		return nil, err
 	}
 	return out, nil
+}
+
+// creatureLootIDs are the three columns a creature points at its loot tables
+// with. Each is independent: a creature can have corpse loot and no skinning
+// loot, or the other way round.
+type creatureLootIDs struct {
+	loot       uint32
+	skinning   uint32
+	pickpocket uint32
+}
+
+// creatureLootIDs reads the loot ids of one creature. It is a separate query
+// because ContentCreature does not carry them: they are only needed on the page
+// that shows the loot.
+func (s *Store) creatureLootIDs(ctx context.Context, creature uint32) (creatureLootIDs, error) {
+	var ids creatureLootIDs
+	err := s.World.QueryRowContext(ctx,
+		"SELECT loot_id, skinning_loot_id, pickpocket_loot_id FROM creature_template WHERE entry = ?",
+		creature).Scan(&ids.loot, &ids.skinning, &ids.pickpocket)
+	if errors.Is(err, sql.ErrNoRows) {
+		return creatureLootIDs{}, nil
+	}
+	if err != nil {
+		return creatureLootIDs{}, fmt.Errorf("loot ids of creature %d: %w", creature, err)
+	}
+	return ids, nil
 }
 
 // QuestRelations gathers who hands a quest out and who takes it back.

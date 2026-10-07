@@ -1,6 +1,7 @@
 package store
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -57,27 +58,144 @@ func TestQuestItemQueryColumnNames(t *testing.T) {
 // against a query that never mentions c.
 func TestLootSourceQueryNames(t *testing.T) {
 	cases := []struct {
-		kind     DropKind
+		table    string
 		baseWant string
 		zhWant   string
 		zhJoin   string
 	}{
-		{DropCreature, "COALESCE(c.name, '')", "COALESCE(lc.name_loc4, c.name, '')", "LEFT JOIN locales_creature lc ON lc.entry = c.entry"},
-		{DropGameObject, "COALESCE(g.name, '')", "COALESCE(lg.name_loc4, g.name, '')", "LEFT JOIN locales_gameobject lg ON lg.entry = g.entry"},
-		{DropItem, "COALESCE(i.name, '')", "COALESCE(li.name_loc4, i.name, '')", "LEFT JOIN locales_item li ON li.entry = i.entry"},
+		{"creature_loot_template", "COALESCE(c.name, '')", "COALESCE(lc.name_loc4, c.name, '')", "LEFT JOIN locales_creature lc ON lc.entry = c.entry"},
+		{"gameobject_loot_template", "COALESCE(g.name, '')", "COALESCE(lg.name_loc4, g.name, '')", "LEFT JOIN locales_gameobject lg ON lg.entry = g.entry"},
+		{"item_loot_template", "COALESCE(i.name, '')", "COALESCE(li.name_loc4, i.name, '')", "LEFT JOIN locales_item li ON li.entry = i.entry"},
 	}
 	for _, tc := range cases {
-		base, _ := lootSourceQuery(ContentLocaleBase, "creature_loot_template", tc.kind, 7, nil)
+		base, _ := lootSourceQuery(ContentLocaleBase, tc.table, 7, nil)
 		if !strings.Contains(base, tc.baseWant) {
-			t.Errorf("%s base: want %s in %s", tc.kind, tc.baseWant, base)
+			t.Errorf("%s base: want %s in %s", tc.table, tc.baseWant, base)
 		}
 		if strings.Contains(base, "_loc4") {
-			t.Errorf("%s base: names a locale column: %s", tc.kind, base)
+			t.Errorf("%s base: names a locale column: %s", tc.table, base)
 		}
 
-		zh, _ := lootSourceQuery(ContentLocaleZH, "creature_loot_template", tc.kind, 7, nil)
+		zh, _ := lootSourceQuery(ContentLocaleZH, tc.table, 7, nil)
 		if !strings.Contains(zh, tc.zhWant) || !strings.Contains(zh, tc.zhJoin) {
-			t.Errorf("%s zh: want %s and the join in %s", tc.kind, tc.zhWant, zh)
+			t.Errorf("%s zh: want %s and the join in %s", tc.table, tc.zhWant, zh)
+		}
+	}
+}
+
+// relationQueries builds every query the relation loaders issue, so the checks
+// below can walk all of them instead of a hand-picked few.
+func relationQueries() map[string]string {
+	out := map[string]string{}
+	tables := []string{"creature_loot_template", "gameobject_loot_template", "item_loot_template",
+		"skinning_loot_template", "pickpocketing_loot_template"}
+	for _, loc := range []ContentLocale{ContentLocaleBase, ContentLocaleZH} {
+		for _, tbl := range tables {
+			q, _ := lootSourceQuery(loc, tbl, 7, []uint32{30016, 30017})
+			out[string(loc)+" "+tbl+" with refs"] = q
+			q, _ = lootSourceQuery(loc, tbl, 7, nil)
+			out[string(loc)+" "+tbl] = q
+
+			q, _ = lootItemsQuery(tbl, 3)
+			out[string(loc)+" "+tbl+" items"] = q
+		}
+		q, _ := referenceParentsQuery([]uint32{1, 2})
+		out[string(loc)+" ref parents"] = q
+		q, _ = referenceItemsQuery(30016)
+		out[string(loc)+" ref items"] = q
+		q, _ = vendorSellersQuery(loc, 117)
+		out[string(loc)+" vendors"] = q
+		q, _ = vendorItemsQuery(3)
+		out[string(loc)+" vendor items"] = q
+		for _, g := range []struct {
+			table string
+			kind  DropKind
+		}{
+			{"creature_questrelation", DropCreature},
+			{"creature_involvedrelation", DropCreature},
+			{"gameobject_questrelation", DropGameObject},
+			{"gameobject_involvedrelation", DropGameObject},
+		} {
+			q, _ = questActorQuery(loc, g.table, g.kind, 5)
+			out[string(loc)+" "+g.table] = q
+		}
+		q, _ = questsOfActorQuery(loc, "creature_questrelation", 3)
+		out[string(loc)+" actor quests"] = q
+		for _, p := range [][]string{questItemPrefixes("required"), questItemPrefixes("rewarded"), questItemPrefixes("choice")} {
+			slots := 4
+			if p[0] == "RewChoiceItemId" {
+				slots = 6
+			}
+			q, _ = questItemQuery(loc, p, slots, 117)
+			out[string(loc)+" "+p[0]] = q
+		}
+	}
+	return out
+}
+
+// TestRelationQueriesBindEveryAlias is the guard for the whole class of bug that
+// shipped once: a query that reads a name through an alias the FROM clause never
+// introduces. MySQL answers those with "Unknown column 'c.name' in 'field
+// list'", which is a 500 on the page, and nothing in Go notices beforehand
+// because the query is only a string until it reaches a server.
+//
+// It walks every query the loaders build and checks that each "alias.column"
+// reference names an alias bound by a FROM or JOIN in the same statement.
+func TestRelationQueriesBindEveryAlias(t *testing.T) {
+	for name, q := range relationQueries() {
+		bound := map[string]bool{}
+		for _, m := range regexp.MustCompile(`(?i)\b(?:FROM|JOIN)\s+([a-z_]+)\s+([a-z_]+)\b`).FindAllStringSubmatch(q, -1) {
+			bound[m[2]] = true
+		}
+		for _, m := range regexp.MustCompile(`\b([a-z_]+)\.([A-Za-z_]+)\b`).FindAllStringSubmatch(q, -1) {
+			if !bound[m[1]] {
+				t.Errorf("%s: alias %q is used (%s.%s) but never bound by a FROM or JOIN:\n%s",
+					name, m[1], m[1], m[2], q)
+			}
+		}
+	}
+}
+
+// TestLootSourceQueryUsesTheLootID pins the join key of each loot table.
+//
+// The loot tables are keyed by the owner's loot id, not by the owner's entry.
+// The two are equal for most creatures, so a wrong key still answers most rows
+// and quietly drops or invents the rest.
+func TestLootSourceQueryUsesTheLootID(t *testing.T) {
+	cases := []struct {
+		table   string
+		wantKey string
+	}{
+		{"creature_loot_template", "c.loot_id = t.entry"},
+		{"skinning_loot_template", "c.skinning_loot_id = t.entry"},
+		{"pickpocketing_loot_template", "c.pickpocket_loot_id = t.entry"},
+		{"gameobject_loot_template", "g.data1 = t.entry"},
+		{"item_loot_template", "i.entry = t.entry"},
+	}
+	for _, tc := range cases {
+		q, _ := lootSourceQuery(ContentLocaleBase, tc.table, 7, nil)
+		if !strings.Contains(q, tc.wantKey) {
+			t.Errorf("%s: want the join key %q in:\n%s", tc.table, tc.wantKey, q)
+		}
+	}
+
+	// Only chests and fishing holes expose data1 as a loot id; for any other
+	// gameobject type the column means something else.
+	q, _ := lootSourceQuery(ContentLocaleBase, "gameobject_loot_template", 7, nil)
+	if !strings.Contains(q, "AND (g.type IN (3, 25))") {
+		t.Errorf("gameobject loot does not restrict the type:\n%s", q)
+	}
+
+	// With references the match is "direct OR reference", and the type has to
+	// apply to both: "a OR b AND c" would leave the direct rows unchecked.
+	withRefs, _ := lootSourceQuery(ContentLocaleBase, "gameobject_loot_template", 7, []uint32{1, 2})
+	if !strings.Contains(withRefs, "WHERE ((t.mincountOrRef > 0") {
+		t.Errorf("the direct/reference group is not parenthesised before the type filter:\n%s", withRefs)
+	}
+	for _, table := range []string{"creature_loot_template", "skinning_loot_template", "item_loot_template"} {
+		q, _ := lootSourceQuery(ContentLocaleBase, table, 7, nil)
+		if strings.Contains(q, "type IN") {
+			t.Errorf("%s: unexpected type filter:\n%s", table, q)
 		}
 	}
 }
@@ -85,7 +203,7 @@ func TestLootSourceQueryNames(t *testing.T) {
 // TestLootSourceQueryReferences covers the two shapes one query has to match: the
 // row that names the item, and the row that points at a reference holding it.
 func TestLootSourceQueryReferences(t *testing.T) {
-	without, args := lootSourceQuery(ContentLocaleBase, "creature_loot_template", DropCreature, 7, nil)
+	without, args := lootSourceQuery(ContentLocaleBase, "creature_loot_template", 7, nil)
 	if strings.Contains(without, " IN (") {
 		t.Errorf("no references should mean no IN list: %s", without)
 	}
@@ -93,7 +211,7 @@ func TestLootSourceQueryReferences(t *testing.T) {
 		t.Errorf("args = %v, want the item and the limit", args)
 	}
 
-	with, args := lootSourceQuery(ContentLocaleBase, "creature_loot_template", DropCreature, 7, []uint32{30016, 30017})
+	with, args := lootSourceQuery(ContentLocaleBase, "creature_loot_template", 7, []uint32{30016, 30017})
 	if !strings.Contains(with, "t.mincountOrRef < 0 AND t.item IN (?,?)") {
 		t.Errorf("reference clause missing: %s", with)
 	}
