@@ -845,5 +845,8 @@
   "common.listSep": ", ",
   "db.unique": "Unique",
   "db.requiresLevel": "Requires Level",
-  "db.tooltip.hint": "Hovering an item link shows what the item does; tabbing to it with the keyboard works too."
+  "db.tooltip.hint": "Hovering an item link shows what the item does; tabbing to it with the keyboard works too.",
+  "db.spawns": "Where it stands",
+  "db.spawnsTruncated": "This creature has a great many spawn points; only the first 200 are drawn.",
+  "db.questPoint": "Objective"
 }

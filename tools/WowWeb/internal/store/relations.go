@@ -628,6 +628,48 @@ func (s *Store) fillLootNames(ctx context.Context, loc ContentLocale, lists ...[
 }
 
 // ---------------------------------------------------------------------------
+// Spawn points
+// ---------------------------------------------------------------------------
+
+// CreatureSpawn is one place a creature stands. The three coordinates are world
+// coordinates on Map, which is what the client's zone boxes are in too.
+type CreatureSpawn struct {
+	Map     uint16
+	X, Y, Z float64
+}
+
+// spawnLimit caps what a page draws. The busiest creature in this realm has 785
+// spawns and a map with 785 dots says nothing, so the page draws the first ones
+// and says how many it left out.
+const spawnLimit = 200
+
+// CreatureSpawns lists where a creature stands, and whether the list was cut.
+//
+// The lookup is an index read: the spawns table has a key on the creature id.
+func (s *Store) CreatureSpawns(ctx context.Context, entry uint32) ([]CreatureSpawn, bool, error) {
+	rows, err := s.World.QueryContext(ctx,
+		"SELECT map, position_x, position_y, position_z FROM creature"+
+			" WHERE id = ? ORDER BY guid LIMIT ?", entry, spawnLimit)
+	if err != nil {
+		return nil, false, fmt.Errorf("spawns of creature %d: %w", entry, err)
+	}
+	defer rows.Close()
+
+	var out []CreatureSpawn
+	for rows.Next() {
+		var spawn CreatureSpawn
+		if err := rows.Scan(&spawn.Map, &spawn.X, &spawn.Y, &spawn.Z); err != nil {
+			return nil, false, fmt.Errorf("scan spawn: %w", err)
+		}
+		out = append(out, spawn)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, false, err
+	}
+	return out, len(out) >= spawnLimit, nil
+}
+
+// ---------------------------------------------------------------------------
 // Loaders the pages call
 // ---------------------------------------------------------------------------
 

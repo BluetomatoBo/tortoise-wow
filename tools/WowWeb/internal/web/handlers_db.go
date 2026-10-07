@@ -582,7 +582,9 @@ type dbQuestView struct {
 	Quest store.ContentQuest
 	// Relations are who hands the quest out and who takes it back.
 	Relations *store.QuestRelations
-	Query     string
+	// Point is the objective on a map, when the quest has one.
+	Point *MapView
+	Query string
 	// HasText lists the prose blocks that are present, so the page can skip the
 	// ones that are empty rather than printing empty headings.
 	HasDetails    bool
@@ -624,12 +626,20 @@ func (s *Server) handleDBQuest(w http.ResponseWriter, r *http.Request, page *Pag
 		}
 	}
 
+	var point *MapView
+	if quest.PointMapID != 0 {
+		if view, ok := page.MapPoint(quest.PointMapID, quest.PointX, quest.PointY); ok {
+			point = &view
+		}
+	}
+
 	page.Title = quest.Title
 	page.Active = "db"
 	s.rend.Render(w, http.StatusOK, "db_quest", dbQuestView{
 		PageData:      *page,
 		Quest:         *quest,
 		Relations:     relations,
+		Point:         point,
 		HasDetails:    strings.TrimSpace(quest.Details) != "",
 		HasObjectives: strings.TrimSpace(quest.Objectives) != "",
 		HasReward:     strings.TrimSpace(quest.OfferRewardText) != "",
@@ -697,7 +707,10 @@ type dbCreatureView struct {
 	Creature store.ContentCreature
 	// Relations are the quests it starts and ends plus its loot tables.
 	Relations *store.CreatureRelations
-	Query     string
+	// Spawns are the zone maps its spawn points fall on, one map per zone.
+	Spawns             []MapView
+	SpawnListTruncated bool
+	Query              string
 }
 
 func (s *Server) handleDBCreature(w http.ResponseWriter, r *http.Request, page *PageData) {
@@ -724,7 +737,21 @@ func (s *Server) handleDBCreature(w http.ResponseWriter, r *http.Request, page *
 		return
 	}
 
+	// Where it stands. A creature with no spawn row at all - one that only exists
+	// as a template, or is summoned by a script - simply has no map to draw.
+	spawns, truncated, err := s.store.CreatureSpawns(r.Context(), entry)
+	if err != nil {
+		s.serverError(w, r, "load creature spawns", err)
+		return
+	}
+
 	page.Title = creature.Name
 	page.Active = "db"
-	s.rend.Render(w, http.StatusOK, "db_npc", dbCreatureView{PageData: *page, Creature: *creature, Relations: relations})
+	s.rend.Render(w, http.StatusOK, "db_npc", dbCreatureView{
+		PageData:           *page,
+		Creature:           *creature,
+		Relations:          relations,
+		Spawns:             page.SpawnMaps(spawns),
+		SpawnListTruncated: truncated,
+	})
 }

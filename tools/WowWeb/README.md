@@ -516,6 +516,37 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 > 也是唯一一处服务端之外的地方会往页面里插 HTML —— 插的是同源、由 `html/template`
 > 转义过的服务端片段，脚本里没有一处是自己拼字符串拼出来的。
 
+### 出没位置与目标点（地图）
+
+生物页画出这只怪的出生点、任务页画出目标点，都落在客户端自己的区域地图上。两样东西齐了才做得到：
+
+1. **区域的世界坐标框**，来自客户端的 `WorldMapArea.dbc`。它的四个浮点数**不是**按名字对应的：
+   文件里叫 `left` 的那格装的是 **y 的最大值**、`right` 是 y 的最小值，`top`/`bottom` 装的是 x 的
+   最大/最小值。所以换算里坐标轴是对调的——这也正是本站在替代的那个 AoWoW 的算法
+   （`includes/game.php` 的 `coord_db2wow`）：
+
+   ```
+   x% = 100 - (y - yMin) / (yMax - yMin) * 100
+   y% = 100 - (x - xMin) / (xMax - xMin) * 100
+   ```
+
+   **用游戏里的事实校验过**：闪金镇旅店老板站在世界坐标 (-9466.4, 21.4)，而旅店在艾尔文森林地图上
+   是 42, 66；这个框算出来是 **43.6, 66.0**。（不换轴的话同一点会落在 66.0, 43.6——同一个区域里
+   完全不同的位置，所以这条必须钉住。）
+
+2. **地图贴图**，从客户端的 `Interface\\WorldMap\\<区域>\\<区域>1.blp` 里取（文件清单 CDN 上没有
+   基础世界地图，只有补丁里那几个）。131 个区域，256×256，合计 10 MB。
+
+```bash
+python3 tools/WowWeb/gen_maps.py                          # 需要先有图；会写出待取清单
+python3 tools/WowWeb/extract_client_files.py --client <客户端目录>
+python3 tools/WowWeb/gen_maps.py                          # 重跑，图就画出来了
+```
+
+落点逻辑：一个世界点可能同时落在多个框里（区域、以及它所在的大陆），**取最小的那个框**——也就是
+客户端会为它显示的那张图。大陆行（area 0）特意保留，这样没有自己地图的区域也还能落到大陆图上。
+不在任何框里的点**不画**，不会凭空造一个位置。
+
 ### 把数字变成名字
 
 数据库里存的是 id 的地方，玩家要看的是名字：任务有个 `ZoneOrSort`，生物有个 `faction`，
@@ -1594,6 +1625,43 @@ template (no page shell), so the bow and the page can never disagree.
 > only on `/db` pages). It is also the only place outside the server that puts
 > HTML into a page — and what it inserts is a same-origin fragment the server
 > rendered and escaped. Nothing in the script builds markup out of strings.
+
+## Where it stands, and where the objective is (maps)
+
+A creature page draws the creature's spawn points and a quest page the objective, both on
+the client's own zone maps. That needs two things:
+
+1. **The zone's world-coordinate box**, from the client's `WorldMapArea.dbc`. Its four
+   floats are **not** what the field names suggest: the one called `left` holds the
+   **maximum Y** and `right` the minimum Y, while `top`/`bottom` hold the maximum and
+   minimum X. That is why the conversion swaps the axes - and it is the algorithm the
+   AoWoW this site replaces used (`coord_db2wow` in its `includes/game.php`):
+
+   ```
+   x% = 100 - (y - yMin) / (yMax - yMin) * 100
+   y% = 100 - (x - xMin) / (xMax - xMin) * 100
+   ```
+
+   **Checked against the game**: the Goldshire innkeeper stands at world (-9466.4, 21.4)
+   and the inn sits at 42, 66 on the Elwynn map; the box puts it at **43.6, 66.0**.
+   (Without the swap the same point lands at 66.0, 43.6 - a different place in the same
+   zone, which is why this is pinned by a test.)
+
+2. **The map artwork**, from the client's `Interface\\WorldMap\\<Zone>\\<Zone>1.blp` (the
+   verified file list only carries the handful in patches, not the base world maps).
+   131 zones, 256x256, 10 MB in total.
+
+```bash
+python3 tools/WowWeb/gen_maps.py                          # needs the images; writes the list it wants
+python3 tools/WowWeb/extract_client_files.py --client /path/to/wow-client
+python3 tools/WowWeb/gen_maps.py                          # run again, now it can draw
+```
+
+A world point can fall inside several boxes - a zone and the continent it sits on - and
+**the smallest one wins**, because that is the map the client would show for it. The
+continent rows (area 0) are kept on purpose so a point in a zone with no map of its own
+still lands on the continent. A point inside no box is **not drawn**: no invented
+positions.
 
 ## Names for the numbers
 

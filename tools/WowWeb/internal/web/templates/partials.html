@@ -73,3 +73,15 @@
   {{if gt .Chance 0.0}}{{printf "%.2f%%" .Chance}}{{end}}
   {{if gt .MaxCount 1}} <span class="muted">×{{.MaxCount}}</span>{{else if gt .MinCount 1}} <span class="muted">×{{.MinCount}}</span>{{end}}
 {{end}}
+
+{{/* "zonemap" draws one map with its dots. It takes a web.MapView. */}}
+{{define "zonemap"}}
+<figure class="map">
+  <img src="{{.Image}}" alt="{{.Name}}" width="256" height="256" loading="lazy">
+  {{range .Markers}}
+    <span class="map-dot" style="left:{{.X}}%;top:{{.Y}}%"{{if .Label}} title="{{.Label}}"{{end}}></span>
+  {{end}}
+  {{if .Name}}<figcaption>{{.Name}}</figcaption>{{end}}
+</figure>
+{{end}}
+

@@ -845,5 +845,8 @@
   "common.listSep": "、",
   "db.unique": "唯一",
   "db.requiresLevel": "需要等级",
-  "db.tooltip.hint": "鼠标停在物品链接上会浮出它的属性；键盘 Tab 到链接也一样。"
+  "db.tooltip.hint": "鼠标停在物品链接上会浮出它的属性；键盘 Tab 到链接也一样。",
+  "db.spawns": "出没位置",
+  "db.spawnsTruncated": "这只生物的出生点很多，地图上只画出了前 200 个。",
+  "db.questPoint": "目标位置"
 }

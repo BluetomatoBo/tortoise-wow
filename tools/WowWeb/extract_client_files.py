@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
-"""Pull the icon BLPs the site is still missing out of a WoW client's MPQs.
+"""Pull the client files the site is still missing out of a WoW client's MPQs.
 
 Some of the icons the client's own ItemDisplayInfo.dbc and SpellIcon.dbc name do
 not exist in the two public mirror sets gen_icons.py uses, because Turtle ships
 them in its own patch archives. Those have to come from an installed client.
 
-This reads the list of names gen_icons.py could not find artwork for, looks each
-one up as `Interface\\Icons\\<name>.blp` across the client's `Data/*.MPQ`, and
-writes what it finds into a directory that gen_icons.py takes as `--blp-dir`.
+Each generator writes the list of files it could not find on the CDN into the
+shared cache as `needed-*.txt`; this reads those lists, looks each entry up across
+the client's `Data/*.MPQ`, and writes what it finds into a directory the
+generators take as their input.
+
+A line in those lists is one of two things:
+
+  * a bare icon name (`inv_sword_39`), looked up as `Interface\\Icons\\<name>.blp`
+    and written as `<name>.blp` - that is what gen_icons.py expects
+  * a full client path (`Interface\\WorldMap\\Elwynn\\Elwynn1.blp`), looked up as
+    written and saved with the separators flattened, which is what gen_maps.py
+    expects
 
 The archives are searched from the highest patch priority down, so the file that
 comes out is the one the client itself would load (`patch.MPQ` and `patch-?.MPQ`
@@ -19,12 +28,14 @@ Needs StormLib, the library the client patch tool already uses:
 
 Usage:
 
-    # 1. find out what is missing (writes the list into its cache)
+    # 1. find out what is missing (each generator writes its own list)
     python3 tools/WowWeb/gen_icons.py --dump ... --sql ...
-    # 2. pull those from a client
-    python3 tools/WowWeb/extract_client_icons.py --client /path/to/wow-client
-    # 3. run gen_icons.py again; it picks the extracted BLPs up automatically
+    python3 tools/WowWeb/gen_maps.py
+    # 2. pull all of it out of a client
+    python3 tools/WowWeb/extract_client_files.py --client /path/to/wow-client
+    # 3. run the generators again; they pick up what was extracted
     python3 tools/WowWeb/gen_icons.py --dump ... --sql ...
+    python3 tools/WowWeb/gen_maps.py
 """
 
 import argparse
@@ -96,6 +107,27 @@ def patch_priority(name):
     return 40 + ord(char) - ord("a")
 
 
+def client_path(line):
+    """A list entry as a client path. A bare name is an icon; anything with a
+    separator is already a path."""
+    if "\\" in line or "/" in line:
+        return line.replace("/", "\\")
+    return "Interface\\Icons\\%s.blp" % line
+
+
+def output_file(path):
+    """Where an extracted file goes.
+
+    Icons keep their plain name, lowercased, because gen_icons.py looks them up by
+    it. Everything else is flattened to one name with the separators as
+    underscores, so two files that share a base name in different directories
+    cannot collide in the cache.
+    """
+    if path.lower().startswith("interface\\icons\\"):
+        return re.sub(r"\.blp$", "", path.rsplit("\\", 1)[-1].lower()) + ".blp"
+    return re.sub(r"[^a-z0-9_.-]", "_", path.replace("\\", "_").lower())
+
+
 class Archive:
     def __init__(self, path):
         self.path = path
@@ -134,8 +166,8 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--client", required=True,
                     help="the client's root directory (the one holding Data/)")
-    ap.add_argument("--names", default=DEFAULT_NAMES,
-                    help="one icon name per line (default: the list gen_icons.py wrote)")
+    ap.add_argument("--names", nargs="*", default=None,
+                    help="name lists to read (default: every needed-*.txt in the cache)")
     ap.add_argument("--out", default=DEFAULT_OUT,
                     help="where the .blp files go (default: the shared cache)")
     ap.add_argument("--force", action="store_true",
@@ -144,13 +176,24 @@ def main():
 
     if not os.path.isdir(args.client):
         sys.exit("no such client directory: %s" % args.client)
-    if not os.path.isfile(args.names):
-        sys.exit("no name list at %s - run gen_icons.py first, or pass --names" % args.names)
+    lists = args.names
+    if not lists:
+        lists = sorted(glob.glob(os.path.join(CACHE, "needed-*.txt")))
+    lists = [p for p in lists if os.path.isfile(p)]
+    if not lists:
+        sys.exit("no name list found (%s) - run a generator first, or pass --names"
+                 % os.path.join(CACHE, "needed-*.txt"))
 
-    names = [line.strip().lower() for line in open(args.names, encoding="utf-8")
-             if line.strip() and not line.startswith("#")]
+    wanted = {}
+    for path in lists:
+        for line in open(path, encoding="utf-8"):
+            line = line.strip()
+            if line and not line.startswith("#"):
+                wanted[client_path(line)] = None
+    names = sorted(wanted)
     if not names:
-        sys.exit("the name list is empty: nothing to extract")
+        sys.exit("the name lists are empty: nothing to extract")
+    print("从 %s 读到 %d 个待抽取的文件" % (", ".join(os.path.basename(p) for p in lists), len(names)))
 
     data_dir = None
     for candidate in ("Data", "data"):
@@ -172,22 +215,22 @@ def main():
         sys.exit("no readable MPQ archives in %s" % data_dir)
     # Highest priority first, so the first hit is the file the client loads.
     archives.sort(key=lambda a: patch_priority(os.path.basename(a.path)), reverse=True)
-    print("打开 %d 个 MPQ（按补丁优先级降序），需要 %d 个图标" % (len(archives), len(names)))
+    print("打开 %d 个 MPQ（按补丁优先级降序），需要 %d 个文件" % (len(archives), len(names)))
 
     os.makedirs(args.out, exist_ok=True)
     found, skipped, missing = 0, 0, []
-    for name in names:
-        dest = os.path.join(args.out, name + ".blp")
+    for path in names:
+        dest = os.path.join(args.out, output_file(path))
         if os.path.exists(dest) and not args.force:
             skipped += 1
             continue
         data = None
         for archive in archives:
-            data = archive.read("Interface\\Icons\\%s.blp" % name)
+            data = archive.read(path)
             if data:
                 break
         if not data:
-            missing.append(name)
+            missing.append(path)
             continue
         with open(dest, "wb") as f:
             f.write(data)

@@ -31,6 +31,16 @@
   <p class="hint">{{.T "db.npcHint"}}</p>
 </section>
 
+{{with .Spawns}}
+<section class="card">
+  <h2>{{$.T "db.spawns"}}</h2>
+  <div class="maprow">
+    {{range .}}{{template "zonemap" .}}{{end}}
+  </div>
+  {{if $.SpawnListTruncated}}<p class="hint">{{$.T "db.spawnsTruncated"}}</p>{{end}}
+</section>
+{{end}}
+
 {{with .Relations}}
 {{if .Truncated}}
 <section class="card">
