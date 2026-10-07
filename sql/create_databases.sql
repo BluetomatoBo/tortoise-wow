@@ -582,6 +582,31 @@ CREATE TABLE `character_inventory` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `character_inventory_copy`
+--
+-- The core's BackupCharacterInventory (reached from the honor maintenance at
+-- startup) truncates and refills this on every run and never created it, so a
+-- database built from this file aborted mangosd with
+-- "Table 'tw_char.character_inventory_copy' doesn't exist" the first time the
+-- weekly maintenance ran. It has to keep the same columns and indexes as
+-- character_inventory: the core fills it with INSERT ... SELECT *.
+--
+
+DROP TABLE IF EXISTS `character_inventory_copy`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `character_inventory_copy` (
+  `guid` int(10) unsigned NOT NULL DEFAULT 0 COMMENT 'Global Unique Identifier',
+  `bag` int(10) unsigned NOT NULL DEFAULT 0,
+  `slot` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `item` int(10) unsigned NOT NULL DEFAULT 0 COMMENT 'Item Global Unique Identifier',
+  `item_template` int(10) unsigned NOT NULL DEFAULT 0 COMMENT 'Item Identifier',
+  PRIMARY KEY (`item`) USING BTREE,
+  KEY `idx_guid` (`guid`) USING BTREE
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC COMMENT='Player System';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `character_item_logs`
 --
 

@@ -10144,6 +10144,16 @@ void ObjectMgr::LoadShellCoinCount()
 void ObjectMgr::BackupCharacterInventory()
 {
     sLog.outInfo("Making copy of character_inventory table.");
+
+    // Create the copy on demand. Nothing in sql/ ever defined this table, so on a
+    // database restored from the published schema the TRUNCATE below was the
+    // first statement to touch it: with BackupCharacterInventory=1 in the shipped
+    // configuration, the honor maintenance that runs at startup aborted with
+    // "Table 'tw_char.character_inventory_copy' doesn't exist" and mangosd went
+    // down with it. LIKE, rather than an explicit column list, keeps the copy in
+    // step with the table it is filled from - the INSERT below is a SELECT * - and
+    // it copies the engine too, which the DISABLE KEYS calls rely on.
+    CharacterDatabase.DirectPExecute("CREATE TABLE IF NOT EXISTS `character_inventory_copy` LIKE `character_inventory`");
     CharacterDatabase.DirectPExecute("TRUNCATE `character_inventory_copy`");
     CharacterDatabase.DirectPExecute("ALTER TABLE `character_inventory_copy` DISABLE KEYS");
     CharacterDatabase.DirectPExecute("INSERT INTO `character_inventory_copy` SELECT * FROM `character_inventory`");

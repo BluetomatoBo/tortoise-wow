@@ -1,0 +1,22 @@
+-- The honor maintenance that runs at startup (HonorMaintenancer::DoMaintenance,
+-- gated by BackupCharacterInventory, which the shipped mangosd.conf sets to 1)
+-- calls ObjectMgr::BackupCharacterInventory, and that function begins with
+--   TRUNCATE `character_inventory_copy`
+-- without ever creating the table. No file in sql/ created it either, so a
+-- database restored from the published schema aborted mangosd on the first
+-- maintenance with:
+--
+--   [1146] Table 'tw_char.character_inventory_copy' doesn't exist
+--   Your database structure is not up to date. ...
+--   Assertion in HandleMySQLError failed: false
+--
+-- Fixed at the source as well (ObjectMgr::BackupCharacterInventory now creates
+-- the table if it is missing), so a rebuilt server needs nothing from here; this
+-- file is for databases that are updated without a rebuild, and for keeping the
+-- schema of an existing installation complete.
+--
+-- LIKE rather than an explicit column list, on purpose: the core fills the copy
+-- with INSERT INTO ... SELECT *, so it has to follow character_inventory exactly -
+-- and it has to inherit its MyISAM engine, which the DISABLE KEYS / ENABLE KEYS
+-- calls around that INSERT depend on.
+CREATE TABLE IF NOT EXISTS `character_inventory_copy` LIKE `character_inventory`;

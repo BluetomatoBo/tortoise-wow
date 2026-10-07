@@ -23,7 +23,7 @@ git diff --stat 1181dev...1181-zhcn-localization -- src/
 |---|---|---|
 | 中文本地化（数据） | 18 个 SQL + 1 篇说明 | `sql/wip_updates/` |
 | 中文本地化（代码） | 3 处修复 | `src/game/`、`src/scripts/` |
-| 服务端缺陷修复 | 2 处 | `src/game/` |
+| 服务端缺陷修复 | 3 处 | `src/game/` |
 | 新增功能 | 1 个 | `src/game/LootMgr.*` 等 |
 | 配置模板补文档 | 2 个键 | `src/mangosd/mangosd.conf.dist.in` |
 | 新增工具 | 2 套 | `tools/WowWeb/`、`tools/ClientPatch/` |
@@ -102,7 +102,7 @@ gossip menu**。脚本用这个重载问「这个 NPC 用哪套问候语」（23
 拼出英文名；重复词还会让分布倾斜，删掉的行也永远删不掉。现在照 `LoadGossipMenu` 的做法
 先 `clear()`。
 
-### 3. 服务端缺陷修复（2 处）
+### 3. 服务端缺陷修复（3 处）
 
 **3.1 新建角色后角色列表不刷新**（`6702f81`、`4cb409b`）
 
@@ -130,6 +130,39 @@ zhCN 落在下标 0，`Name[4]` 不存在 → 静默退回英文根基名。现�
 
 同时修掉 `GetItemLocaleName` 里的越界：`size() < loc_idx` 允许 `size() == loc_idx`，
 那会读到 `operator[]` 的尾后位置。
+
+**3.3 服务器起不来：荣誉维护里少一张表**
+
+`ObjectMgr::BackupCharacterInventory()`（由启动时的荣誉维护调用，开关
+`BackupCharacterInventory` 在默认配置模板里就是 **1**）开头就
+`TRUNCATE \`character_inventory_copy\``，**却从不创建这张表**；而 `sql/` 里也从没有任何文件
+定义过它（全仓库只有两处 C++ 引用它：这个函数和一个 GM 指令）。于是从公开 schema 建起来的
+库里，第一次周维护就会：
+
+```
+[1146] Table 'tw_char.character_inventory_copy' doesn't exist
+Your database structure is not up to date. ...
+Assertion in HandleMySQLError failed: false   →   Aborted (core dumped)
+```
+
+更糟的是崩溃点在 `ToggleMaintenanceMarker()`（把标记翻回 0）**之前**，所以
+`saved_variables.honorMaintenanceMarker` 会一直是 1 —— **之后每次启动都崩在同一处，服务器
+再也起不来**。
+
+修法（三处，互相独立）：
+
+- 核心：`BackupCharacterInventory()` 先 `CREATE TABLE IF NOT EXISTS ... LIKE
+  \`character_inventory\``（`LIKE` 才能保证列/索引/引擎跟着源表走，代码灌数据用的是
+  `INSERT ... SELECT *`，而 `DISABLE KEYS` 只对 MyISAM 有效）
+- `sql/create_databases.sql`：补上这张表（新装的库直接完整）
+- `sql/database_updates/character/20261007114500_character.sql`：给已有库用
+  （`CREATE TABLE IF NOT EXISTS ... LIKE ...`）
+
+顺带修掉 `sql/setup_databases.sh` 的一个同类问题：它只 glob
+`database_updates/*.sql`（顶层），而 149 个更新文件全在 `character/`、`world/` 子目录里，所以
+它**一个都没导入**，还打印 "No SQL update files found" 后成功退出。现在按目录映射到对应的库
+（`character`→`tw_char`、`world`→`tw_world`、`logon`→`tw_logon`、`logs`→`tw_logs`）逐个导入，
+未知目录名会提示并跳过。
 
 ### 4. 新增功能：`Loot.RetryEmptyDrops`（`a720440`、`8fecf9d`）
 
@@ -347,7 +380,7 @@ word, `GeneratePetName` picks half0 + half1 at random, and roughly half the fres
 summoned demons still came out English. Duplicates also skew the distribution and a
 deleted row can never be removed. It now clears first, like `LoadGossipMenu` does.
 
-### 3. Server bug fixes (2)
+### 3. Server bug fixes (3)
 
 **3.1 A new character is missing until the player relogs** (`6702f81`, `4cb409b`)
 
@@ -378,6 +411,43 @@ does — and takes the English branch when the answer is -1.
 
 `GetItemLocaleName` also had an off-by-one: `size() < loc_idx` admits
 `size() == loc_idx`, which reaches `operator[]` one past the end.
+
+**3.3 The server would not start: a table the honor maintenance needs**
+
+`ObjectMgr::BackupCharacterInventory()` - called by the honor maintenance that runs
+at startup, behind `BackupCharacterInventory`, which the shipped configuration sets
+to **1** - begins with `TRUNCATE \`character_inventory_copy\`` and **never creates
+that table**. No file in `sql/` defined it either (the whole repository mentions it
+in exactly two places, both C++: that function and one GM command). So on a database
+built from the published schema the first weekly maintenance hit:
+
+```
+[1146] Table 'tw_char.character_inventory_copy' doesn't exist
+Your database structure is not up to date. ...
+Assertion in HandleMySQLError failed: false   →   Aborted (core dumped)
+```
+
+Worse, the abort happens *before* `ToggleMaintenanceMarker()` flips
+`saved_variables.honorMaintenanceMarker` back to 0, so the marker stays 1 and
+**every later startup crashes in the same place - the realm cannot come back up**.
+
+Three independent fixes:
+
+* core: `BackupCharacterInventory()` now starts with `CREATE TABLE IF NOT EXISTS ...
+  LIKE \`character_inventory\``; `LIKE` is what keeps the columns, indexes and
+  engine following the source table (the fill is `INSERT ... SELECT *`, and
+  `DISABLE KEYS` only means anything on MyISAM).
+* `sql/create_databases.sql`: the table is part of the schema now, so a fresh
+  installation is complete.
+* `sql/database_updates/character/20261007114500_character.sql`: for databases that
+  are updated without a rebuild.
+
+While there, `sql/setup_databases.sh` had the same shape of problem: it globbed only
+`database_updates/*.sql` at the top level, while all 149 update files live in the
+`character/` and `world/` subfolders - so it imported **none** of them and exited
+successfully after printing "No SQL update files found". It now maps each folder to
+its database (`character`→`tw_char`, `world`→`tw_world`, `logon`→`tw_logon`,
+`logs`→`tw_logs`) and says so when it meets an unknown one.
 
 ### 4. New feature: `Loot.RetryEmptyDrops` (`a720440`, `8fecf9d`)
 
