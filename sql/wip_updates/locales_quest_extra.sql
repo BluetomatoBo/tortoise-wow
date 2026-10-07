@@ -203,3 +203,8 @@ INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (42092, '回应的星
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (42094, '飞蛾的异端') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- The Moth’s Heresy
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (42095, '树妖的忠告') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- A Dryad’s Counsel
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (42096, '伊露纳兰的腐烂') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- The Rot of Elun’aran
+
+-- ---- 补充：早前工作清单漏算的杜隆塔尔劳工联盟任务链（标题，7 条）----
+INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41763, '精巧的画作') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Intricate Artwork
+INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41764, '石油味的牢骚') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Oil-Based Grievances
+INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41766, '尖鳍提前退休') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Shrillflukes Early Retirement

@@ -1798,7 +1798,7 @@ INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62614, '风险投�
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62615, '雇用的劫掠者') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Hired Freebooter
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62616, '雇用的逃犯') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Hired Outlaw
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62617, '风险投资公司掠夺者') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Venture Co. Plunderer
-INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62618, '格雷泽兹斯里尔夫尔乌克') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
+INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62618, '格雷泽兹·尖鳍') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62619, '滑芯工人') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Slickwick Worker
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62620, '切罗克斯疾烤') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62621, '布罗特娜疾烤') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
@@ -1807,7 +1807,7 @@ INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62623, '克瓦阿�
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62624, '特雷吉') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62625, '女服务生普伊恩伊') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Waitress Peenqi
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62626, '伊比格尔伊塞洛克') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
-INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62627, '首领工程师卡尔克') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Chief Engineer Kalke
+INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62627, '总工程师卡克') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Chief Engineer Kalke
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62628, '尼克斯马尼夫特帕') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62629, '格拉斯诺尔') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62630, '娜索克') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Nathok
@@ -1861,10 +1861,10 @@ INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62677, '亡首头�
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62678, '亡首头颅战地卫士') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Death's Head Battleguard
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62679, '死亡预言者拉卡梅格') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Death Prophet Rakameg
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62680, '塞瑞塞拉') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
-INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62681, '大头目加滑芯') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Boss Slickwick
+INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62681, '滑芯老大') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Boss Slickwick
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62682, '助手蒸汽耀斑') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Assistant Steamflare
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62683, '布拉克斯比') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Blaxbi
-INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62684, '可疑的单件') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Shady Individual
+INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62684, '可疑的家伙') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Shady Individual
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62685, '马上长枪观众') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Jousting Spectator
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62686, '马上长枪观众') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Jousting Spectator
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (62687, '马上长枪观众') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Jousting Spectator
@@ -2977,3 +2977,8 @@ INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (131313, '造型
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (131314, '造型师非凡') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- The Stylist Extraordinaire
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (161207, '时间守望者') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Wardens of Time
 
+
+-- ---- 补充：杜隆塔尔劳工联盟任务链涉及的生物名（早前机翻误译 / 原为英文）----
+INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (80100, '纳特·布拉斯滕托姆') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Nert Blastentom
+INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (80121, '纳特·布拉斯滕托姆') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Nert Blastentom
+INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (80178, '大任务大师纳特·布拉斯滕托姆') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Grand Taskmaster Nert Blastentom

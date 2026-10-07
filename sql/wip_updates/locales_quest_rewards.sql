@@ -505,3 +505,7 @@ INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`) VALUES (42028, '�
 
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`) VALUES (41277, '<瑟格伦的目光在你和你带来的水晶之间来回移动。盯着你看了好一会儿后，他点了点头。>') ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);  -- <Thegrens gaze switches between you and the crystal you brought with you. After staring at you for a
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`) VALUES (41286, '<那位上层精灵不屑地打量你。>$B$B先是下头那个笨手笨脚的人类，现在又轮到你？一位艺术家这辈子就不能有一次清静吗？说吧，是谁让你来找巧匠的？') ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);  -- <The Highborne eyes you dismissively.>$B$BFirst this bumbling human down there, and now you? Can an 
+
+-- ---- 补充：早前工作清单漏算的杜隆塔尔劳工联盟任务链（交还，7 条）----
+INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`) VALUES (41764, '你将获得：卡克的油光手套') ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);  -- You will receive: Kalkes Slicked Mitts
+INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`) VALUES (41767, '你可以从这些奖励中选择其一：滑芯柳条宝盒、重制的风险投资公司毒刃、碎片金属肩铠、首领斗殴者项圈') ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);  -- You can choose one of these awards: Slickwick Wicker Box ...

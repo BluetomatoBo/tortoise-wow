@@ -28,7 +28,7 @@ Balor/SI:7 那一包），另有约 855 条任务详情、850 条任务目标、
 
 > **进度**：这些缺口里，「玩家现在仍能接到」的那部分**已经全部译完**，产物在
 > `sql/wip_updates/` 下的 5 个任务文件（`locales_quest_extra` / `_fixes` /
-> `_objectives` / `_rewards` / `_details`，共 175 + 456 + 743 + 481 + 748 条），
+> `_objectives` / `_rewards` / `_details`，共 178 + 456 + 750 + 483 + 755 条），
 > 需手工导入；本工具仍可用来核对或重算清单。
 
 ### 用法
@@ -63,7 +63,7 @@ EXISTS (SELECT 1 FROM creature_questrelation r JOIN creature s ON s.id = r.id WH
 也就是「有关系表记录」**并且**「给予者在 `creature` / `gameobject` 里真有 spawn 行」。
 只看关系表是不够的：任务可以在表里，但给予者已经被删掉或从未放置，玩家永远见不到。
 
-这个条件把范围从 214/855/850/528 收到 **175/748/743/481**（约砍掉 12%）。
+这个条件把范围从 214/855/850/528 收到 **178/755/750/483**（约砍掉 12%）。
 
 ### 产出三个文件
 
@@ -142,7 +142,7 @@ easy to put back.
 
 > **Status**: for the part a player can **still pick up**, that gap is now **fully
 > translated** — see the five quest files in `sql/wip_updates/` (`locales_quest_extra`,
-> `_fixes`, `_objectives`, `_rewards`, `_details`; 175 + 456 + 743 + 481 + 748 rows).
+> `_fixes`, `_objectives`, `_rewards`, `_details`; 178 + 456 + 750 + 483 + 755 rows).
 > They are imported by hand. This tool remains useful for auditing or recomputing the list.
 
 ### Usage
@@ -178,7 +178,7 @@ That is: a relation row **and** a spawn row for the giver in `creature` / `gameo
 The relation table alone is not enough - a quest can be listed while its giver has been
 removed or was never placed, in which case no player will ever see it.
 
-The condition narrows the work from 214/855/850/528 to **175/748/743/481** (about 12% less).
+The condition narrows the work from 214/855/850/528 to **178/755/750/483** (about 12% less).
 
 ### What you get
 
