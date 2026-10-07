@@ -1,0 +1,54 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.T "db.npcs.title"}} <span class="muted">({{.Total}})</span></h1>
+  <a class="btn btn-ghost" href="/db">{{.T "db.back"}}</a>
+</div>
+
+<section class="card">
+  <form method="get" action="/db/npcs" class="filters">
+    <input name="q" value="{{.Search}}" placeholder="{{.T "db.search.placeholder"}}">
+    <select name="type">
+      <option value="">{{.T "db.anyType"}}</option>
+      {{range .CreatureTypeOptions}}
+        <option value="{{.Value}}" {{if and (isSet $.FilterType) (eq (deref $.FilterType) .Value)}}selected{{end}}>{{.Name}}</option>
+      {{end}}
+    </select>
+    <input type="number" name="minlevel" min="0" max="255" value="{{if isSet $.FilterMin}}{{deref $.FilterMin}}{{end}}" placeholder="{{.T "db.levelMin"}}">
+    <input type="number" name="maxlevel" min="0" max="255" value="{{if isSet $.FilterMax}}{{deref $.FilterMax}}{{end}}" placeholder="{{.T "db.levelMax"}}">
+    <button class="btn" type="submit">{{.T "common.filter"}}</button>
+    <a class="btn btn-ghost" href="/db/npcs">{{.T "common.reset"}}</a>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "db.entry"}}</th>
+        <th>{{.T "db.name"}}</th>
+        <th class="right">{{.T "db.level"}}</th>
+        <th>{{.T "db.type"}}</th>
+        <th>{{.T "db.rank"}}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Creatures}}
+      <tr>
+        <td><code>{{.Entry}}</code></td>
+        <td>
+          <a href="/db/npcs/{{.Entry}}">{{.Name}}</a>
+          {{if .SubName}}<span class="muted">{{.SubName}}</span>{{end}}
+        </td>
+        <td class="right">{{$.LevelRange .LevelMin .LevelMax}}</td>
+        <td>{{$.CreatureTypeName .Type}}</td>
+        <td>{{$.CreatureRankName .Rank}}</td>
+        <td class="right"><a class="btn btn-ghost btn-sm" href="/db/npcs/{{.Entry}}">{{$.T "common.open"}}</a></td>
+      </tr>
+    {{else}}
+      <tr><td colspan="6" class="muted center">{{$.T "db.none"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+
+  {{template "pagination" .}}
+</section>
+{{end}}

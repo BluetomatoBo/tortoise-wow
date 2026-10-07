@@ -34,6 +34,13 @@ func TestTemplatesParse(t *testing.T) {
 	}
 	rank := uint8(3)
 	online := true
+
+	// Filter values the database browser cases pass by pointer: a zero would be
+	// indistinguishable from "no filter", which is exactly what the pointer is
+	// for.
+	quality, class := uint8(4), uint8(2)
+	minLevel, maxLevel := uint8(30), uint8(60)
+	school, ctype := uint8(2), uint8(7)
 	char := store.Character{
 		GUID: 42, AccountID: 7, AccountName: "TESTER", Name: "Thrall",
 		Race: 2, Class: 1, Gender: 0, Level: 60, Money: 1234567,
@@ -205,6 +212,113 @@ func TestTemplatesParse(t *testing.T) {
 				{ID: 34, Name: "Toys", Icon: "wormhole"},
 			},
 		}},
+		// The database browser: the landing page, one list and one detail page
+		// per kind, plus the unified search. Every optional field is set on one
+		// case and left empty on the next, so both branches of the templates
+		// are executed.
+		{"db_home", dbHomeView{PageData: page, Counts: store.ContentCounts{
+			Items: 20123, Spells: 34210, Quests: 5678, Creatures: 41230,
+		}}},
+		{"db_search", dbSearchView{PageData: page, Query: "sword",
+			Results: []store.ContentSearchResult{
+				{Kind: "item", Entry: 1234, Name: "Fine Sword", Subtitle: ""},
+				{Kind: "spell", Entry: 133, Name: "火球术", Subtitle: "等级 1"},
+				{Kind: "quest", Entry: 5, Name: "A Quest", Subtitle: "30"},
+				{Kind: "creature", Entry: 80117, Name: "发疯的战斗鸡", Subtitle: ""},
+			}}},
+		{"db_search", dbSearchView{PageData: page}},
+		{"db_items", dbItemsView{
+			PageData: page, Search: "sword", Total: 3, Page: 2, Pages: 4,
+			QueryString: "q=sword&", FilterQuality: &quality, FilterClass: &class,
+			FilterMin: &minLevel, FilterMax: &maxLevel,
+			Items: []store.ContentItem{
+				{Entry: 1234, Name: "Fine Sword", Description: "A fine sword", Quality: 4,
+					Class: 2, ItemLevel: 50, RequiredLevel: 45},
+				{Entry: 5, Name: "Rusty Screw", Quality: 0, Class: 7, ItemLevel: 0},
+			}}},
+		{"db_items", dbItemsView{PageData: page, Total: 0, Page: 1, Pages: 1}},
+		{"db_item", dbItemView{PageData: page, Item: store.ContentItem{
+			Entry: 1234, Name: "Fine Sword", Description: "A fine sword", Quality: 4,
+			Class: 2, SubClass: 7, DisplayID: 2213, ItemLevel: 50, RequiredLevel: 45,
+			InventoryType: 21, BuyPrice: 12000, SellPrice: 2400, Stackable: 1, MaxCount: 1,
+			Armor: 0, Block: 0, Delay: 2600, DamageMin: 10, DamageMax: 20, Bonding: 2,
+			SetID: 0, StartQuest: 0, PageText: 0, Flags: 0,
+			Stats:       []store.ContentItemStat{{Type: 7, Value: 15}, {Type: 4, Value: -3}},
+			Resistances: []store.ContentItemResistance{{School: 3, Value: 5}},
+			Spells:      []store.ContentItemSpell{{Slot: 1, SpellID: 133, Trigger: 0, Charges: -5}},
+		}}},
+		// A plain item: no damage, no stats, no spells, no description.
+		{"db_item", dbItemView{PageData: page, Item: store.ContentItem{
+			Entry: 5, Name: "Rusty Screw", Quality: 1, Class: 7, Bonding: 0, Stackable: 20,
+		}}},
+		{"db_spells", dbSpellsView{
+			PageData: page, Search: "fire", Total: 2, Page: 1, Pages: 1,
+			FilterSchool: &school, FilterMin: &minLevel, FilterMax: &maxLevel,
+			Spells: []store.ContentSpell{
+				{Entry: 133, Name: "Fireball", NameSubtext: "Rank 1", School: 2,
+					SpellLevel: 30, ManaCost: 95, ProcChance: 100, CastingTimeIndex: 1},
+				{Entry: 9, Name: "Frostbolt", School: 4, SpellLevel: 4},
+			}}},
+		{"db_spells", dbSpellsView{PageData: page, Total: 0, Page: 1, Pages: 1}},
+		{"db_spell", dbSpellView{PageData: page, Spell: store.ContentSpell{
+			Entry: 133, Name: "Fireball", NameSubtext: "Rank 1", Description: "Hurls a fiery ball",
+			AuraDescription: "Burning", School: 2, SpellLevel: 30, BaseLevel: 24, MaxLevel: 36,
+			ManaCost: 95, ManaCostPercentage: 0, CastingTimeIndex: 1, DurationIndex: 0, RangeIndex: 4,
+			PowerType: 0, ProcChance: 100, StackAmount: 0, SpellIconID: 36, SpellFamilyName: 3,
+			CustomFlags: 0,
+			Effects: []store.ContentSpellEffect{
+				{Slot: 1, Effect: 2, BasePoints: 9, DieSides: 3, AuraName: 0, MiscValue: 0, TriggerSpell: 0},
+				{Slot: 2, Effect: 6, BasePoints: -1, DieSides: 1, AuraName: 3, MiscValue: 126, TriggerSpell: 12654},
+			},
+		}}},
+		{"db_spell", dbSpellView{PageData: page, Spell: store.ContentSpell{Entry: 9, Name: "Frostbolt"}}},
+		{"db_quests", dbQuestsView{
+			PageData: page, Search: "mech", Total: 1, Page: 1, Pages: 1,
+			FilterMin: &minLevel, FilterMax: &maxLevel,
+			Quests: []store.ContentQuest{
+				{Entry: 80104, Title: "The Other White Mech", QuestLevel: 30, MinLevel: 28},
+				{Entry: 5, Title: "A Quest"},
+			}}},
+		{"db_quests", dbQuestsView{PageData: page, Total: 0, Page: 1, Pages: 1}},
+		{"db_quest", dbQuestView{
+			PageData: page, HasDetails: true, HasObjectives: true, HasReward: true, HasEnd: true,
+			ObjectiveText: []string{"Collect five drumsticks", "Return to the chicken"},
+			Quest: store.ContentQuest{
+				Entry: 80104, Title: "The Other White Mech", QuestLevel: 30, MinLevel: 28,
+				MaxLevel: 0, Type: 0, ZoneOrSort: 0, SuggestedPlayers: 0,
+				QuestFlags: 0, SpecialFlags: 0, PrevQuestID: 80099, NextQuestID: 0,
+				PointMapID: 1, PointX: 10.5, PointY: -20.25,
+				Details: "Text", Objectives: "Text", OfferRewardText: "Text", EndText: "Text",
+				RewXP: 2500, RewOrReqMoney: 1200,
+				RequiredItems: []store.ContentItemCount{{Entry: 80119, Count: 5, Name: "Mechanical Drumstick"}},
+				RequiredMobs: []store.ContentCreatureCount{
+					{Entry: 80117, Count: 5},
+					{Entry: 1234, IsGameObject: true, Count: 1},
+				},
+				RewardItems: []store.ContentItemCount{{Entry: 80119, Count: 1, Name: "Mechanical Drumstick"}},
+				ChoiceItems: []store.ContentItemCount{{Entry: 50071, Count: 1}, {Entry: 50072, Count: 1, Name: "Other"}},
+			}}},
+		// The same page with nothing filled in at all.
+		{"db_quest", dbQuestView{PageData: page, Quest: store.ContentQuest{Entry: 5, Title: "A Quest"}}},
+		{"db_npcs", dbCreaturesView{
+			PageData: page, Search: "chicken", Total: 2, Page: 3, Pages: 5,
+			QueryString: "type=7&", FilterType: &ctype, FilterMin: &minLevel, FilterMax: &maxLevel,
+			Creatures: []store.ContentCreature{
+				{Entry: 80117, Name: "Haywire Battlechicken", SubName: "", LevelMin: 2, LevelMax: 2,
+					Rank: 0, Type: 7, Faction: 35, LootID: 80117, Scale: 1},
+				{Entry: 2, Name: "Spawn Point", LevelMin: 60, LevelMax: 60, Type: 7},
+			}}},
+		{"db_npcs", dbCreaturesView{PageData: page, Total: 0, Page: 1, Pages: 1}},
+		{"db_npc", dbCreatureView{PageData: page, Creature: store.ContentCreature{
+			Entry: 80117, Name: "Haywire Battlechicken", SubName: "Elite Chicken",
+			LevelMin: 2, LevelMax: 3, Rank: 1, Type: 9, Faction: 35, NPCFlags: 0x81,
+			LootID: 80117, GossipMenuID: 12, VendorID: 0, TrainerType: 0,
+			Scale: 1.25, GoldMin: 0, GoldMax: 25, Civilian: 1, RacialLeader: 0,
+			DynamicFlags: 0, AIName: "EventAI", ScriptName: "npc_haywire",
+		}}},
+		{"db_npc", dbCreatureView{PageData: page, Creature: store.ContentCreature{
+			Entry: 2, Name: "Spawn Point", LevelMin: 60, LevelMax: 60, Type: 7, Scale: 1,
+		}}},
 		{"error", page},
 	}
 

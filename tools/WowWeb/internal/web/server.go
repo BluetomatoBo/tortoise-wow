@@ -105,6 +105,19 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /lang/{code}", s.handleSetLanguage)
 	s.mux.HandleFunc("POST /lang/{code}", s.handleSetLanguage)
 
+	// The database browser. Public on purpose: it reads nothing but the content
+	// tables the client itself is served from. See handlers_db.go.
+	s.mux.HandleFunc("GET /db", s.public(s.handleDBHome))
+	s.mux.HandleFunc("GET /db/search", s.public(s.handleDBSearch))
+	s.mux.HandleFunc("GET /db/items", s.public(s.handleDBItems))
+	s.mux.HandleFunc("GET /db/items/{entry}", s.public(s.handleDBItem))
+	s.mux.HandleFunc("GET /db/spells", s.public(s.handleDBSpells))
+	s.mux.HandleFunc("GET /db/spells/{entry}", s.public(s.handleDBSpell))
+	s.mux.HandleFunc("GET /db/quests", s.public(s.handleDBQuests))
+	s.mux.HandleFunc("GET /db/quests/{entry}", s.public(s.handleDBQuest))
+	s.mux.HandleFunc("GET /db/npcs", s.public(s.handleDBCreatures))
+	s.mux.HandleFunc("GET /db/npcs/{entry}", s.public(s.handleDBCreature))
+
 	// Player area
 	s.mux.HandleFunc("GET /panel", s.player(s.handlePanel))
 	s.mux.HandleFunc("GET /panel/password", s.player(s.handlePasswordForm))

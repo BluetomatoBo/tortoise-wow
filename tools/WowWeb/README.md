@@ -35,6 +35,7 @@ already uses**, so nothing has to be patched or rebuilt on the server side.
 | `/notice` | 公告的**网页版** —— 客户端公告里那个链接落到的页面，匿名可访问 |
 | `/account/{banned,suspended,no-time,verify}` | 登录失败对话框的**说明页**，匿名可访问 |
 | `/api/status` | 给监控或 Discord 机器人用的 JSON 状态。**不含任何地址与端口** |
+| `/db`、`/db/items`、`/db/spells`、`/db/quests`、`/db/npcs` | **数据库浏览器**：物品/法术/任务/生物的搜索、列表与详情，匿名可访问 |
 | `/healthz` | 存活探针，含数据库连通性 |
 | `/lang/{en\|zh}` | 中英切换 |
 
@@ -445,6 +446,32 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 
 每一行结果显示 `PASS` / `FAIL`。用它自己的账号跑，验证的才是线上那套权限。
 
+### 数据库浏览器（`/db`）
+
+把服务端自己的内容表直接做成可浏览的页面：**物品、法术、任务、生物**。不复制 AoWoW 那套
+`aowow_*` 库，也不跑导入器 —— 页面读的就是客户端正在被服务的那份数据，所以不会和游戏不一致。
+
+| 路径 | 作用 |
+|---|---|
+| `/db` | 首页：四类内容的数量与搜索框 |
+| `/db/search?q=` | 一次搜四类（每类最多 10 条），名称或条目编号都可以 |
+| `/db/items` | 物品列表，可按品质、类别、物品等级区间筛选 |
+| `/db/items/{entry}` | 物品详情：属性、抗性、物品上的法术、售价、绑定、起始任务 |
+| `/db/spells`、`/db/spells/{id}` | 法术列表（按学派、等级筛选）与详情（含三个效果槽） |
+| `/db/quests`、`/db/quests/{entry}` | 任务列表与详情（需求物品/生物、奖励、任务文本） |
+| `/db/npcs`、`/db/npcs/{entry}` | 生物列表（按类型、等级筛选）与详情 |
+
+要点：
+
+- **语言**：站点语言是中文时读 `*_loc4` 列（本服的中文就在这一列，商城模块也是这么读的），
+  其它语言读基础列；表达式里用 `COALESCE` 回退，所以没有翻译的行照样显示，不会空白。
+- **公开页面**，不需要登录：它显示的正是客户端本来就能拿到的内容。
+- 名称来自核心自己的枚举头文件（`ItemPrototype.h`、`SharedDefines.h`、`SpellDefines.h`），
+  所以「品质 4」「学派 2」在页面与游戏里是同一件事；取不到名字时显示 `#数字`。
+- 索引客户端 DBC 的字段（施法时间、持续时间、范围、图标、法术效果）**按原始数字显示**：
+  要起名就得读客户端的 DBC 文件，而猜出来的标签比原始索引更糟。
+- **只读**：不建表、不写任何东西，权限沿用 `GRANT SELECT ON tw_world.*`。
+
 ### 安全说明（要点）
 
 - **游戏密码哈希本身是无盐 SHA-1** —— 这是核心的限制，本站改不了（客户端必须能用同一列认证）。
@@ -581,6 +608,7 @@ has to be patched or rebuilt on the server side:
 | `/notice` | The notice as a **web page** - where the link inside the client's panel lands |
 | `/account/{banned,suspended,no-time,verify}` | What a sign-in failure dialog's link opens |
 | `/api/status` | JSON status for monitoring or a Discord bot. Carries counts and load, but **never an address or port** |
+| `/db`, `/db/items`, `/db/spells`, `/db/quests`, `/db/npcs` | The **database browser**: search, lists and detail pages for items, spells, quests and creatures; public |
 | `/healthz` | Liveness/readiness probe including database connectivity |
 | `/lang/{en\|zh}` | Language switcher (also sets the `tw_lang` cookie) |
 
@@ -1319,6 +1347,41 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 
 Each line reports `PASS` or `FAIL`. Run it as the account the service uses — that
 is what makes it a test of the live privileges rather than of `root`'s.
+
+---
+
+### The database browser (`/db`)
+
+The server's own content tables, browsable: **items, spells, quests and creatures**.
+It does not copy AoWoW's `aowow_*` schema and runs no importer - the pages read the
+same rows the client is being served from, so they cannot disagree with the game.
+
+| Page | What it does |
+| --- | --- |
+| `/db` | Landing page: how much of each kind the database holds, plus a search box |
+| `/db/search?q=` | Searches all four kinds at once (up to 10 hits each), by name or entry |
+| `/db/items` | Item list, filterable by quality, class and item-level range |
+| `/db/items/{entry}` | One item: stats, resistances, its spells, prices, binding, the quest it starts |
+| `/db/spells`, `/db/spells/{id}` | Spell list (by school and level) and one spell, including its effect slots |
+| `/db/quests`, `/db/quests/{entry}` | Quest list and one quest: required items and creatures, rewards, quest text |
+| `/db/npcs`, `/db/npcs/{entry}` | Creature list (by type and level) and one creature |
+
+Worth knowing:
+
+* **Language**: a Chinese visitor reads the `*_loc4` columns (this realm's Chinese
+  lives there, and the shop module reads the same ones), everyone else the base
+  columns, with `COALESCE` inside the query so a row with no translation still
+  reads instead of coming out blank.
+* **Public**, no session required: everything it shows is content the client is
+  already sent.
+* Names come from the core's own headers (`ItemPrototype.h`, `SharedDefines.h`,
+  `SpellDefines.h`), so "quality 4" and "school 2" mean the same thing here as in
+  the game; a value with no name shows as `#number`.
+* Fields that index the client's DBC files (casting time, duration, range, icons,
+  spell effects) are shown as **numbers**: naming them would mean reading the
+  client's data files, and a guessed label would be worse than the index.
+* **Read-only**: it creates nothing and writes nothing, and needs no privileges
+  beyond the existing `GRANT SELECT ON tw_world.*`.
 
 ---
 

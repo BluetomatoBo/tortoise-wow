@@ -1,0 +1,37 @@
+{{define "content"}}
+<div class="hero">
+  <h1>{{.T "db.title"}}</h1>
+  <p class="lead">{{.T "db.intro"}}</p>
+</div>
+
+{{template "dbsearch" .}}
+
+<div class="grid">
+  <section class="card">
+    <h2>{{.T "db.items.title"}}</h2>
+    <p class="stat">{{.Counts.Items}}</p>
+    <p class="muted">{{.T "db.items.hint"}}</p>
+    <a class="btn" href="/db/items">{{.T "db.browse"}}</a>
+  </section>
+  <section class="card">
+    <h2>{{.T "db.spells.title"}}</h2>
+    <p class="stat">{{.Counts.Spells}}</p>
+    <p class="muted">{{.T "db.spells.hint"}}</p>
+    <a class="btn" href="/db/spells">{{.T "db.browse"}}</a>
+  </section>
+  <section class="card">
+    <h2>{{.T "db.quests.title"}}</h2>
+    <p class="stat">{{.Counts.Quests}}</p>
+    <p class="muted">{{.T "db.quests.hint"}}</p>
+    <a class="btn" href="/db/quests">{{.T "db.browse"}}</a>
+  </section>
+  <section class="card">
+    <h2>{{.T "db.npcs.title"}}</h2>
+    <p class="stat">{{.Counts.Creatures}}</p>
+    <p class="muted">{{.T "db.npcs.hint"}}</p>
+    <a class="btn" href="/db/npcs">{{.T "db.browse"}}</a>
+  </section>
+</div>
+
+<p class="muted">{{.T "db.localeHint"}}</p>
+{{end}}

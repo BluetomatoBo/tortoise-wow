@@ -1,0 +1,31 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.Creature.Name}}{{if .Creature.SubName}} <span class="muted">{{.Creature.SubName}}</span>{{end}}</h1>
+  <a class="btn btn-ghost" href="/db/npcs">{{.T "db.npcs.title"}}</a>
+</div>
+
+{{template "dbsearch" .}}
+
+<section class="card">
+  <table class="kv">
+    <tr><th>{{.T "db.entry"}}</th><td><code>{{.Creature.Entry}}</code></td></tr>
+    <tr><th>{{.T "db.level"}}</th><td>{{.LevelRange .Creature.LevelMin .Creature.LevelMax}}</td></tr>
+    <tr><th>{{.T "db.rank"}}</th><td>{{.CreatureRankName .Creature.Rank}}</td></tr>
+    <tr><th>{{.T "db.type"}}</th><td>{{.CreatureTypeName .Creature.Type}}</td></tr>
+    <tr><th>{{.T "db.faction"}}</th><td>{{.Creature.Faction}}</td></tr>
+    {{if .Creature.NPCFlags}}<tr><th>{{.T "db.npcFlags"}}</th><td><code>{{.Creature.NPCFlags}}</code> <span class="muted">(0x{{printf "%x" .Creature.NPCFlags}})</span></td></tr>{{end}}
+    {{if .Creature.LootID}}<tr><th>{{.T "db.lootID"}}</th><td><code>{{.Creature.LootID}}</code></td></tr>{{end}}
+    {{if .Creature.GossipMenuID}}<tr><th>{{.T "db.gossipMenu"}}</th><td>{{.Creature.GossipMenuID}}</td></tr>{{end}}
+    {{if .Creature.VendorID}}<tr><th>{{.T "db.vendorID"}}</th><td>{{.Creature.VendorID}}</td></tr>{{end}}
+    {{if .Creature.TrainerType}}<tr><th>{{.T "db.trainerType"}}</th><td>{{.Creature.TrainerType}}</td></tr>{{end}}
+    {{if .MoneyRange .Creature.GoldMin .Creature.GoldMax}}<tr><th>{{.T "db.money"}}</th><td>{{.MoneyRange .Creature.GoldMin .Creature.GoldMax}}</td></tr>{{end}}
+    <tr><th>{{.T "db.scale"}}</th><td>{{printf "%.2f" .Creature.Scale}}</td></tr>
+    {{if .Creature.Civilian}}<tr><th>{{.T "db.civilian"}}</th><td>{{.T "common.yes"}}</td></tr>{{end}}
+    {{if .Creature.RacialLeader}}<tr><th>{{.T "db.racialLeader"}}</th><td>{{.T "common.yes"}}</td></tr>{{end}}
+    {{if .Creature.AIName}}<tr><th>{{.T "db.aiName"}}</th><td><code>{{.Creature.AIName}}</code></td></tr>{{end}}
+    {{if .Creature.ScriptName}}<tr><th>{{.T "db.scriptName"}}</th><td><code>{{.Creature.ScriptName}}</code></td></tr>{{end}}
+    {{if .Creature.DynamicFlags}}<tr><th>{{.T "db.dynamicFlags"}}</th><td><code>{{.Creature.DynamicFlags}}</code></td></tr>{{end}}
+  </table>
+  <p class="hint">{{.T "db.npcHint"}}</p>
+</section>
+{{end}}

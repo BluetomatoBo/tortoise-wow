@@ -50,6 +50,18 @@ func TestRoutesAreRegistered(t *testing.T) {
 		{"GET", "/account/verify"},
 		{"GET", "/assets/style.css"},
 
+		// The database browser: public, and one detail route per kind.
+		{"GET", "/db"},
+		{"GET", "/db/search"},
+		{"GET", "/db/items"},
+		{"GET", "/db/items/1234"},
+		{"GET", "/db/spells"},
+		{"GET", "/db/spells/133"},
+		{"GET", "/db/quests"},
+		{"GET", "/db/quests/80104"},
+		{"GET", "/db/npcs"},
+		{"GET", "/db/npcs/80117"},
+
 		// player area
 		{"GET", "/panel"},
 		{"GET", "/panel/password"},

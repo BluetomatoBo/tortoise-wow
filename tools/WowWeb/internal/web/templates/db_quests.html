@@ -1,0 +1,43 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.T "db.quests.title"}} <span class="muted">({{.Total}})</span></h1>
+  <a class="btn btn-ghost" href="/db">{{.T "db.back"}}</a>
+</div>
+
+<section class="card">
+  <form method="get" action="/db/quests" class="filters">
+    <input name="q" value="{{.Search}}" placeholder="{{.T "db.search.placeholder"}}">
+    <input type="number" name="minlevel" min="0" max="255" value="{{if isSet $.FilterMin}}{{deref $.FilterMin}}{{end}}" placeholder="{{.T "db.questLevelMin"}}">
+    <input type="number" name="maxlevel" min="0" max="255" value="{{if isSet $.FilterMax}}{{deref $.FilterMax}}{{end}}" placeholder="{{.T "db.questLevelMax"}}">
+    <button class="btn" type="submit">{{.T "common.filter"}}</button>
+    <a class="btn btn-ghost" href="/db/quests">{{.T "common.reset"}}</a>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "db.entry"}}</th>
+        <th>{{.T "db.name"}}</th>
+        <th class="right">{{.T "db.questLevel"}}</th>
+        <th class="right">{{.T "db.requiredLevel"}}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Quests}}
+      <tr>
+        <td><code>{{.Entry}}</code></td>
+        <td><a href="/db/quests/{{.Entry}}">{{.Title}}</a></td>
+        <td class="right">{{.QuestLevel}}</td>
+        <td class="right">{{if .MinLevel}}{{.MinLevel}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        <td class="right"><a class="btn btn-ghost btn-sm" href="/db/quests/{{.Entry}}">{{$.T "common.open"}}</a></td>
+      </tr>
+    {{else}}
+      <tr><td colspan="5" class="muted center">{{$.T "db.none"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+
+  {{template "pagination" .}}
+</section>
+{{end}}

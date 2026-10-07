@@ -1,0 +1,88 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1 class="{{.QualityClass .Item.Quality}}">{{.Item.Name}}</h1>
+  <a class="btn btn-ghost" href="/db/items">{{.T "db.items.title"}}</a>
+</div>
+
+{{template "dbsearch" .}}
+
+<section class="card">
+  <table class="kv">
+    <tr><th>{{.T "db.entry"}}</th><td><code>{{.Item.Entry}}</code></td></tr>
+    <tr><th>{{.T "db.quality"}}</th><td class="{{.QualityClass .Item.Quality}}">{{.QualityName .Item.Quality}}</td></tr>
+    <tr><th>{{.T "db.itemclass"}}</th><td>{{.ItemClassName .Item.Class}} <span class="muted">({{.Item.SubClass}})</span></td></tr>
+    {{if .Item.InventoryType}}<tr><th>{{.T "db.invtype"}}</th><td>{{.InvTypeName .Item.InventoryType}}</td></tr>{{end}}
+    <tr><th>{{.T "db.itemLevel"}}</th><td>{{.Item.ItemLevel}}</td></tr>
+    {{if .Item.RequiredLevel}}<tr><th>{{.T "db.requiredLevel"}}</th><td>{{.Item.RequiredLevel}}</td></tr>{{end}}
+    {{if .DamageRange .Item}}
+      <tr><th>{{.T "db.damage"}}</th>
+        <td>{{.DamageRange .Item}} <span class="muted">{{.T "db.speed"}} {{.Speed .Item}} &middot; {{.T "db.dps"}} {{.DPS .Item}}</span></td>
+      </tr>
+    {{end}}
+    {{if .Item.Armor}}<tr><th>{{.T "db.armor"}}</th><td>{{.Item.Armor}}</td></tr>{{end}}
+    {{if .Item.Block}}<tr><th>{{.T "db.block"}}</th><td>{{.Item.Block}}</td></tr>{{end}}
+    {{if .Item.Stackable}}<tr><th>{{.T "db.stackable"}}</th><td>{{.Item.Stackable}}</td></tr>{{end}}
+    {{if .Item.MaxCount}}<tr><th>{{.T "db.maxCount"}}</th><td>{{.Item.MaxCount}}</td></tr>{{end}}
+    <tr><th>{{.T "db.bonding"}}</th><td>{{.BondingName .Item.Bonding}}</td></tr>
+    {{if .Item.BuyPrice}}<tr><th>{{.T "db.buyPrice"}}</th><td>{{coins .Item.BuyPrice}}</td></tr>{{end}}
+    {{if .Item.SellPrice}}<tr><th>{{.T "db.sellPrice"}}</th><td>{{coins .Item.SellPrice}}</td></tr>{{end}}
+    {{if .Item.SetID}}<tr><th>{{.T "db.set"}}</th><td>{{.Item.SetID}}</td></tr>{{end}}
+    {{if .Item.StartQuest}}<tr><th>{{.T "db.startsQuest"}}</th><td><a href="/db/quests/{{.Item.StartQuest}}">#{{.Item.StartQuest}}</a></td></tr>{{end}}
+    {{if .Item.PageText}}<tr><th>{{.T "db.pageText"}}</th><td>{{.Item.PageText}}</td></tr>{{end}}
+    <tr><th>{{.T "db.displayID"}}</th><td>{{.Item.DisplayID}}</td></tr>
+    <tr><th>{{.T "db.flags"}}</th><td><code>{{.Item.Flags}}</code> <span class="muted">(0x{{printf "%x" .Item.Flags}})</span></td></tr>
+  </table>
+  {{if .Item.Description}}
+    <p class="lead">{{.Item.Description}}</p>
+  {{end}}
+</section>
+
+{{if .Item.Stats}}
+<section class="card">
+  <h2>{{.T "db.stats"}}</h2>
+  <table class="kv">
+    {{range .Item.Stats}}
+      <tr><th>{{$.StatName .Type}}</th><td>{{if gt .Value 0}}+{{end}}{{.Value}}</td></tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .Item.Resistances}}
+<section class="card">
+  <h2>{{.T "db.resistances"}}</h2>
+  <table class="kv">
+    {{range .Item.Resistances}}
+      <tr><th>{{$.ResistanceName .School}}</th><td>+{{.Value}}</td></tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .Item.Spells}}
+<section class="card">
+  <h2>{{.T "db.itemSpells"}}</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "db.slot"}}</th>
+        <th>{{.T "db.spell"}}</th>
+        <th>{{.T "db.trigger"}}</th>
+        <th class="right">{{.T "db.charges"}}</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Item.Spells}}
+      <tr>
+        <td>{{.Slot}}</td>
+        <td><a href="/db/spells/{{.SpellID}}">#{{.SpellID}}</a></td>
+        <td>{{$.TriggerName .Trigger}}</td>
+        <td class="right">{{if .Charges}}{{.Charges}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  <p class="hint">{{.T "db.itemSpellsHint"}}</p>
+</section>
+{{end}}
+{{end}}

@@ -44,6 +44,9 @@ var tablesNeeded = []string{
 	"character_ticket", "character_pet", "character_social",
 	"character_deleted_items", "group_instance", "guild_eventlog",
 	"item_instance", "mail", "mail_items",
+	// World content, read by the browser.
+	"item_template", "spell_template", "quest_template", "creature_template",
+	"locales_item", "locales_spell", "locales_quest", "locales_creature",
 }
 
 func testDSN(t *testing.T) string {
@@ -949,6 +952,233 @@ func TestIntegration(t *testing.T) {
 		if n, _ := st.ThrottleCount(ctx, store.ThrottleLoginIP, ip, 7*24*time.Hour); n != 0 {
 			t.Errorf("count after pruning a two-day-old row = %d, want 0", n)
 		}
+	})
+
+	// --- world content browsing ----------------------------------------------
+	//
+	// The browser reads item_template and friends directly, so this is where the
+	// queries meet a real MySQL: column names, the numbered stat/spell columns,
+	// the signed game-object column, NULL text and the locale join.
+	t.Run("WorldContent", func(t *testing.T) {
+		for _, stmt := range []string{
+			`INSERT INTO item_template (entry, name, description, quality, class, subclass,
+				item_level, required_level, inventory_type, buy_price, sell_price,
+				stat_type1, stat_value1, frost_res, spellid_1, spelltrigger_1, spellcharges_1)
+			 VALUES (1, 'Fine Sword', 'A fine sword', 4, 2, 7, 50, 45, 21, 12000, 2400, 7, 15, 5, 133, 0, -5)`,
+			`INSERT INTO item_template (entry, name, description, quality, class, item_level)
+			 VALUES (2, 'Rusty Screw', '', 1, 7, 5)`,
+			// Needed by the quest below, so the name lookup has something to find.
+			`INSERT INTO item_template (entry, name, description, quality, class, item_level)
+			 VALUES (80119, 'Mechanical Drumstick', '', 1, 15, 1)`,
+			`INSERT INTO locales_item (entry, name_loc4, description_loc4)
+			 VALUES (1, '精良的剑', '一把好剑'), (80119, '机械鸡腿', NULL)`,
+			`INSERT INTO spell_template (entry, name, nameSubtext, description, auraDescription,
+				school, spellLevel, manaCost, effect1, effectBasePoints1, effectDieSides1)
+			 VALUES (1, 'Fireball', 'Rank 1', 'Hurls a fiery ball', '', 4, 30, 95, 2, 9, 3)`,
+			`INSERT INTO locales_spell (entry, name_loc4, nameSubtext_loc4)
+			 VALUES (1, '火球术', '等级 1')`,
+			`INSERT INTO quest_template (entry, Title, QuestLevel, MinLevel,
+				ReqItemId1, ReqItemCount1, ReqCreatureOrGOId1, ReqCreatureOrGOCount1,
+				ReqCreatureOrGOId2, ReqCreatureOrGOCount2, RewChoiceItemId1, RewChoiceItemCount1)
+			 VALUES (1, 'The Other White Mech', 30, 28, 80119, 5, 80117, 5, -1234, 1, 80119, 1)`,
+			`INSERT INTO locales_quest (entry, Title_loc4) VALUES (1, '另一只白鸡')`,
+			`INSERT INTO creature_template (entry, name, subname, level_min, level_max, type, loot_id)
+			 VALUES (80117, 'Haywire Battlechicken', '', 2, 2, 7, 80117)`,
+			// A NULL subname: the page must print nothing rather than fail to scan.
+			`INSERT INTO creature_template (entry, name, level_min, level_max, type)
+			 VALUES (2, 'Spawn Point', 60, 60, 7)`,
+			`INSERT INTO locales_creature (entry, name_loc4, subname_loc4)
+			 VALUES (80117, '发疯的战斗鸡', '')`,
+		} {
+			if _, err := db.ExecContext(ctx, stmt); err != nil {
+				t.Fatalf("seed %s: %v", stmt, err)
+			}
+		}
+
+		zh, base := store.ContentLocaleZH, store.ContentLocaleBase
+
+		t.Run("Counts", func(t *testing.T) {
+			counts := st.ContentCountsFor(ctx)
+			if counts.Items != 3 || counts.Spells != 1 || counts.Quests != 1 || counts.Creatures != 2 {
+				t.Errorf("counts = %+v", counts)
+			}
+		})
+
+		t.Run("Item", func(t *testing.T) {
+			it, err := st.ContentItem(ctx, zh, 1)
+			if err != nil {
+				t.Fatalf("ContentItem: %v", err)
+			}
+			if it.Name != "精良的剑" || it.Description != "一把好剑" {
+				t.Errorf("item name/description = %q / %q, want the loc4 columns", it.Name, it.Description)
+			}
+			if it.Quality != 4 || it.Class != 2 || it.ItemLevel != 50 || it.BuyPrice != 12000 {
+				t.Errorf("item columns are off: %+v", it)
+			}
+			if len(it.Stats) != 1 || it.Stats[0].Type != 7 || it.Stats[0].Value != 15 {
+				t.Errorf("stats = %+v", it.Stats)
+			}
+			if len(it.Resistances) != 1 || it.Resistances[0].School != 3 || it.Resistances[0].Value != 5 {
+				t.Errorf("resistances = %+v", it.Resistances)
+			}
+			if len(it.Spells) != 1 || it.Spells[0].SpellID != 133 || it.Spells[0].Slot != 1 || it.Spells[0].Charges != -5 {
+				t.Errorf("item spells = %+v", it.Spells)
+			}
+
+			// The same row read without a locale must not show the translation.
+			plain, err := st.ContentItem(ctx, base, 1)
+			if err != nil {
+				t.Fatalf("ContentItem base: %v", err)
+			}
+			if plain.Name != "Fine Sword" {
+				t.Errorf("base name = %q, want Fine Sword", plain.Name)
+			}
+
+			if _, err := st.ContentItem(ctx, zh, 424242); !errors.Is(err, store.ErrNotFound) {
+				t.Errorf("missing item error = %v, want ErrNotFound", err)
+			}
+		})
+
+		t.Run("ItemList", func(t *testing.T) {
+			// Searching the translated name has to match too, which is the whole
+			// point of joining the locale table into the filter.
+			items, total, err := st.ContentItems(ctx, zh, store.ContentItemFilter{Search: "精良"})
+			if err != nil {
+				t.Fatalf("ContentItems: %v", err)
+			}
+			if total != 1 || len(items) != 1 || items[0].Name != "精良的剑" {
+				t.Errorf("search by translated name returned total=%d items=%+v", total, items)
+			}
+
+			items, total, err = st.ContentItems(ctx, zh, store.ContentItemFilter{Search: "sword"})
+			if err != nil {
+				t.Fatalf("ContentItems: %v", err)
+			}
+			if total != 1 || items[0].Name != "精良的剑" {
+				t.Errorf("search by base name returned total=%d items=%+v", total, items)
+			}
+
+			quality := uint8(1)
+			_, total, err = st.ContentItems(ctx, zh, store.ContentItemFilter{Quality: &quality})
+			if err != nil {
+				t.Fatalf("ContentItems: %v", err)
+			}
+			if total != 2 {
+				t.Errorf("quality 1 matched %d items, want the two common ones", total)
+			}
+
+			// Paging must not repeat a row.
+			first, _, err := st.ContentItems(ctx, zh, store.ContentItemFilter{Limit: 1, Offset: 0})
+			if err != nil {
+				t.Fatalf("ContentItems page 1: %v", err)
+			}
+			second, _, err := st.ContentItems(ctx, zh, store.ContentItemFilter{Limit: 1, Offset: 1})
+			if err != nil {
+				t.Fatalf("ContentItems page 2: %v", err)
+			}
+			if len(first) != 1 || len(second) != 1 || first[0].Entry == second[0].Entry {
+				t.Errorf("paging returned %+v then %+v", first, second)
+			}
+		})
+
+		t.Run("Spell", func(t *testing.T) {
+			sp, err := st.ContentSpell(ctx, zh, 1)
+			if err != nil {
+				t.Fatalf("ContentSpell: %v", err)
+			}
+			if sp.Name != "火球术" || sp.NameSubtext != "等级 1" {
+				t.Errorf("spell name/subtext = %q / %q", sp.Name, sp.NameSubtext)
+			}
+			if sp.School != 4 || sp.SpellLevel != 30 || sp.ManaCost != 95 {
+				t.Errorf("spell columns are off: %+v", sp)
+			}
+			if len(sp.Effects) != 1 || sp.Effects[0].Slot != 1 || sp.Effects[0].BasePoints != 9 {
+				t.Errorf("effects = %+v", sp.Effects)
+			}
+		})
+
+		t.Run("Quest", func(t *testing.T) {
+			q, err := st.ContentQuest(ctx, zh, 1)
+			if err != nil {
+				t.Fatalf("ContentQuest: %v", err)
+			}
+			if q.Title != "另一只白鸡" || q.QuestLevel != 30 {
+				t.Errorf("quest title/level = %q / %d", q.Title, q.QuestLevel)
+			}
+			if len(q.RequiredItems) != 1 || q.RequiredItems[0].Entry != 80119 || q.RequiredItems[0].Count != 5 {
+				t.Fatalf("required items = %+v", q.RequiredItems)
+			}
+			if q.RequiredItems[0].Name != "机械鸡腿" {
+				t.Errorf("required item name = %q, want the loc4 name", q.RequiredItems[0].Name)
+			}
+			if len(q.ChoiceItems) != 1 || q.ChoiceItems[0].Name != "机械鸡腿" {
+				t.Errorf("choice items = %+v", q.ChoiceItems)
+			}
+			if len(q.RequiredMobs) != 2 {
+				t.Fatalf("required mobs = %+v, want a creature and a game object", q.RequiredMobs)
+			}
+			if q.RequiredMobs[0].IsGameObject || q.RequiredMobs[0].Entry != 80117 {
+				t.Errorf("positive entry = %+v, want creature 80117", q.RequiredMobs[0])
+			}
+			if !q.RequiredMobs[1].IsGameObject || q.RequiredMobs[1].Entry != 1234 {
+				t.Errorf("negative entry = %+v, want game object 1234", q.RequiredMobs[1])
+			}
+		})
+
+		t.Run("Creature", func(t *testing.T) {
+			c, err := st.ContentCreature(ctx, zh, 80117)
+			if err != nil {
+				t.Fatalf("ContentCreature: %v", err)
+			}
+			if c.Name != "发疯的战斗鸡" || c.LevelMin != 2 || c.Type != 7 || c.LootID != 80117 {
+				t.Errorf("creature = %+v", c)
+			}
+
+			// A NULL subname must read as empty, not fail the scan.
+			other, err := st.ContentCreature(ctx, zh, 2)
+			if err != nil {
+				t.Fatalf("ContentCreature with a NULL subname: %v", err)
+			}
+			if other.SubName != "" {
+				t.Errorf("NULL subname = %q, want empty", other.SubName)
+			}
+
+			ctype := uint8(7)
+			_, total, err := st.ContentCreatures(ctx, zh, store.ContentCreatureFilter{Type: &ctype})
+			if err != nil {
+				t.Fatalf("ContentCreatures: %v", err)
+			}
+			if total != 2 {
+				t.Errorf("type 7 matched %d creatures, want 2", total)
+			}
+		})
+
+		t.Run("Search", func(t *testing.T) {
+			kinds := func(term string) map[string]string {
+				out := map[string]string{}
+				for _, r := range st.ContentSearch(ctx, zh, term) {
+					out[r.Kind] = r.Name
+				}
+				return out
+			}
+
+			if got := kinds("精良"); got["item"] != "精良的剑" {
+				t.Errorf("searching the translated name found %+v", got)
+			}
+			if got := kinds("sword"); got["item"] != "精良的剑" {
+				t.Errorf("searching the base name found %+v", got)
+			}
+			if got := kinds("火球"); got["spell"] != "火球术" {
+				t.Errorf("spell search found %+v", got)
+			}
+			if got := kinds("mech"); got["quest"] != "另一只白鸡" {
+				t.Errorf("quest search found %+v", got)
+			}
+			// A pasted entry has to work on every kind.
+			if got := kinds("80117"); got["creature"] != "发疯的战斗鸡" {
+				t.Errorf("entry search found %+v", got)
+			}
+		})
 	})
 }
 

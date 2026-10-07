@@ -11,6 +11,15 @@
 {{/* "badge" renders a status pill from a web.Badge (label + css class). */}}
 {{define "badge"}}<span class="{{badge .}}">{{.Label}}</span>{{end}}
 
+{{/* "dbsearch" is the database browser's search box, shared by the landing page,
+     the search results and every detail page. */}}
+{{define "dbsearch"}}
+<form method="get" action="/db/search" class="filters">
+  <input name="q" value="{{.Query}}" placeholder="{{.T "db.search.placeholder"}}">
+  <button class="btn" type="submit">{{.T "db.search.button"}}</button>
+</form>
+{{end}}
+
 {{define "charactertable"}}
 <table class="table">
   <thead>

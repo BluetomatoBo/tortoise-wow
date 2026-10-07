@@ -12,6 +12,7 @@
     <a class="brand" href="/">{{.Config.SiteName}}</a>
     <nav>
       <a href="/" class="{{if eq .Active "home"}}active{{end}}">{{.T "nav.home"}}</a>
+      <a href="/db" class="{{if eq .Active "db"}}active{{end}}">{{.T "nav.database"}}</a>
       {{if .Account}}
         <a href="/panel" class="{{if eq .Active "panel"}}active{{end}}">{{.T "nav.account"}}</a>
         <a href="/panel/characters" class="{{if eq .Active "characters"}}active{{end}}">{{.T "nav.characters"}}</a>

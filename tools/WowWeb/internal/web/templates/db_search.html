@@ -1,0 +1,40 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.T "db.search.title"}}</h1>
+  <a class="btn btn-ghost" href="/db">{{.T "db.back"}}</a>
+</div>
+
+{{template "dbsearch" .}}
+
+{{if .Results}}
+<section class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "db.kind"}}</th>
+        <th>{{.T "db.name"}}</th>
+        <th>{{.T "db.entry"}}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Results}}
+      <tr>
+        <td>{{$.T (printf "db.kind.%s" .Kind)}}</td>
+        <td>
+          <a href="{{dbResultPath .}}">{{.Name}}</a>
+          {{if .Subtitle}}<span class="muted">{{.Subtitle}}</span>{{end}}
+        </td>
+        <td><code>{{.Entry}}</code></td>
+        <td class="right"><a class="btn btn-ghost btn-sm" href="{{dbResultPath .}}">{{$.T "common.open"}}</a></td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+{{else}}
+<section class="card">
+  <p class="muted">{{.T "db.search.none"}}</p>
+</section>
+{{end}}
+{{end}}

@@ -161,6 +161,10 @@ func templateFuncs() template.FuncMap {
 		"isSetB":  func(p *bool) bool { return p != nil },
 
 		"add": func(a, b int) int { return a + b },
+		// dbResultPath links one search hit to its detail page.
+		"dbResultPath": func(r store.ContentSearchResult) string {
+			return dbKindPath(r.Kind) + "/" + itoa(int(r.Entry))
+		},
 		"sub": func(a, b int) int { return a - b },
 		// regionName renders the shop's ShopRegion enum so a template can build
 		// the key shop.region.<name>.

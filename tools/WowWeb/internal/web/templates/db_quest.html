@@ -1,0 +1,110 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.Quest.Title}}</h1>
+  <a class="btn btn-ghost" href="/db/quests">{{.T "db.quests.title"}}</a>
+</div>
+
+{{template "dbsearch" .}}
+
+<section class="card">
+  <table class="kv">
+    <tr><th>{{.T "db.entry"}}</th><td><code>{{.Quest.Entry}}</code></td></tr>
+    <tr><th>{{.T "db.questLevel"}}</th><td>{{.Quest.QuestLevel}}</td></tr>
+    <tr><th>{{.T "db.requiredLevel"}}</th><td>{{.Quest.MinLevel}}{{if .Quest.MaxLevel}} <span class="muted">&ndash; {{.Quest.MaxLevel}}</span>{{end}}</td></tr>
+    {{if .Quest.Type}}<tr><th>{{.T "db.questType"}}</th><td>{{.Quest.Type}}</td></tr>{{end}}
+    {{if .Quest.ZoneOrSort}}<tr><th>{{.T "db.zoneOrSort"}}</th><td>{{.Quest.ZoneOrSort}}</td></tr>{{end}}
+    {{if .Quest.SuggestedPlayers}}<tr><th>{{.T "db.suggestedPlayers"}}</th><td>{{.Quest.SuggestedPlayers}}</td></tr>{{end}}
+    {{if .Quest.QuestFlags}}<tr><th>{{.T "db.questFlags"}}</th><td><code>{{.Quest.QuestFlags}}</code></td></tr>{{end}}
+    {{if .Quest.SpecialFlags}}<tr><th>{{.T "db.specialFlags"}}</th><td><code>{{.Quest.SpecialFlags}}</code></td></tr>{{end}}
+    {{if .Quest.PrevQuestID}}<tr><th>{{.T "db.prevQuest"}}</th><td><a href="/db/quests/{{.Quest.PrevQuestID}}">#{{.Quest.PrevQuestID}}</a></td></tr>{{end}}
+    {{if .Quest.NextQuestID}}<tr><th>{{.T "db.nextQuest"}}</th><td><a href="/db/quests/{{.Quest.NextQuestID}}">#{{.Quest.NextQuestID}}</a></td></tr>{{end}}
+    {{if .Quest.PointMapID}}<tr><th>{{.T "db.coords"}}</th><td>{{.Quest.PointMapID}} &middot; {{printf "%.1f" .Quest.PointX}}, {{printf "%.1f" .Quest.PointY}}</td></tr>{{end}}
+  </table>
+</section>
+
+{{if .HasDetails}}
+<section class="card">
+  <h2>{{.T "db.questDetails"}}</h2>
+  <p>{{.Quest.Details}}</p>
+</section>
+{{end}}
+
+{{if .HasObjectives}}
+<section class="card">
+  <h2>{{.T "db.questObjectives"}}</h2>
+  <p>{{.Quest.Objectives}}</p>
+</section>
+{{end}}
+
+{{if .Quest.RequiredItems}}
+<section class="card">
+  <h2>{{.T "db.questRequired"}}</h2>
+  <table class="kv">
+    {{range .Quest.RequiredItems}}
+      <tr>
+        <th><a href="/db/items/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}#{{.Entry}}{{end}}</a></th>
+        <td>&times; {{.Count}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .Quest.RequiredMobs}}
+<section class="card">
+  <h2>{{.T "db.questRequiredMobs"}}</h2>
+  <table class="kv">
+    {{range .Quest.RequiredMobs}}
+      <tr>
+        {{if .IsGameObject}}
+          <th>{{$.T "db.gameObject"}} #{{.Entry}}</th>
+        {{else}}
+          <th><a href="/db/npcs/{{.Entry}}">#{{.Entry}}</a></th>
+        {{end}}
+        <td>&times; {{.Count}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if or .Quest.RewardItems .Quest.ChoiceItems .Quest.RewXP .Quest.RewOrReqMoney}}
+<section class="card">
+  <h2>{{.T "db.questRewards"}}</h2>
+  <table class="kv">
+    {{if .Quest.RewOrReqMoney}}{{$m := .QuestMoney .Quest.RewOrReqMoney}}<tr><th>{{$m.Label}}</th><td>{{$m.Amount}}</td></tr>{{end}}
+    {{if .Quest.RewXP}}<tr><th>{{.T "db.xp"}}</th><td>{{.Quest.RewXP}}</td></tr>{{end}}
+    {{range .Quest.RewardItems}}
+      <tr><th><a href="/db/items/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}#{{.Entry}}{{end}}</a></th><td>&times; {{.Count}}</td></tr>
+    {{end}}
+    {{range .Quest.ChoiceItems}}
+      <tr>
+        <th><a href="/db/items/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}#{{.Entry}}{{end}}</a></th>
+        <td>&times; {{.Count}} <span class="pill">{{$.T "db.choice"}}</span></td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .ObjectiveText}}
+<section class="card">
+  <h2>{{.T "db.objectiveText"}}</h2>
+  {{range .ObjectiveText}}<p>{{.}}</p>{{end}}
+</section>
+{{end}}
+
+{{if .HasReward}}
+<section class="card">
+  <h2>{{.T "db.offerReward"}}</h2>
+  <p>{{.Quest.OfferRewardText}}</p>
+</section>
+{{end}}
+
+{{if .HasEnd}}
+<section class="card">
+  <h2>{{.T "db.endText"}}</h2>
+  <p>{{.Quest.EndText}}</p>
+</section>
+{{end}}
+{{end}}

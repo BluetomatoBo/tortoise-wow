@@ -1,0 +1,53 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.T "db.spells.title"}} <span class="muted">({{.Total}})</span></h1>
+  <a class="btn btn-ghost" href="/db">{{.T "db.back"}}</a>
+</div>
+
+<section class="card">
+  <form method="get" action="/db/spells" class="filters">
+    <input name="q" value="{{.Search}}" placeholder="{{.T "db.search.placeholder"}}">
+    <select name="school">
+      <option value="">{{.T "db.anySchool"}}</option>
+      {{range .SpellSchoolOptions}}
+        <option value="{{.Value}}" {{if and (isSet $.FilterSchool) (eq (deref $.FilterSchool) .Value)}}selected{{end}}>{{.Name}}</option>
+      {{end}}
+    </select>
+    <input type="number" name="minlevel" min="0" max="255" value="{{if isSet $.FilterMin}}{{deref $.FilterMin}}{{end}}" placeholder="{{.T "db.spellLevelMin"}}">
+    <input type="number" name="maxlevel" min="0" max="255" value="{{if isSet $.FilterMax}}{{deref $.FilterMax}}{{end}}" placeholder="{{.T "db.spellLevelMax"}}">
+    <button class="btn" type="submit">{{.T "common.filter"}}</button>
+    <a class="btn btn-ghost" href="/db/spells">{{.T "common.reset"}}</a>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "db.entry"}}</th>
+        <th>{{.T "db.name"}}</th>
+        <th>{{.T "db.subtext"}}</th>
+        <th>{{.T "db.school"}}</th>
+        <th class="right">{{.T "db.spellLevel"}}</th>
+        <th class="right">{{.T "db.manaCost"}}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Spells}}
+      <tr>
+        <td><code>{{.Entry}}</code></td>
+        <td><a href="/db/spells/{{.Entry}}">{{.Name}}</a></td>
+        <td class="muted">{{if .NameSubtext}}{{.NameSubtext}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        <td>{{$.SchoolName .School}}</td>
+        <td class="right">{{.SpellLevel}}</td>
+        <td class="right">{{.ManaCost}}</td>
+        <td class="right"><a class="btn btn-ghost btn-sm" href="/db/spells/{{.Entry}}">{{$.T "common.open"}}</a></td>
+      </tr>
+    {{else}}
+      <tr><td colspan="7" class="muted center">{{$.T "db.none"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+
+  {{template "pagination" .}}
+</section>
+{{end}}

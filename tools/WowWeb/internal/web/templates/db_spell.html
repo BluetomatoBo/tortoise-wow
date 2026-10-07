@@ -1,0 +1,63 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.Spell.Name}}{{if .Spell.NameSubtext}} <span class="muted">{{.Spell.NameSubtext}}</span>{{end}}</h1>
+  <a class="btn btn-ghost" href="/db/spells">{{.T "db.spells.title"}}</a>
+</div>
+
+{{template "dbsearch" .}}
+
+<section class="card">
+  <table class="kv">
+    <tr><th>{{.T "db.entry"}}</th><td><code>{{.Spell.Entry}}</code></td></tr>
+    <tr><th>{{.T "db.school"}}</th><td>{{.SchoolName .Spell.School}}</td></tr>
+    <tr><th>{{.T "db.spellLevel"}}</th><td>{{.Spell.SpellLevel}}</td></tr>
+    <tr><th>{{.T "db.baseLevel"}}</th><td>{{.Spell.BaseLevel}} <span class="muted">&ndash; {{.Spell.MaxLevel}}</span></td></tr>
+    <tr><th>{{.T "db.manaCost"}}</th>
+      <td>{{.Spell.ManaCost}}{{if .Spell.ManaCostPercentage}} <span class="muted">+ {{.Spell.ManaCostPercentage}}%</span>{{end}}</td>
+    </tr>
+    <tr><th>{{.T "db.powerType"}}</th><td>{{.Spell.PowerType}}</td></tr>
+    <tr><th>{{.T "db.procChance"}}</th><td>{{.Spell.ProcChance}}%</td></tr>
+    {{if .Spell.StackAmount}}<tr><th>{{.T "db.stackAmount"}}</th><td>{{.Spell.StackAmount}}</td></tr>{{end}}
+    <tr><th>{{.T "db.castTimeIndex"}}</th><td>{{.Spell.CastingTimeIndex}}</td></tr>
+    <tr><th>{{.T "db.durationIndex"}}</th><td>{{.Spell.DurationIndex}}</td></tr>
+    <tr><th>{{.T "db.rangeIndex"}}</th><td>{{.Spell.RangeIndex}}</td></tr>
+    <tr><th>{{.T "db.spellIcon"}}</th><td>{{.Spell.SpellIconID}}</td></tr>
+    <tr><th>{{.T "db.spellFamily"}}</th><td>{{.Spell.SpellFamilyName}}</td></tr>
+    {{if .Spell.CustomFlags}}<tr><th>{{.T "db.customFlags"}}</th><td><code>{{.Spell.CustomFlags}}</code></td></tr>{{end}}
+  </table>
+  {{if .Spell.Description}}<p>{{.Spell.Description}}</p>{{end}}
+  {{if .Spell.AuraDescription}}<p class="lead">{{.Spell.AuraDescription}}</p>{{end}}
+  <p class="hint">{{.T "db.dbcHint"}}</p>
+</section>
+
+{{if .Spell.Effects}}
+<section class="card">
+  <h2>{{.T "db.effects"}}</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "db.slot"}}</th>
+        <th>{{.T "db.effect"}}</th>
+        <th>{{.T "db.value"}}</th>
+        <th>{{.T "db.aura"}}</th>
+        <th>{{.T "db.miscValue"}}</th>
+        <th>{{.T "db.triggerSpell"}}</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Spell.Effects}}
+      <tr>
+        <td>{{.Slot}}</td>
+        <td><code>{{.Effect}}</code></td>
+        <td>{{$.SpellRange .}} <span class="muted">({{.DieSides}}d)</span></td>
+        <td>{{if .AuraName}}<code>{{.AuraName}}</code>{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        <td>{{if .MiscValue}}{{.MiscValue}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        <td>{{if .TriggerSpell}}<a href="/db/spells/{{.TriggerSpell}}">#{{.TriggerSpell}}</a>{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  <p class="hint">{{.T "db.effectHint"}}</p>
+</section>
+{{end}}
+{{end}}
