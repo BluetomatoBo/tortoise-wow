@@ -93,7 +93,7 @@ already uses**, so nothing has to be patched or rebuilt on the server side.
 | `ADMIN_MIN_RANK` | `4` | 能进 `/admin` 的最低 `account.rank` |
 | `ALLOW_REGISTER` | `true` | 是否开放自助注册 |
 | `SESSION_SECURE` | `false` | 走 HTTPS 时设为 `true` |
-| `WEB_TRUST_PROXY` | `false` | 在反代后面**必须设为 `true`**，否则限流与日志只看得到反代的地址 |
+| `WEB_TRUST_PROXY` | `false` | 在反代后面**必须设为 `true`**，否则限流与日志只看得到反代的地址。开启后取 `X-Forwarded-For` 的**最后**一项（代理自己追加的那个），伪造的头部条目不会被采信 |
 
 > 网站名字只有 `REALM_NAME` 这一个参数（站名、页脚领域名、验证器签发者共用）。
 
@@ -230,6 +230,11 @@ WEB_TRUST_PROXY=1                        # 否则所有玩家共用一个限流�
 
 `WEB_TRUST_PROXY=1` 不是可选项：反代后面每个请求的来源都是 nginx 自己的地址，
 不开这个，**登录失败限流会按同一个 IP 计数 —— 一个人连错几次密码就把所有人挡住**。
+
+开启后应用只认 `X-Forwarded-For` 的**最后一项**，也就是 nginx 用
+`$proxy_add_x_forwarded_for` 追加进去的、它自己看到的那个对端地址；客户端塞在最前面的
+值一律不采信。这一点是必须的：否则任何人在这条头里写一个假地址就能每次换一个限流桶，
+按地址计的限流等于不存在。`X-Real-IP` 只在没有 `X-Forwarded-For` 时才用。
 
 这个域名**故意只走 HTTP**：客户端根本打不开 `https://` 的链接，所以它的链接必须留在
 80 端口。
@@ -654,7 +659,7 @@ Everything is read from the environment.
 | --- | --- | --- |
 | `WEB_LISTEN` | `:8080` | Listen address |
 | `WEB_BASE_URL` | *(empty)* | Public URL, used for links |
-| `WEB_TRUST_PROXY` | `false` | Trust `X-Forwarded-For` / `X-Real-IP` |
+| `WEB_TRUST_PROXY` | `false` | Trust the proxy's forwarding headers. Must be `true` behind a reverse proxy, or every request is attributed to the proxy. The **last** `X-Forwarded-For` entry - the one the proxy appends - is the one used; `X-Real-IP` is the fallback |
 | `DB_HOST` / `DB_PORT` | `127.0.0.1` / `3306` | Database server |
 | `DB_USER` / `DB_PASSWORD` | `mangos` / `mangos` | Database credentials (**required**) |
 | `DB_LOGON_NAME` | `tw_logon` | Login database |
@@ -737,8 +742,13 @@ UPDATE `tw_logon`.`account` SET `rank` = 4 WHERE `username` = 'YOURACCOUNT';
 Terminate TLS in nginx/Caddy and forward to the service. Set
 `WEB_TRUST_PROXY=true` so rate limiting and the audit log see the real client
 address, and `SESSION_SECURE=true` so the session cookie is only sent over
-HTTPS. (For the plain-HTTP name the game client needs, with a ready config file,
-see [Reaching the site by name](#reaching-the-site-by-name-what-the-client-needs)
+HTTPS. With it on, the app reads the **last** `X-Forwarded-For` entry - the one
+the proxy appended, which is the peer it actually saw - and ignores whatever the
+client wrote to the left of it, so a made-up header cannot pick its own
+rate-limit bucket. `X-Real-IP` is only consulted when there is no
+`X-Forwarded-For` at all. (For the plain-HTTP name the game client needs, with a
+ready config file, see
+[Reaching the site by name](#reaching-the-site-by-name-what-the-client-needs)
 below.)
 
 ```nginx
@@ -954,7 +964,10 @@ WEB_TRUST_PROXY=1                        # otherwise every player shares one thr
 
 `WEB_TRUST_PROXY=1` is not optional: behind a proxy every request arrives from nginx's own
 address, so without it **the sign-in throttle counts everyone as one visitor - a single
-person mistyping their password locks the whole server out**.
+person mistyping their password locks the whole server out**. That the app then reads the
+last `X-Forwarded-For` entry rather than the first is just as load-bearing: the entries on
+the left are whatever the client sent, so believing them would let one visitor rotate
+through a new throttle bucket on every attempt.
 
 This name is deliberately **plain HTTP**: the client cannot follow an `https://` link at all,
 so its links have to stay on port 80.

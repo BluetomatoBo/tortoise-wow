@@ -982,7 +982,7 @@ func (s *Server) handleAdminBanIP(w http.ResponseWriter, r *http.Request, page *
 		http.Redirect(w, r, "/admin/bans", http.StatusSeeOther)
 		return
 	}
-	if ip == s.clientIP(r) {
+	if sameIP(ip, s.clientIP(r)) {
 		s.setFlash(w, "error", page.T("flash.err.ownIP"))
 		http.Redirect(w, r, "/admin/bans", http.StatusSeeOther)
 		return

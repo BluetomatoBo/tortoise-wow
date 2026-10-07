@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"tortoiseweb/internal/config"
@@ -28,6 +29,10 @@ type Server struct {
 	mux    *http.ServeMux
 	i18n   *i18n.Bundle
 	defLng i18n.Lang
+
+	// warnProxyHeaders keeps the misconfiguration warning below to one line per
+	// process: the condition it describes holds for every single request.
+	warnProxyHeaders sync.Once
 }
 
 func New(cfg config.Config, st *store.Store, log *slog.Logger) (*Server, error) {
@@ -464,25 +469,98 @@ func (s *Server) readFlash(w http.ResponseWriter, r *http.Request) []Flash {
 // Small helpers
 // ---------------------------------------------------------------------------
 
-// clientIP returns the address of the caller, honouring X-Forwarded-For only
-// when the deployment says a proxy is in front (WEB_TRUST_PROXY=1).
+// clientIP returns the address of the caller, honouring the forwarding headers
+// only when the deployment says a proxy this host controls is in front
+// (WEB_TRUST_PROXY=1).
+//
+// Which end of X-Forwarded-For counts is the whole question here. Proxies
+// append the address they actually saw to the right of whatever the client sent,
+// so with the usual setup - nginx's $proxy_add_x_forwarded_for, HAProxy's
+// `option forwardfor` - the last entry is the peer the proxy talked to and
+// everything to its left is client-supplied. Taking the *leftmost* entry instead
+// hands the caller a free choice of identity: one request with
+// `X-Forwarded-For: 1.2.3.4` and the sign-in and sign-up throttles, the audit
+// log and the stored session all record 1.2.3.4, which is a different bucket on
+// every request.
+//
+// X-Real-IP is the fallback for proxies that set only that one. Values that are
+// not addresses are ignored rather than returned, so a junk header cannot put
+// prose in the audit log or overrun the width of a throttle key.
 func (s *Server) clientIP(r *http.Request) string {
 	if s.cfg.TrustProxy {
-		if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
-			if first, _, ok := strings.Cut(fwd, ","); ok {
-				return strings.TrimSpace(first)
+		chain := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
+		for i := len(chain) - 1; i >= 0; i-- {
+			if ip := parseForwardedIP(chain[i]); ip != "" {
+				return ip
 			}
-			return strings.TrimSpace(fwd)
 		}
-		if real := r.Header.Get("X-Real-IP"); real != "" {
-			return strings.TrimSpace(real)
+		if ip := parseForwardedIP(r.Header.Get("X-Real-IP")); ip != "" {
+			return ip
 		}
 	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		host = r.RemoteAddr
+	}
+	if !s.cfg.TrustProxy {
+		s.warnIfProxyHeadersIgnored(r, host)
 	}
 	return host
+}
+
+// warnIfProxyHeadersIgnored says so, once, when requests look like they come
+// through a proxy but the app has been told to ignore the proxy's headers.
+//
+// Without it the only symptom is that every player is recorded as the proxy's
+// address - the throttle buckets them together and the audit log stops telling
+// them apart - which is easy to miss until someone is locked out.
+func (s *Server) warnIfProxyHeadersIgnored(r *http.Request, peer string) {
+	if r.Header.Get("X-Forwarded-For") == "" && r.Header.Get("X-Real-IP") == "" {
+		return
+	}
+	ip := net.ParseIP(peer)
+	if ip == nil || !(ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsUnspecified()) {
+		return
+	}
+	if s.log == nil {
+		return
+	}
+	s.warnProxyHeaders.Do(func() {
+		s.log.Warn("forwarding headers are being ignored",
+			"peer", peer,
+			"hint", "this host looks like it sits behind a proxy; set WEB_TRUST_PROXY=1 so the throttles, the audit log and the session list see the real client address")
+	})
+}
+
+// parseForwardedIP accepts a bare address as well as the "host:port" and
+// "[v6]:port" shapes some proxies write, and returns "" for anything that is not
+// an address at all. The canonical spelling is returned so that two ways of
+// writing one address cannot end up in two throttle buckets.
+func parseForwardedIP(v string) string {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return ""
+	}
+	if ip := net.ParseIP(v); ip != nil {
+		return ip.String()
+	}
+	if host, _, err := net.SplitHostPort(v); err == nil {
+		if ip := net.ParseIP(host); ip != nil {
+			return ip.String()
+		}
+	}
+	return ""
+}
+
+// sameIP reports whether two strings name the same address, comparing the parsed
+// values so that the spelling differences canonicalisation introduces (IPv6
+// zero compression, IPv4-mapped forms) do not make one address look like two.
+func sameIP(a, b string) bool {
+	ia, ib := net.ParseIP(a), net.ParseIP(b)
+	if ia == nil || ib == nil {
+		return a == b
+	}
+	return ia.Equal(ib)
 }
 
 func (s *Server) parseUintPath(r *http.Request, name string) (uint32, bool) {
