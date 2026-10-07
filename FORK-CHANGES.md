@@ -196,6 +196,9 @@ Loot.RetryEmptyDrops = 1     # 默认 0 = 保持原配置的概率，可用 .rel
 - **管理后台**：账号/角色查询与操作、封禁与 IP 封禁、禁言、领域编辑、
   **登录界面公告**（`/admin/announcement`）、**捐赠商城**（`/admin/shop` 条目 +
   `/admin/shop/categories` 类别）、审计日志
+- **数据库浏览器**（`/db`，公开）：物品/法术/任务/生物的搜索、列表与详情页，直读核心自己的
+  内容表（不复制 AoWoW 的 `aowow_*` 库）；中文读者取 `*_loc4` 列、其它语言取基列，
+  名称来自核心的枚举头文件
 
 细节见 [`tools/WowWeb/README.md`](tools/WowWeb/README.md)（中英双语，含配置项、权限、
 反代、限流、以及每个「静默失败」条件的说明）。两个额外的运维文件：
@@ -456,6 +459,10 @@ A separate service that only reads and writes the game's databases; no core chan
 * **Administration**: account and character search and actions, bans and IP bans, mutes,
   realm editing, the **login announcement** (`/admin/announcement`), the **donation shop**
   (`/admin/shop` for items, `/admin/shop/categories` for categories), and an audit log.
+* **Database browser** (`/db`, public): search, lists and detail pages for items, spells,
+  quests and creatures, read straight from the core's own content tables (no AoWoW
+  `aowow_*` copy); a Chinese reader gets the `*_loc4` columns, everyone else the base
+  ones, and the names come from the core's own enum headers.
 
 See [`tools/WowWeb/README.md`](tools/WowWeb/README.md) for configuration, database
 privileges, reverse proxying, brute-force limits and every "silently fails" condition it
