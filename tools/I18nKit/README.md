@@ -26,6 +26,11 @@ Balor/SI:7 那一包），另有约 855 条任务详情、850 条任务目标、
 
 这个工具就是把这批东西按**任务链**整理出来，翻译完能直接导回去。
 
+> **进度**：这些缺口里，「玩家现在仍能接到」的那部分**已经全部译完**，产物在
+> `sql/wip_updates/` 下的 5 个任务文件（`locales_quest_extra` / `_fixes` /
+> `_objectives` / `_rewards` / `_details`，共 175 + 456 + 743 + 481 + 748 条），
+> 需手工导入；本工具仍可用来核对或重算清单。
+
 ### 用法
 
 不需要任何 Python 依赖，它调用你系统里的 `mysql` / `mariadb` 客户端：
@@ -134,6 +139,11 @@ texts have English without Chinese.
 
 This tool groups that work by **quest chain** so the translation is consistent, and makes it
 easy to put back.
+
+> **Status**: for the part a player can **still pick up**, that gap is now **fully
+> translated** — see the five quest files in `sql/wip_updates/` (`locales_quest_extra`,
+> `_fixes`, `_objectives`, `_rewards`, `_details`; 175 + 456 + 743 + 481 + 748 rows).
+> They are imported by hand. This tool remains useful for auditing or recomputing the list.
 
 ### Usage
 

@@ -39,7 +39,7 @@ git diff --stat 1181dev...1181-zhcn-localization -- src/
 
 ## 中文说明
 
-### 1. 中文本地化：数据（`sql/wip_updates/`，18 个 SQL + 1 篇说明）
+### 1. 中文本地化：数据（`sql/wip_updates/`，23 个 SQL + 1 篇说明）
 
 把官方的 zhCN 文本灌进核心库的 `locales_*` 表与几张文本表。文件名就是目标表名：
 
@@ -48,7 +48,12 @@ git diff --stat 1181dev...1181-zhcn-localization -- src/
 | `locales_item.sql` | `locales_item` | 物品名与描述 |
 | `locales_spell.sql` | `locales_spell` | 法术名与描述 |
 | `locales_creature.sql` | `locales_creature` | 生物名与副名 |
-| `locales_quest.sql` | `locales_quest` | 任务标题与说明 |
+| `locales_quest.sql` | `locales_quest` | 任务标题与说明（官方 zhCN 那部分） |
+| `locales_quest_extra.sql` | `locales_quest` | 任务标题补译：官方 zhCN 没覆盖、但玩家**现在还能接到**的英文任务标题（175 条） |
+| `locales_quest_fixes.sql` | `locales_quest` | 任务标题病句修复：改写既有中文标题里的错译与病句（456 条改写、110 条复核后保留原样） |
+| `locales_quest_objectives.sql` | `locales_quest` | 任务目标文本 `Objectives_loc4`（743 条，可接取任务全覆盖） |
+| `locales_quest_rewards.sql` | `locales_quest` | 任务交还文本 `OfferRewardText_loc4`（481 条，可接取任务全覆盖） |
+| `locales_quest_details.sql` | `locales_quest` | 任务详情文本 `Details_loc4`（748 条，可接取任务全覆盖） |
 | `locales_broadcast_text.sql` | `locales_broadcast_text` | 广播文本 |
 | `locales_gameobject.sql` | `locales_gameobject` | 游戏对象名 |
 | `locales_page_text.sql` | `locales_page_text` | 书页正文 |
@@ -66,7 +71,14 @@ git diff --stat 1181dev...1181-zhcn-localization -- src/
 | `README-client-patch.md` | — | 说明「只存在于客户端资源里的那部分中文」及其补丁 |
 
 （`ls sql/wip_updates/` 还会列出 `create_update.sh` 和 `what-are-these.txt` —— 这两个是
-上游自带的，不在本分支的改动里。本分支新增的是上面 18 个 SQL 加 1 个说明文件。）
+上游自带的，不在本分支的改动里。本分支新增的是上面 23 个 SQL 加 1 个说明文件。）
+
+其中 `locales_quest_extra/fixes/objectives/rewards/details` 这 5 个文件是针对**官方 zhCN
+没覆盖到的任务文本**做的补译与校对 —— 范围限定为「玩家现在仍能接到」的任务（在
+`creature_questrelation` / `gameobject_questrelation` 里有给予者，且该给予者在
+`creature` / `gameobject` 里有实际 spawn，重算工具见 `tools/I18nKit/`）。翻译时按
+**文本去重**处理（748 条详情实际只有 561 条不同文本），并对每条逐字校验 `$B`/`$N`/`$C`
+等占位符与英文原文完全一致、译文无残留英文。这 5 个文件同样**不会自动导入**，需手工执行。
 
 **⚠️ 这些 SQL 不会自动应用。** `CONTRIBUTING.md` 把 `sql/wip_updates/` 定义为
 **待合并**的更新暂存区，而 `Database.AutoUpdate.Path` 只扫 `sql/database_updates/`
@@ -341,7 +353,7 @@ git rev-parse 187af78^{tree} d94947b^{tree}   # 两行相同
 
 ## English
 
-### 1. Chinese localisation: the data (`sql/wip_updates/`, 18 SQL files + 1 note)
+### 1. Chinese localisation: the data (`sql/wip_updates/`, 23 SQL files + 1 note)
 
 Official zhCN text loaded into the core's `locales_*` tables and a few text tables. Each
 file is named after the table it fills: `locales_item`, `locales_spell`,
@@ -352,8 +364,19 @@ file is named after the table it fills: `locales_item`, `locales_spell`,
 `README-client-patch.md` (the part of the translation that only exists in client
 assets, and the patch that carries it).
 
+Five of those fill quest text that the official zhCN data never covered, for quests a
+player can **still pick up** today (one with a giver in `creature_questrelation` /
+`gameobject_questrelation` that actually spawns in `creature` / `gameobject`; the
+recomputation tool is `tools/I18nKit/`):
+`locales_quest_extra.sql` (175 missing titles), `locales_quest_fixes.sql` (456 titles
+rewritten for mistranslation/awkward phrasing, 110 reviewed and kept),
+`locales_quest_objectives.sql` (743 objectives), `locales_quest_rewards.sql` (481
+completion texts) and `locales_quest_details.sql` (748 details — 561 distinct texts
+after deduplication). Every row was checked to mirror its English source's `$B`/`$N`/`$C`
+placeholders exactly and to contain no leftover English.
+
 (`ls sql/wip_updates/` also lists `create_update.sh` and `what-are-these.txt` — both are
-upstream's own files, not part of this branch. This branch adds the 18 SQL files above
+upstream's own files, not part of this branch. This branch adds the 23 SQL files above
 plus the one note.)
 
 **⚠️ This SQL is not applied automatically.** `CONTRIBUTING.md` defines
