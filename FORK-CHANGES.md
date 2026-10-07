@@ -2,14 +2,15 @@
 
 - **基准 / Baseline**：上游 [`tortoise-wow/tortoise-wow`](https://github.com/tortoise-wow/tortoise-wow) 的 `1181dev` 分支，共同祖先 `187af78`
 - **分支 / Branch**：[`BluetomatoBo/tortoise-wow`](https://github.com/BluetomatoBo/tortoise-wow) 的 `1181-zhcn-localization`
-- **规模 / Size**：42 个提交，119 个文件（103 新增 / 16 修改），+54063 / −18
+- **规模 / Size**：本分支自己的提交 43 个，合计 120 个文件（104 新增 / 16 修改），+54549 / −18
+- **上游同步 / Upstream sync**：已并入上游 `main` 的最新提交 `d94947b`（见第 10 节）
 
 这条清单可以自己复现 / Reproduce this list:
 
 ```bash
 git fetch origin
-# 本分支独有的提交（42 个）
-git log --oneline --reverse 1181dev..1181-zhcn-localization
+# 本分支独有的提交（43 个，不含上游的合并提交）
+git log --oneline --reverse --no-merges 1181dev..1181-zhcn-localization
 # 文件级差异（新增 vs 修改）
 git diff --name-status 1181dev...1181-zhcn-localization
 # 只看服务端核心代码
@@ -27,8 +28,12 @@ git diff --stat 1181dev...1181-zhcn-localization -- src/
 | 配置模板补文档 | 2 个键 | `src/mangosd/mangosd.conf.dist.in` |
 | 新增工具 | 2 套 | `tools/WowWeb/`、`tools/ClientPatch/` |
 
-> 上游的东西**一个都没删**：119 个文件里 103 个是新增、16 个是修改，全部 18 行删除都是
+> 上游的东西**一个都没删**：120 个文件里 104 个是新增、16 个是修改，全部 18 行删除都是
 > 被替换掉的旧代码，没有删掉任何文件或功能。
+>
+> **Nothing upstream was deleted**: of the 120 files, 104 are additions and 16 are
+> modifications, and all 18 deleted lines are old code that was replaced. No file and no
+> feature was removed.
 
 ---
 
@@ -247,7 +252,38 @@ Loot.RetryEmptyDrops = 1     # 默认 0 = 保持原配置的概率，可用 .rel
    注意它会整份携带 `GlobalStrings.lua`，汉化包更新后要重跑 `gen_patchz.py`
 4. **上游合并**：本分支基点 `187af78`，上述所有改动都集中在少数文件里
    （`git diff --stat 1181dev...1181-zhcn-localization -- src/` 只有 16 个文件、
-   `+206 −18`；全部 18 行删除都在这 16 个文件里），方便跟着上游 rebase
+   `+206 −18`；全部 18 行删除都在这 16 个文件里），方便跟着上游 rebase；上游 `main`
+   现在已是本分支的祖先（第 10 节），以后再合 `main` 不会带进历史包袱
+
+### 10. 上游同步状态
+
+上游 [`main`](https://github.com/tortoise-wow/tortoise-wow) 的最新提交 `d94947b`
+（2026-09-29，「Merging SOAP Interface, Windows build/deploy fixes, and creature HP
+clamping」）已并入本分支，合并提交 `ad4ff55`。
+
+它是一次**纯同步合并，一个文件都没改**：
+
+- `d94947b` 的两个父是 `4f4fcaa`（`main` 的旧头，9-16）和 `187af78`（`1181dev`，9-24，
+  **也就是本分支的基点**），而 `4f4fcaa` 本身是 `187af78` 的祖先 —— 上游只是把 `main`
+  追平到 `1181dev` 这条线上来
+- `git diff 187af78 d94947b` **为空**，两个提交树哈希相同（`679b28d`），因此这次合并既
+  不改动任何文件，也不可能有冲突
+
+所以它标题里那三项**早就在我们的基点里**：
+
+| 它声称合并的 | 在我们基点里的位置 |
+|---|---|
+| SOAP 接口 | `src/mangosd/MaNGOSsoap.{cpp,h}`、`src/mangosd/soap/`、`dep/src/gsoap/`、`docs/management/soap-remote-command-interface.md` |
+| Windows 构建/部署文档修复 | PR #519（提交 `4f4fcaa`） |
+| 生物零血量钳制（HP clamping） | PR #525 —— 基点 `187af78` **本身就是**这个 PR 的合并提交 |
+
+自己确认：
+
+```bash
+git merge-base --is-ancestor main HEAD && echo "main 已是本分支的祖先"
+git diff --stat 187af78 d94947b        # 空
+git rev-parse 187af78^{tree} d94947b^{tree}   # 两行相同
+```
 
 ---
 
@@ -483,4 +519,34 @@ calls.
 4. **Merging upstream**: this branch is based on `187af78` and all of the above lives in a
    small number of files (`git diff --stat 1181dev...1181-zhcn-localization -- src/` is
    16 files, `+206 −18`; those same 16 files hold every one of the 18 deleted lines),
-   which keeps rebasing cheap.
+   which keeps rebasing cheap. Upstream `main` is now an ancestor of this branch
+   (section 10), so later merges of `main` carry no historical baggage.
+
+### 10. Upstream sync status
+
+Upstream `main`'s latest commit, `d94947b` (2026-09-29, "Merging SOAP Interface, Windows
+build/deploy fixes, and creature HP clamping"), is merged into this branch as `ad4ff55`.
+
+It is a **pure catch-up merge that changes no files at all**:
+
+* `d94947b`'s two parents are `4f4fcaa` (`main`'s old tip, Sep 16) and `187af78`
+  (`1181dev`, Sep 24 — **this branch's own base**), and `4f4fcaa` is itself an ancestor of
+  `187af78`: upstream simply brought `main` up to the `1181dev` line.
+* `git diff 187af78 d94947b` is **empty** and the two commits share a tree hash
+  (`679b28d`), so merging it cannot change a file or conflict with anything.
+
+So all three things in its title were **already in our base**:
+
+| What it says it merges | Where it lives in our base |
+|---|---|
+| The SOAP interface | `src/mangosd/MaNGOSsoap.{cpp,h}`, `src/mangosd/soap/`, `dep/src/gsoap/`, `docs/management/soap-remote-command-interface.md` |
+| Windows build/deploy documentation fixes | PR #519 (commit `4f4fcaa`) |
+| Creature HP clamping | PR #525 — the base `187af78` **is** that pull request's merge commit |
+
+To check it yourself:
+
+```bash
+git merge-base --is-ancestor main HEAD && echo "main is an ancestor of this branch"
+git diff --stat 187af78 d94947b        # empty
+git rev-parse 187af78^{tree} d94947b^{tree}   # both lines identical
+```
