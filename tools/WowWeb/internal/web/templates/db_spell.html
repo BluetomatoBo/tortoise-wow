@@ -1,6 +1,9 @@
 {{define "content"}}
 <div class="pagehead">
-  <h1>{{.Spell.Name}}{{if .Spell.NameSubtext}} <span class="muted">{{.Spell.NameSubtext}}</span>{{end}}</h1>
+  <h1>
+    {{with .SpellIcon .Spell.SpellIconID}}<img class="ico ico-lg" src="{{.}}" alt="" width="36" height="36">{{end}}
+    {{.Spell.Name}}{{if .Spell.NameSubtext}} <span class="muted">{{.Spell.NameSubtext}}</span>{{end}}
+  </h1>
   <a class="btn btn-ghost" href="/db/spells">{{.T "db.spells.title"}}</a>
 </div>
 

@@ -64,7 +64,7 @@
   <table class="kv">
     {{range .Drops}}
       <tr>
-        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
+        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly "icon" ($.ItemIcon .DisplayID)}}</th>
         <td class="right">{{template "dropchance" .}}</td>
       </tr>
     {{end}}
@@ -78,7 +78,7 @@
   <table class="kv">
     {{range .Skins}}
       <tr>
-        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
+        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly "icon" ($.ItemIcon .DisplayID)}}</th>
         <td class="right">{{template "dropchance" .}}</td>
       </tr>
     {{end}}
@@ -92,7 +92,7 @@
   <table class="kv">
     {{range .Pickpockets}}
       <tr>
-        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
+        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly "icon" ($.ItemIcon .DisplayID)}}</th>
         <td class="right">{{template "dropchance" .}}</td>
       </tr>
     {{end}}
@@ -106,7 +106,7 @@
   <table class="kv">
     {{range .Sells}}
       <tr>
-        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name}}</th>
+        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name "icon" ($.ItemIcon .DisplayID)}}</th>
         <td class="right"></td>
       </tr>
     {{end}}

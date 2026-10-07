@@ -35,7 +35,10 @@
     {{range .Spells}}
       <tr>
         <td><code>{{.Entry}}</code></td>
-        <td><a href="/db/spells/{{.Entry}}">{{.Name}}</a></td>
+        <td>
+          {{with $.SpellIcon .SpellIconID}}<img class="ico" src="{{.}}" alt="" width="18" height="18" loading="lazy">{{end}}
+          <a href="/db/spells/{{.Entry}}">{{.Name}}</a>
+        </td>
         <td class="muted">{{if .NameSubtext}}{{.NameSubtext}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
         <td>{{$.SchoolName .School}}</td>
         <td class="right">{{.SpellLevel}}</td>

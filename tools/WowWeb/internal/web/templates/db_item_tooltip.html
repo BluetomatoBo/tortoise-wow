@@ -5,11 +5,15 @@
        what a player reading it expects: name, binding, slot, what it does, what
        it adds, what it costs. */ -}}
 <div class="tt" role="tooltip">
-  <div class="tt-name {{.QualityClass .Item.Quality}}">{{.Item.Name}}</div>
-
-  {{if .Item.Bonding}}<div class="tt-bind">{{.BondingName .Item.Bonding}}</div>{{end}}
+  <div class="tt-head">
+    {{with .ItemIcon .Item.DisplayID}}<img class="ico ico-tt" src="{{.}}" alt="" width="36" height="36">{{end}}
+    <div>
+      <div class="tt-name {{.QualityClass .Item.Quality}}">{{.Item.Name}}</div>
+      {{if .Item.Bonding}}<div class="tt-bind">{{.BondingName .Item.Bonding}}</div>{{end}}
   {{if .Unique}}<div class="tt-bind">{{.T "db.unique"}}</div>{{end}}
-  {{if .Item.InventoryType}}<div class="tt-slot">{{.InvTypeName .Item.InventoryType}}</div>{{end}}
+      {{if .Item.InventoryType}}<div class="tt-slot">{{.InvTypeName .Item.InventoryType}}</div>{{end}}
+    </div>
+  </div>
 
   {{if .Item.DamageMin}}
     <div class="tt-line">{{.DamageRange .Item}}</div>

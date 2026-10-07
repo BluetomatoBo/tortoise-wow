@@ -19,7 +19,7 @@ import (
 	"tortoiseweb/internal/store"
 )
 
-//go:embed templates/*.html assets/*
+//go:embed templates/*.html assets/* assets/icons
 var templateFS embed.FS
 
 // renderer caches one parsed template set per page.

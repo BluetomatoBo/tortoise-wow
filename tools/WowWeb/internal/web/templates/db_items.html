@@ -42,6 +42,7 @@
       <tr>
         <td><code>{{.Entry}}</code></td>
         <td>
+          {{with $.ItemIcon .DisplayID}}<img class="ico" src="{{.}}" alt="" width="18" height="18" loading="lazy">{{end}}
           <a class="{{$.QualityClass .Quality}}" href="/db/items/{{.Entry}}">{{.Name}}</a>
           {{if .Description}}<span class="muted truncate">{{.Description}}</span>{{end}}
         </td>

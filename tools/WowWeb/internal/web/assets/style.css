@@ -229,3 +229,20 @@ pre {
 .tt-trigger { color: var(--muted); }
 .tt-spell { color: #1eff00; }
 .tt-flavor { margin-top: .35rem; color: #ffd100; font-style: italic; }
+
+/* ---- icons ----
+   The artwork is the 36px set drawn at 18px most of the time, so a 2x screen
+   has real pixels to use. The border and dark backing are not decoration: item
+   icons have transparent corners, and without them a bright icon floats. */
+.ico {
+  width: 18px;
+  height: 18px;
+  vertical-align: -4px;
+  margin-right: .35rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: #05070b;
+}
+.ico-lg { width: 36px; height: 36px; vertical-align: -10px; }
+.ico-tt { margin-right: 0; }
+.tt-head { display: flex; gap: .5rem; align-items: flex-start; margin-bottom: .2rem; }

@@ -68,8 +68,10 @@ type ContentDrop struct {
 
 // ContentLootItem is one item something can drop.
 type ContentLootItem struct {
-	Entry     uint32
-	Name      string
+	Entry uint32
+	Name  string
+	// DisplayID is the client display id the icon is looked up by.
+	DisplayID uint32
 	Chance    float64 // percent
 	MinCount  uint32
 	MaxCount  uint32
@@ -596,7 +598,7 @@ func scanQuestRefs(rows *sql.Rows, prefixes []string, slots int, item uint32) ([
 	return out, rows.Err()
 }
 
-// fillLootNames fills in the names of the items a loot list holds.
+// fillLootNames fills in the name and display id of the items a loot list holds.
 func (s *Store) fillLootNames(ctx context.Context, loc ContentLocale, lists ...[]ContentLootItem) error {
 	seen := map[uint32]bool{}
 	var ids []uint32
@@ -612,13 +614,14 @@ func (s *Store) fillLootNames(ctx context.Context, loc ContentLocale, lists ...[
 		return nil
 	}
 
-	names, err := s.itemNames(ctx, loc, ids)
+	briefs, err := s.itemBriefs(ctx, loc, ids)
 	if err != nil {
 		return err
 	}
 	for _, list := range lists {
 		for i := range list {
-			list[i].Name = names[list[i].Entry]
+			list[i].Name = briefs[list[i].Entry].Name
+			list[i].DisplayID = briefs[list[i].Entry].DisplayID
 		}
 	}
 	return nil

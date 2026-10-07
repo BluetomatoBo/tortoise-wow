@@ -1,6 +1,9 @@
 {{define "content"}}
 <div class="pagehead">
-  <h1 class="{{.QualityClass .Item.Quality}}">{{.Item.Name}}</h1>
+  <h1 class="{{.QualityClass .Item.Quality}}">
+    {{with .ItemIcon .Item.DisplayID}}<img class="ico ico-lg" src="{{.}}" alt="" width="36" height="36">{{end}}
+    {{.Item.Name}}
+  </h1>
   <a class="btn btn-ghost" href="/db/items">{{.T "db.items.title"}}</a>
 </div>
 

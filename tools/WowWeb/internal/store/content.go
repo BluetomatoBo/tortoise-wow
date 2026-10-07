@@ -133,6 +133,10 @@ type ContentItemCount struct {
 	Entry uint32
 	Count uint16
 	Name  string
+	// DisplayID is the item's client display id, carried so the page can draw
+	// the item's icon. It is separate from the name lookup below only because the
+	// name is what a page must have and the icon is what it may have.
+	DisplayID uint32
 }
 
 // ---------------------------------------------------------------------------
@@ -785,21 +789,48 @@ func (s *Store) ContentQuest(ctx context.Context, loc ContentLocale, entry uint3
 	return &quest, nil
 }
 
-// itemNamesQuery loads the names of the given item entries in one round trip.
+// itemNamesQuery loads the names and display ids of the given item entries in one
+// round trip.
 func itemNamesQuery(loc ContentLocale, ids []uint32) (string, []any) {
 	args := make([]any, 0, len(ids))
 	for _, id := range ids {
 		args = append(args, id)
 	}
-	return "SELECT i.entry, " + loc.localized("cl", "i", "name") + " FROM item_template i" +
+	return "SELECT i.entry, " + loc.localized("cl", "i", "name") + ", i.display_id FROM item_template i" +
 		loc.join("cl", "locales_item", "entry", "i") + " WHERE i.entry IN (" + placeholders(len(ids)) + ")", args
 }
 
-// itemNames reads the shown name of each item entry in one round trip. A name
-// that no longer exists comes back as an empty string, which the callers render
-// as the entry number rather than as a blank.
-func (s *Store) itemNames(ctx context.Context, loc ContentLocale, ids []uint32) (map[uint32]string, error) {
-	return s.nameLookup(ctx, "item", ids, func() (string, []any) { return itemNamesQuery(loc, ids) })
+// itemBrief is what a page needs to show an item it only has the entry of: the
+// name to print, and the display id its icon comes from.
+type itemBrief struct {
+	Name      string
+	DisplayID uint32
+}
+
+// itemBriefs reads the shown name and display id of each item entry in one round
+// trip. An entry that no longer exists comes back with an empty name, which the
+// callers render as the entry number rather than as a blank.
+func (s *Store) itemBriefs(ctx context.Context, loc ContentLocale, ids []uint32) (map[uint32]itemBrief, error) {
+	out := make(map[uint32]itemBrief, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	q, args := itemNamesQuery(loc, ids)
+	rows, err := s.World.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("item names: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var entry uint32
+		var brief itemBrief
+		if err := rows.Scan(&entry, &brief.Name, &brief.DisplayID); err != nil {
+			return nil, fmt.Errorf("scan item name: %w", err)
+		}
+		out[entry] = brief
+	}
+	return out, rows.Err()
 }
 
 // SpellNames reads the shown name of each spell entry in one round trip. It is
@@ -849,12 +880,12 @@ func spellNamesQuery(loc ContentLocale, ids []uint32) (string, []any) {
 // fillItemNames adds the name of each referenced item so a quest page can link
 // them without a second round trip per row.
 func (s *Store) fillItemNames(ctx context.Context, loc ContentLocale, groups ...[]ContentItemCount) error {
-	entries := map[uint32]string{}
 	var ids []uint32
+	seen := map[uint32]bool{}
 	for _, group := range groups {
 		for _, it := range group {
-			if _, seen := entries[it.Entry]; !seen {
-				entries[it.Entry] = ""
+			if !seen[it.Entry] {
+				seen[it.Entry] = true
 				ids = append(ids, it.Entry)
 			}
 		}
@@ -863,27 +894,15 @@ func (s *Store) fillItemNames(ctx context.Context, loc ContentLocale, groups ...
 		return nil
 	}
 
-	q, args := itemNamesQuery(loc, ids)
-	rows, err := s.World.QueryContext(ctx, q, args...)
+	briefs, err := s.itemBriefs(ctx, loc, ids)
 	if err != nil {
-		return fmt.Errorf("names for quest items: %w", err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var entry uint32
-		var name string
-		if err := rows.Scan(&entry, &name); err != nil {
-			return fmt.Errorf("scan quest item name: %w", err)
-		}
-		entries[entry] = name
-	}
-	if err := rows.Err(); err != nil {
 		return err
 	}
 
 	for _, group := range groups {
 		for i := range group {
-			group[i].Name = entries[group[i].Entry]
+			group[i].Name = briefs[group[i].Entry].Name
+			group[i].DisplayID = briefs[group[i].Entry].DisplayID
 		}
 	}
 	return nil

@@ -513,6 +513,35 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 > 也是唯一一处服务端之外的地方会往页面里插 HTML —— 插的是同源、由 `html/template`
 > 转义过的服务端片段，脚本里没有一处是自己拼字符串拼出来的。
 
+### 图标
+
+物品与法术的图标来自 `assets/icons/*.png`，栏目对应关系在 `icondata.txt` 里。两者都由
+[`gen_icons.py`](gen_icons.py) 从 **Turtlehead 的 AoWoW 泄露转储**（`Winfidonarleyan/turtle-wow`）生成：
+那个项目已经把客户端的 `ItemDisplayInfo.dbc` / `SpellIcon.dbc` 解析成了两张表
+（`aowow_icons` / `aowow_spellicons`），图标也已经从 MPQ 转成了 PNG，所以不必自己解 DBC 或 BLP。
+
+```bash
+git clone --depth 1 --filter=blob:none --sparse \
+    https://github.com/Winfidonarleyan/turtle-wow /tmp/twdump
+cd /tmp/twdump && git sparse-checkout set \
+    "Dumps/Source Code/18 - Development_Turtlehead Current/main/images/icons"
+
+python3 tools/WowWeb/gen_icons.py \
+    --dump "/tmp/twdump/Dumps/Source Code/18 - Development_Turtlehead Current/main" \
+    --sql  /tmp/aowow.sql --size medium
+```
+
+`--size medium` 是 36×36（11.9 MB，默认），页面平时按 18px 画，所以在 2x 屏上是实打实的像素；
+`--size small`（18×18，4 MB）是四分之一大小。
+
+**覆盖率据实说明**：映射表来自那次转储，因此**转储之后新增的 Turtle 自制 id 不在里面**。
+按本服数据算，物品用到的 display id 有 91.6% 能出图，法术的 spellIconId 是 76%。没有对应的
+条目**不画图**（模板判断 URL 为空就跳过），不会出现 404 的 `<img>`；`icons_test.go` 里有一条
+测试逐个核对「映射里的每个名字都有文件」，这正是最容易出错的地方。
+
+补那部分缺口的正路是从**客户端 MPQ** 补：读 `ItemDisplayInfo.dbc` / `SpellIcon.dbc` 得到新 id 的名字，
+名字没有对应 PNG 的再从 MPQ 解 BLP。这条路需要客户端文件，尚未做。
+
 ### 静态资源的缓存指纹
 
 `style.css` 与 `db-tooltip.js` 都挂在 `/assets/...?v=<8 位十六进制>` 下面，那个值是**两个文件
@@ -1506,6 +1535,40 @@ template (no page shell), so the bow and the page can never disagree.
 > only on `/db` pages). It is also the only place outside the server that puts
 > HTML into a page — and what it inserts is a same-origin fragment the server
 > rendered and escaped. Nothing in the script builds markup out of strings.
+
+## Icons
+
+Item and spell icons are `assets/icons/*.png`, with the id-to-name table in
+`icondata.txt`. Both are produced by [`gen_icons.py`](gen_icons.py) from the
+**Turtlehead AoWoW dump** (`Winfidonarleyan/turtle-wow`): that project has already
+resolved the client's `ItemDisplayInfo.dbc` and `SpellIcon.dbc` into two tables
+(`aowow_icons`, `aowow_spellicons`) and converted the icons from MPQ to PNG, so
+nothing here has to decode a DBC or a BLP.
+
+```bash
+git clone --depth 1 --filter=blob:none --sparse \
+    https://github.com/Winfidonarleyan/turtle-wow /tmp/twdump
+cd /tmp/twdump && git sparse-checkout set \
+    "Dumps/Source Code/18 - Development_Turtlehead Current/main/images/icons"
+
+python3 tools/WowWeb/gen_icons.py \
+    --dump "/tmp/twdump/Dumps/Source Code/18 - Development_Turtlehead Current/main" \
+    --sql  /tmp/aowow.sql --size medium
+```
+
+`--size medium` is the 36x36 set (11.9 MB, the default); the pages draw icons at
+18px, so a 2x screen has real pixels to use. `--size small` is a quarter of that.
+
+**Coverage, stated plainly**: the table comes from that one dump, so **Turtle's
+own ids added after it was taken are not in it**. Against this realm's data, 91.6%
+of the item display ids and 76% of the spell icon ids resolve. An id with no entry
+draws **nothing** (the templates skip an empty URL), so there is no 404ing `<img>`;
+`icons_test.go` walks every mapped name and checks the file is in the binary, which
+is the failure mode of shipping a table and a directory that are built separately.
+
+Filling the gap properly means going to the **client MPQ**: read
+`ItemDisplayInfo.dbc` / `SpellIcon.dbc` for the newer ids, and decode the BLPs whose
+names have no PNG. That needs the client files and has not been done.
 
 ## Cache busting for the static assets
 

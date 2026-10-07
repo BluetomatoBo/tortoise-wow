@@ -42,7 +42,10 @@
   <table class="kv">
     {{range .Quest.RequiredItems}}
       <tr>
-        <th><a href="/db/items/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}#{{.Entry}}{{end}}</a></th>
+        <th>
+          {{with $.ItemIcon .DisplayID}}<img class="ico" src="{{.}}" alt="" width="18" height="18" loading="lazy">{{end}}
+          <a href="/db/items/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}#{{.Entry}}{{end}}</a>
+        </th>
         <td>&times; {{.Count}}</td>
       </tr>
     {{end}}
@@ -75,11 +78,20 @@
     {{if .Quest.RewOrReqMoney}}{{$m := .QuestMoney .Quest.RewOrReqMoney}}<tr><th>{{$m.Label}}</th><td>{{$m.Amount}}</td></tr>{{end}}
     {{if .Quest.RewXP}}<tr><th>{{.T "db.xp"}}</th><td>{{.Quest.RewXP}}</td></tr>{{end}}
     {{range .Quest.RewardItems}}
-      <tr><th><a href="/db/items/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}#{{.Entry}}{{end}}</a></th><td>&times; {{.Count}}</td></tr>
+      <tr>
+        <th>
+          {{with $.ItemIcon .DisplayID}}<img class="ico" src="{{.}}" alt="" width="18" height="18" loading="lazy">{{end}}
+          <a href="/db/items/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}#{{.Entry}}{{end}}</a>
+        </th>
+        <td>&times; {{.Count}}</td>
+      </tr>
     {{end}}
     {{range .Quest.ChoiceItems}}
       <tr>
-        <th><a href="/db/items/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}#{{.Entry}}{{end}}</a></th>
+        <th>
+          {{with $.ItemIcon .DisplayID}}<img class="ico" src="{{.}}" alt="" width="18" height="18" loading="lazy">{{end}}
+          <a href="/db/items/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}#{{.Entry}}{{end}}</a>
+        </th>
         <td>&times; {{.Count}} <span class="pill">{{$.T "db.choice"}}</span></td>
       </tr>
     {{end}}
