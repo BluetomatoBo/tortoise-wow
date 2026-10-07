@@ -606,9 +606,19 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 客户端会为它显示的那张图。大陆行（area 0）特意保留，这样没有自己地图的区域也还能落到大陆图上。
 不在任何框里的点**不画**，不会凭空造一个位置。
 
+> **列名与真实表结构对不上这件事有测试盯着了。** `TestQueriesNameRealColumns` 把
+> `sql/base/*.sql` 里的 `CREATE TABLE` 读出来，逐条检查生成出来的查询里每一个 `alias.column`
+> 是否真的存在于那张表上。它抓的是一类真实发生过的错误：`creature_template` 的键是 `entry`，
+> 而刷怪表 `creature` 的模板 id 列叫 `id`——写成 `c.id` 时 MySQL 报
+> `Unknown column 'c.id' in 'field list'`，Go 侧完全看不出来（查询在碰到服务器之前只是字符串）。
+> 这条和 `TestRelationQueriesBindEveryAlias`（别名有没有被 FROM/JOIN 绑定）合起来覆盖
+> 「查询里的名字是不是真的」，前提是新查询要登记进 `relationQueries()`，否则测不到。
+
 **任务页上真正会出现的是「这些目标在哪儿」**：本服**所有任务的 `PointMapId` 都是 0**（没有任何任务
 设了目标坐标），所以上面那套目标点逻辑在本服永远不会触发。任务页改为查它要求杀的生物/捡的物件
 （`ReqCreatureOrGOId`）的出生点，按区域分组画出来，每个点标注是哪只怪——这才是玩家真正要问的问题。
+本服里负值（也就是物件）目标**全是脚本用的哨兵值**（形如 `-2147481927`，2³¹ 减几），没有一个是真实的
+gameobject，所以那一支实际上不会画出地图；查询本身仍在，数据换了就能用。
 
 ### 任务链与前置任务
 
@@ -1820,7 +1830,19 @@ A world point can fall inside several boxes - a zone and the continent it sits o
 **the smallest one wins**, because that is the map the client would show for it. The
 continent rows (area 0) are kept on purpose so a point in a zone with no map of its own
 still lands on the continent. A point inside no box is **not drawn**: no invented
-positions.
+positions. On this realm every negative (that is, gameobject) objective is a script marker of the
+form `-2147481927` - 2^31 minus something - rather than a real gameobject, so that branch never
+draws a map here; the query stays, and it works the moment the data has real ones.
+
+> **A column that does not exist on the table it is asked for is covered by a test now.**
+> `TestQueriesNameRealColumns` reads the `CREATE TABLE` statements out of `sql/base/*.sql` and
+> checks every `alias.column` a generated query uses against them. It catches a mistake that
+> actually shipped: `creature_template` is keyed by `entry` while the spawn table `creature`
+> carries the template id in a column called `id`, so a query asking for `c.id` gets
+> `Unknown column 'c.id' in 'field list'` from MySQL and nothing in Go notices, because a query
+> is only a string until a server sees it. That, plus `TestRelationQueriesBindEveryAlias` (is the
+> alias bound by a FROM or JOIN at all), covers whether the names in a query are real - as long as
+> a new query is registered in `relationQueries()`, or the test never sees it.
 
 **On a quest page the block that actually appears is "where to find them"**: every quest
 in this realm has `PointMapId = 0`, so the objective-coordinate path above never fires

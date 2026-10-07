@@ -682,18 +682,8 @@ func (s *Store) QuestTargetSpawns(ctx context.Context, loc ContentLocale, creatu
 	var out []QuestTargetSpawn
 
 	if len(creatures) > 0 {
-		q := "SELECT c.id, " + loc.localized("lc", "c", "name") +
-			", t.map, t.position_x, t.position_y, t.position_z" +
-			" FROM creature t JOIN creature_template c ON c.entry = t.id" +
-			loc.join("lc", "locales_creature", "entry", "c") +
-			" WHERE t.id IN (" + placeholders(len(creatures)) + ") ORDER BY t.id, t.guid LIMIT ?"
-		args := make([]any, 0, len(creatures)+1)
-		for _, id := range creatures {
-			args = append(args, id)
-		}
-		args = append(args, targetSpawnLimit)
-
-		rows, err := s.World.QueryContext(ctx, q, args...)
+		rows, err := s.World.QueryContext(ctx, targetSpawnQuery(loc, DropCreature, len(creatures)),
+			append(spawnArgs(creatures), targetSpawnLimit)...)
 		if err != nil {
 			return nil, fmt.Errorf("quest target spawns: %w", err)
 		}
@@ -706,18 +696,8 @@ func (s *Store) QuestTargetSpawns(ctx context.Context, loc ContentLocale, creatu
 	}
 
 	if len(objects) > 0 {
-		q := "SELECT g.id, " + loc.localized("lg", "g", "name") +
-			", t.map, t.position_x, t.position_y, t.position_z" +
-			" FROM gameobject t JOIN gameobject_template g ON g.entry = t.id" +
-			loc.join("lg", "locales_gameobject", "entry", "g") +
-			" WHERE t.id IN (" + placeholders(len(objects)) + ") ORDER BY t.id, t.guid LIMIT ?"
-		args := make([]any, 0, len(objects)+1)
-		for _, id := range objects {
-			args = append(args, id)
-		}
-		args = append(args, targetSpawnLimit)
-
-		rows, err := s.World.QueryContext(ctx, q, args...)
+		rows, err := s.World.QueryContext(ctx, targetSpawnQuery(loc, DropGameObject, len(objects)),
+			append(spawnArgs(objects), targetSpawnLimit)...)
 		if err != nil {
 			return nil, fmt.Errorf("quest target object spawns: %w", err)
 		}
@@ -733,6 +713,35 @@ func (s *Store) QuestTargetSpawns(ctx context.Context, loc ContentLocale, creatu
 	}
 
 	return out, nil
+}
+
+// targetSpawnQuery reads the spawn points of a set of creatures or gameobjects.
+//
+// The entry is selected from the *template's* own key column. The spawn table
+// carries the template id in a column called `id` while the template tables are
+// keyed by `entry`, so "c.id" asks a table for a column it does not have - which
+// MySQL answers with "Unknown column 'c.id' in 'field list'" on the page.
+func targetSpawnQuery(loc ContentLocale, kind DropKind, n int) string {
+	if kind == DropGameObject {
+		return "SELECT g.entry, " + loc.localized("lg", "g", "name") +
+			", t.map, t.position_x, t.position_y, t.position_z" +
+			" FROM gameobject t JOIN gameobject_template g ON g.entry = t.id" +
+			loc.join("lg", "locales_gameobject", "entry", "g") +
+			" WHERE t.id IN (" + placeholders(n) + ") ORDER BY t.id, t.guid LIMIT ?"
+	}
+	return "SELECT c.entry, " + loc.localized("lc", "c", "name") +
+		", t.map, t.position_x, t.position_y, t.position_z" +
+		" FROM creature t JOIN creature_template c ON c.entry = t.id" +
+		loc.join("lc", "locales_creature", "entry", "c") +
+		" WHERE t.id IN (" + placeholders(n) + ") ORDER BY t.id, t.guid LIMIT ?"
+}
+
+func spawnArgs(entries []uint32) []any {
+	args := make([]any, 0, len(entries)+1)
+	for _, entry := range entries {
+		args = append(args, entry)
+	}
+	return args
 }
 
 // scanTargetSpawns reads the (id, name, map, x, y, z) shape the two queries share.

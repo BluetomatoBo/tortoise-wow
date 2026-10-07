@@ -127,6 +127,9 @@ func relationQueries() map[string]string {
 		out[string(loc)+" own links"] = questOwnLinksQuery()
 		out[string(loc)+" requirement links"] = questLinkQuery(loc)
 		out[string(loc)+" exclusive group"] = questGroupQuery(loc)
+		for _, kind := range []DropKind{DropCreature, DropGameObject} {
+			out[string(loc)+" target spawns "+string(kind)] = targetSpawnQuery(loc, kind, 2)
+		}
 		out[string(loc)+" quest titles"] = questTitlesQuery(loc, 3)
 		for _, p := range [][]string{questItemPrefixes("required"), questItemPrefixes("rewarded"), questItemPrefixes("choice")} {
 			slots := 4
