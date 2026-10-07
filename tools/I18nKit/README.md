@@ -41,7 +41,24 @@ cd tools/I18nKit
 
 # 只要那 214 个连标题都没有的
 ./export_missing_quests.py --titles-only -o worklist-titles/
+
+# 只要「玩家现在还能接到」的（推荐；汉化优先做这部分）
+./export_missing_quests.py --obtainable-only -o worklist-live/
 ```
+
+### 「还能接到」是怎么判定的
+
+`--obtainable-only` 要求该任务**有活着的给予者**：
+
+```sql
+EXISTS (SELECT 1 FROM creature_questrelation r JOIN creature s ON s.id = r.id WHERE r.quest = q.entry)
+ OR EXISTS (SELECT 1 FROM gameobject_questrelation r JOIN gameobject s ON s.id = r.id WHERE r.quest = q.entry)
+```
+
+也就是「有关系表记录」**并且**「给予者在 `creature` / `gameobject` 里真有 spawn 行」。
+只看关系表是不够的：任务可以在表里，但给予者已经被删掉或从未放置，玩家永远见不到。
+
+这个条件把范围从 214/855/850/528 收到 **175/748/743/481**（约砍掉 12%）。
 
 ### 产出三个文件
 
@@ -133,7 +150,25 @@ cd tools/I18nKit
 
 # only the 214 with no Chinese title at all
 ./export_missing_quests.py --titles-only -o worklist-titles/
+
+# only quests a player can still pick up (recommended; translate these first)
+./export_missing_quests.py --obtainable-only -o worklist-live/
 ```
+
+### How "still obtainable" is decided
+
+`--obtainable-only` requires the quest to have a **live giver**:
+
+```sql
+EXISTS (SELECT 1 FROM creature_questrelation r JOIN creature s ON s.id = r.id WHERE r.quest = q.entry)
+ OR EXISTS (SELECT 1 FROM gameobject_questrelation r JOIN gameobject s ON s.id = r.id WHERE r.quest = q.entry)
+```
+
+That is: a relation row **and** a spawn row for the giver in `creature` / `gameobject`.
+The relation table alone is not enough - a quest can be listed while its giver has been
+removed or was never placed, in which case no player will ever see it.
+
+The condition narrows the work from 214/855/850/528 to **175/748/743/481** (about 12% less).
 
 ### What you get
 

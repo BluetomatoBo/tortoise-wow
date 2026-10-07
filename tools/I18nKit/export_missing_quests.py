@@ -69,7 +69,20 @@ TSV_COLUMNS = [
 ]
 
 
-def build_sql(titles_only):
+# A quest counts as still obtainable when a giver for it exists in the world:
+# a creature or game object with at least one spawn row. quest_template alone
+# cannot answer this - a quest can be in the table with no one to hand it out.
+OBTAINABLE = """(
+    EXISTS (SELECT 1 FROM `creature_questrelation` r
+              JOIN `creature` s ON s.`id` = r.`id`
+             WHERE r.`quest` = q.`entry`)
+ OR EXISTS (SELECT 1 FROM `gameobject_questrelation` r
+              JOIN `gameobject` s ON s.`id` = r.`id`
+             WHERE r.`quest` = q.`entry`)
+  )"""
+
+
+def build_sql(titles_only, obtainable_only):
     """The worklist query.
 
     "Missing" means: the English column has text and the corresponding *_loc4
@@ -89,6 +102,8 @@ def build_sql(titles_only):
     locale_select = ", ".join(
         "COALESCE(l.`%s_loc4`, '')" % loc for loc, _en, _zh, _label in COLUMNS
     )
+    if obtainable_only:
+        conditions = "(%s) AND %s" % (conditions, OBTAINABLE)
     return """
 SELECT
   q.`entry`, COALESCE(q.`QuestLevel`, 0), COALESCE(q.`MinLevel`, 0), COALESCE(q.`MaxLevel`, 0),
@@ -391,6 +406,9 @@ def main():
                         help="directory to write the three files into (default: worklist)")
     parser.add_argument("--titles-only", action="store_true",
                         help="only quests with no Chinese title at all (the 214)")
+    parser.add_argument("--obtainable-only", action="store_true",
+                        help="only quests a player can still pick up: the quest must have a "
+                             "creature or game object giver that actually spawns in the world")
     args = parser.parse_args()
 
     mysql = args.mysql
@@ -402,7 +420,7 @@ def main():
     if not mysql:
         sys.exit("error: neither mysql nor mariadb is on PATH; pass --mysql")
 
-    sql = build_sql(args.titles_only)
+    sql = build_sql(args.titles_only, args.obtainable_only)
     rows, dropped = parse_tsv(run_query(mysql, args, args.database, sql))
     if dropped:
         print("warning: %d row(s) did not have %d fields and were skipped - "
