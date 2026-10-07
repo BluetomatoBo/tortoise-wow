@@ -78,8 +78,9 @@ func TestMapPointMatchesTheGame(t *testing.T) {
 	if math.Abs(x-66) < 1 {
 		t.Errorf("x = %.1f looks like the axes were not swapped", x)
 	}
-	if !strings.HasPrefix(view.Image, "/assets/maps/") || !strings.HasSuffix(view.Image, ".png") {
-		t.Errorf("image = %q", view.Image)
+	if !strings.HasPrefix(view.Image, "/assets/maps/elwynn.png") ||
+		!strings.Contains(view.Image, ".png?v=") {
+		t.Errorf("image = %q; it needs a version, the maps are cached for an hour", view.Image)
 	}
 	if view.Name == "" {
 		t.Error("the map has no name")
@@ -128,7 +129,7 @@ func TestContinentFallbackUsesItsOwnMap(t *testing.T) {
 	if !ok {
 		t.Fatalf("no map for the Kalimdor point %.0f, %.0f", x, y)
 	}
-	if view.Image != "/assets/maps/kalimdor.png" {
+	if !strings.HasPrefix(view.Image, "/assets/maps/kalimdor.png") {
 		t.Errorf("a Kalimdor point fell back to %q", view.Image)
 	}
 }

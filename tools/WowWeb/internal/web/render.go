@@ -117,19 +117,28 @@ func (r *renderer) RenderFragment(w http.ResponseWriter, page string, data any) 
 	_, _ = buf.WriteTo(w)
 }
 
-// assetVersion is a short hash of the embedded stylesheet and script, appended
-// to their URLs as a query string.
+// assetVersion is a short hash of the embedded stylesheet, script and zone maps,
+// appended to their URLs as a query string.
 //
 // Static assets are served with an hour of cache and their names do not change
 // between builds, so without this a returning visitor keeps the old style.css
 // after a deploy - and a tooltip whose layout changed in that deploy arrives
-// looking broken until somebody thinks to hard-reload. The hash is over the file
-// contents, so the URL changes exactly when a file does.
+// looking broken until somebody thinks to hard-reload. The map images are in here
+// for the same reason and a sharper one: they are seventeen megabytes of artwork
+// at fixed paths, and after the maps were fixed a visitor with a cached corner
+// tile would keep seeing exactly the bug that was fixed.
+//
+// The hash is over the file contents, so a URL changes exactly when a file does.
 var assetVersion = func() string {
 	names, err := fs.Glob(templateFS, "assets/*")
 	if err != nil {
 		return "dev"
 	}
+	maps, err := fs.Glob(templateFS, "assets/maps/*.png")
+	if err != nil {
+		return "dev"
+	}
+	names = append(names, maps...)
 	sort.Strings(names)
 	h := sha256.New()
 	for _, name := range names {

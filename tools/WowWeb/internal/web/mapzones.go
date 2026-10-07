@@ -34,6 +34,17 @@ import (
 //go:embed mapzones.txt
 var mapZonesData string
 
+// mapImage is the URL of a zone's map.
+//
+// The version is the same one the stylesheet carries and it matters more here:
+// map images live at paths that never change, they are served with an hour of
+// cache, and they are seventeen megabytes of artwork - so after a regeneration a
+// visitor would otherwise be shown the previous build's maps, which is a map at
+// the wrong size with the dots in the wrong places.
+func mapImage(dir string) string {
+	return "/assets/maps/" + dir + ".png?v=" + assetVersion
+}
+
 // zoneBox is one zone's map and the world box it covers.
 type zoneBox struct {
 	area                   uint32
@@ -156,7 +167,7 @@ func (p PageData) MapPoint(mapID uint16, x, y float64) (MapView, bool) {
 	px, py := box.marker(x, y)
 	view := MapView{
 		Area:  box.area,
-		Image: "/assets/maps/" + box.dir + ".png",
+		Image: mapImage(box.dir),
 		Name:  p.AreaName(box.area),
 	}
 	view.Markers = append(view.Markers, MapMarker{X: round2(px), Y: round2(py)})
@@ -219,7 +230,7 @@ func (p PageData) mapViews(points []mapPoint) []MapView {
 		byBox[box] = len(views)
 		views = append(views, MapView{
 			Area:    box.area,
-			Image:   "/assets/maps/" + box.dir + ".png",
+			Image:   mapImage(box.dir),
 			Name:    p.AreaName(box.area),
 			Markers: []MapMarker{marker},
 		})
