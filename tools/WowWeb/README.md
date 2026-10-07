@@ -513,6 +513,15 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 > 也是唯一一处服务端之外的地方会往页面里插 HTML —— 插的是同源、由 `html/template`
 > 转义过的服务端片段，脚本里没有一处是自己拼字符串拼出来的。
 
+### 静态资源的缓存指纹
+
+`style.css` 与 `db-tooltip.js` 都挂在 `/assets/...?v=<8 位十六进制>` 下面，那个值是**两个文件
+内容的哈希**（`assetVersion`，编译时算好）。原因是这套资源带 `Cache-Control: max-age=3600`
+而文件名从不变化：改了样式再部署，老访客会在最长一小时内继续用旧 CSS——tooltip 的定位样式
+正好在这一版改过，不处理的话第一眼看起来就是坏的。
+
+哈希只看内容，所以文件没动时 URL 不变（缓存照常命中），文件一改 URL 就变，浏览器必然重新取。
+
 ### 关于性能：那几条全表扫描
 
 关联查询用的是 `item` 列，而**战利品表的主键都从"谁掉"开始**（`creature_loot_template`
@@ -1497,6 +1506,18 @@ template (no page shell), so the bow and the page can never disagree.
 > only on `/db` pages). It is also the only place outside the server that puts
 > HTML into a page — and what it inserts is a same-origin fragment the server
 > rendered and escaped. Nothing in the script builds markup out of strings.
+
+## Cache busting for the static assets
+
+`style.css` and `db-tooltip.js` are served under `/assets/...?v=<8 hex digits>`,
+where the value is a **hash of the two files' contents** (`assetVersion`, computed
+at startup). The reason: the assets carry `Cache-Control: max-age=3600` under
+names that never change, so after a deploy a returning visitor keeps the old
+`style.css` for up to an hour - and the tooltip's positioning styles changed in
+that very deploy, so without this the first thing anyone sees is a broken tooltip.
+
+The hash covers the contents only, so an unchanged file keeps its URL (and its
+cache hit) and a changed one forces the fetch.
 
 ## On the full table scans
 

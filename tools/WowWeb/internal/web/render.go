@@ -2,11 +2,14 @@ package web
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -114,8 +117,39 @@ func (r *renderer) RenderFragment(w http.ResponseWriter, page string, data any) 
 	_, _ = buf.WriteTo(w)
 }
 
+// assetVersion is a short hash of the embedded stylesheet and script, appended
+// to their URLs as a query string.
+//
+// Static assets are served with an hour of cache and their names do not change
+// between builds, so without this a returning visitor keeps the old style.css
+// after a deploy - and a tooltip whose layout changed in that deploy arrives
+// looking broken until somebody thinks to hard-reload. The hash is over the file
+// contents, so the URL changes exactly when a file does.
+var assetVersion = func() string {
+	names, err := fs.Glob(templateFS, "assets/*")
+	if err != nil {
+		return "dev"
+	}
+	sort.Strings(names)
+	h := sha256.New()
+	for _, name := range names {
+		b, err := templateFS.ReadFile(name)
+		if err != nil {
+			continue
+		}
+		h.Write(b)
+	}
+	return hex.EncodeToString(h.Sum(nil))[:8]
+}()
+
 func templateFuncs() template.FuncMap {
 	return template.FuncMap{
+		// asset builds a versioned URL for an embedded static file, so a deploy
+		// that changes one reaches the browsers that cached the old one.
+		"asset": func(name string) string {
+			return "/assets/" + name + "?v=" + assetVersion
+		},
+
 		// Presentation-only helpers. Display names (rank, race, class, flags)
 		// are methods on PageData instead, because they need the request's
 		// language and the FuncMap is shared by every request.

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{if .Title}}{{.Title}} &middot; {{end}}{{.Config.SiteName}}</title>
-<link rel="stylesheet" href="/assets/style.css">
-{{if eq .Active "db"}}<script src="/assets/db-tooltip.js" defer></script>{{end}}
+<link rel="stylesheet" href="{{asset "style.css"}}">
+{{if eq .Active "db"}}<script src="{{asset "db-tooltip.js"}}" defer></script>{{end}}
 </head>
 <body>
 <header class="topbar">
