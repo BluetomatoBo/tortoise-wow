@@ -552,13 +552,17 @@ python3 tools/WowWeb/gen_icons.py --dump ... --sql /tmp/aowow.sql   # 重跑，�
 
 | | 有映射 | 其中有图 |
 |---|---|---|
-| 物品 display_id | 12209 / 12250（99.7%） | 11918（97.3%） |
-| 法术 spellIconId | 1219 / 1220（99.9%） | 1097（89.9%） |
+| 物品 display_id | 12250 / 12250（100%） | 12203（99.6%） |
+| 法术 spellIconId | 1220 / 1220（100%） | 1216（99.7%） |
 
-缺图的那批是**客户端自己也没有的图**：DBC 里登记了名字，但客户端从来没有发布过对应的 BLP
-（多为资料片图标名）。没有图就**不画图标**——模板判断 URL 为空直接跳过，不会出现 404 的 `<img>`。
+剩下的 0.4% 是**客户端自己也没有的图**：DBC 里登记了名字，但客户端从来没发布过对应的 BLP
+（`ability_temp`、`frostbolt_test` 这类占位名）。没有图就**不画图标**——模板判断 URL 为空直接跳过，
+不会出现 404 的 `<img>`。
+
 `icons_test.go` 有一条测试逐个核对「映射里的每个名字都有文件」，这正是「表与目录分开生成」
-最容易出的错。
+最容易出的错。另有一个坑：客户端有些图标的名字带着**撇号、`&`、空格**（`btnmur'gulstaff`、
+`inv_misc_fork&knife`），而 `go:embed` 拒绝这样的文件名——生成器会把 `[a-z0-9_.-]` 之外的字符
+规范化成 `_`，并检查规范化之后没有两个名字撞车（撞车就报错，不静默覆盖）。
 
 ### 静态资源的缓存指纹
 
@@ -1598,14 +1602,21 @@ python3 tools/WowWeb/gen_icons.py --dump ... --sql /tmp/aowow.sql   # rerun, it 
 
 | | mapped | with a file |
 |---|---|---|
-| item display ids | 12209 / 12250 (99.7%) | 11918 (97.3%) |
-| spell icon ids | 1219 / 1220 (99.9%) | 1097 (89.9%) |
+| item display ids | 12250 / 12250 (100%) | 12203 (99.6%) |
+| spell icon ids | 1220 / 1220 (100%) | 1216 (99.7%) |
 
-What is still missing is art **the client itself does not have**: the DBCs name it,
-but no BLP was ever shipped for it (mostly later-expansion icon names). An id with no
-file draws **nothing** - the templates skip an empty URL, so there is no 404ing
-`<img>`. `icons_test.go` walks every mapped name and checks the file is in the binary,
-which is the failure mode of building the table and the directory separately.
+What is still missing is art **the client itself does not have**: the DBCs name it, but
+no BLP was ever shipped for it (placeholders like `ability_temp` and `frostbolt_test`).
+An id with no file draws **nothing** - the templates skip an empty URL, so there is no
+404ing `<img>`.
+
+`icons_test.go` walks every mapped name and checks the file is in the binary, which is
+the failure mode of building the table and the directory separately. There is a second
+trap: some of the client's icon names contain an apostrophe, an ampersand or a space
+(`btnmur'gulstaff`, `inv_misc_fork&knife`), and `go:embed` refuses to build with such a
+file name. The generator rewrites anything outside `[a-z0-9_.-]` to `_`, and refuses to
+run if that makes two names collide rather than quietly letting one stand in for the
+other.
 
 ## Cache busting for the static assets
 

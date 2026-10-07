@@ -196,6 +196,20 @@ def read_dbc(path):
     return rows, string
 
 
+def safe_name(name):
+    """A name that a file, an embed pattern and a URL all accept.
+
+    Some of the client's icons have characters in their DBC name that cannot go
+    in an embedded file name or in a URL - this client has an apostrophe
+    (btnmur'gulstaff), an ampersand and a space. go:embed refuses to build with
+    such a file, so the name is normalised to [a-z0-9_.-] before it is used as
+    the file name. The name is only a key: what matters is that icondata.txt and
+    the file agree. main() reports a collision rather than overwriting one icon
+    with another.
+    """
+    return re.sub(r"[^a-z0-9_.-]", "_", name)
+
+
 def icon_name(raw):
     """Normalise a name from a DBC or a table into the PNG's file name.
 
@@ -216,6 +230,11 @@ def icon_name(raw):
 def _rgb565(v):
     r, g, b = (v >> 11) & 0x1F, (v >> 5) & 0x3F, v & 0x1F
     return ((r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2))
+
+
+class Unsupported(Exception):
+    """A BLP variant this tool cannot read. One odd file in a client is not a
+    reason to abandon the other seven hundred, so the caller reports and skips."""
 
 
 class Window:
@@ -344,7 +363,7 @@ def _read_blp1(data):
         else:
             _dxt1(block, w, h, image)
     else:
-        sys.exit("unsupported BLP1 compression %d" % compression)
+        raise Unsupported("BLP1 compression %d" % compression)
     return w, h, image
 
 
@@ -355,7 +374,7 @@ def _read_blp2(data):
     sizes = struct.unpack_from("<16I", data, 84)
     block = data[offsets[0]:offsets[0] + sizes[0]]
     image = _blank(w, h)
-    if encoding == 1:  # raw BGRA
+    if encoding in (1, 3):  # raw BGRA; the client uses 1 and 3 for 4-byte pixels
         for y in range(h):
             for x in range(w):
                 i = (y * w + x) * 4
@@ -368,7 +387,7 @@ def _read_blp2(data):
         else:
             _dxt3(block, w, h, image)
     else:
-        sys.exit("unsupported BLP2 encoding %d" % encoding)
+        raise Unsupported("BLP2 encoding %d" % encoding)
     return w, h, image
 
 
@@ -428,11 +447,11 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     copied = 0
     for name in names:
-        dest = os.path.join(out_dir, name)
+        dest = os.path.join(out_dir, safe_name(os.path.splitext(name)[0].lower()) + ".png")
         if not os.path.exists(dest):
             shutil.copyfile(os.path.join(src_dir, name), dest)
             copied += 1
-    have = {os.path.splitext(n)[0].lower() for n in names}
+    have = {safe_name(os.path.splitext(n)[0].lower()) for n in names}
 
     # --- the mappings ----------------------------------------------------
     items = {i: icon_name(n) for i, n in read_table(args.sql, "aowow_icons").items() if n.strip()}
@@ -473,7 +492,10 @@ def main():
         # hand over by extract_client_icons.py. The second is what covers Turtle's
         # own patch content.
         from_cdn = from_local = 0
+        unreadable = []
         for name in missing:
+            # The BLP is looked up under the name the client uses; the PNG is
+            # written under the name a file and a URL can carry.
             blp = None if args.no_client else client.icon_blp(name)
             if blp:
                 from_cdn += 1
@@ -482,11 +504,17 @@ def main():
                 from_local += 1
             if not blp:
                 continue
-            w, h, image = read_blp(blp)
-            write_png(os.path.join(out_dir, name + ".png"), w, h, image)
-            have.add(name)
+            try:
+                w, h, image = read_blp(blp)
+            except Unsupported as exc:
+                unreadable.append("%s (%s)" % (name, exc))
+                continue
+            write_png(os.path.join(out_dir, safe_name(name) + ".png"), w, h, image)
+            have.add(safe_name(name))
             drawn += 1
         print("  从清单 CDN 的 BLP 解码 %d 个，从 --blp-dir 解码 %d 个" % (from_cdn, from_local))
+        if unreadable:
+            print("  读不了的 BLP %d 个：%s" % (len(unreadable), ", ".join(unreadable[:5])))
 
     still = [n for n in missing if n not in have]
     os.makedirs(args.cache, exist_ok=True)
@@ -499,6 +527,18 @@ def main():
         print("  然后重跑本脚本；名单已经写到 %s" % needed_path)
 
     # --- what ships ------------------------------------------------------
+    # Names that differ only in the characters safe_name() rewrites would land on
+    # the same file: one icon would silently stand in for another. There are none
+    # today; the check is here so that a future client cannot introduce it quietly.
+    seen = {}
+    for name in sorted(set(items.values()) | set(spells.values())):
+        clash = seen.get(safe_name(name))
+        if clash and clash != name:
+            sys.exit("icon names collide after normalising: %r and %r" % (clash, name))
+        seen[safe_name(name)] = name
+
+    items = {i: safe_name(n) for i, n in items.items()}
+    spells = {i: safe_name(n) for i, n in spells.items()}
     kept_items = [(i, n) for i, n in sorted(items.items()) if n in have]
     kept_spells = [(i, n) for i, n in sorted(spells.items()) if n in have]
     with open(data_path, "w", encoding="utf-8") as f:
