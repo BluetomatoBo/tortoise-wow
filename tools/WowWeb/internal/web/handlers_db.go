@@ -341,6 +341,25 @@ func (s *Server) handleDBItems(w http.ResponseWriter, r *http.Request, page *Pag
 	})
 }
 
+// dbItemSetView is the "this item is part of a set" block on the item page.
+type dbItemSetView struct {
+	Name    string
+	Pieces  []dbItemSetPiece
+	Bonuses []SetBonus
+	// ClientListed is true when the pieces came from the client's own set list
+	// rather than from the item templates, which happens when the server's data
+	// does not use the set at all.
+	ClientListed bool
+}
+
+// dbItemSetPiece is one item of a set, with the one being viewed marked.
+type dbItemSetPiece struct {
+	Entry     uint32
+	Name      string
+	Icon      string
+	IsCurrent bool
+}
+
 type dbItemView struct {
 	PageData
 	Item store.ContentItem
@@ -349,7 +368,13 @@ type dbItemView struct {
 	// itself is still worth showing, so the handler leaves this empty and the
 	// template skips the sections.
 	Relations *store.ItemRelations
-	Query     string
+	// Set is the item's set, when it is in one. Its pieces and bonuses only exist
+	// in the client's ItemSet.dbc, which the server never loads.
+	Set *dbItemSetView
+	// Disenchant is what an enchanter gets for the item, when it can be broken
+	// down at all.
+	Disenchant []store.ContentLootItem
+	Query      string
 }
 
 func (s *Server) handleDBItem(w http.ResponseWriter, r *http.Request, page *PageData) {
@@ -376,9 +401,98 @@ func (s *Server) handleDBItem(w http.ResponseWriter, r *http.Request, page *Page
 		return
 	}
 
+	itemSet, err := s.itemSet(r, page, loc, item)
+	if err != nil {
+		s.serverError(w, r, "load item set", err)
+		return
+	}
+
+	disenchant, err := s.store.ItemDisenchant(r.Context(), loc, item.DisenchantID)
+	if err != nil {
+		s.serverError(w, r, "load disenchant", err)
+		return
+	}
+
 	page.Title = item.Name
 	page.Active = "db"
-	s.rend.Render(w, http.StatusOK, "db_item", dbItemView{PageData: *page, Item: *item, Relations: relations})
+	s.rend.Render(w, http.StatusOK, "db_item", dbItemView{
+		PageData: *page, Item: *item, Relations: relations, Set: itemSet,
+		Disenchant: disenchant,
+	})
+}
+
+// itemSet builds the set block for an item, or nil when the item is in no set.
+//
+// The pieces come from the server's own data - every item template stores the set
+// it belongs to - and fall back to the client's list (ItemSet.dbc) when no item
+// carries the set. The name and the bonuses only exist in that DBC, so those
+// always come from it.
+func (s *Server) itemSet(r *http.Request, page *PageData, loc store.ContentLocale, item *store.ContentItem) (*dbItemSetView, error) {
+	if item.SetID == 0 {
+		return nil, nil
+	}
+	view := &dbItemSetView{
+		Name:    page.ItemSetName(item.SetID),
+		Bonuses: page.SetBonuses(item.SetID),
+	}
+
+	pieces, err := s.store.ItemsInSet(r.Context(), loc, item.SetID)
+	if err != nil {
+		return nil, err
+	}
+	if len(pieces) == 0 {
+		// The set is only in the client's data. Look its pieces up so the page can
+		// still show them.
+		ids := page.SetPieces(item.SetID)
+		briefs, err := s.store.ItemBriefs(r.Context(), loc, ids)
+		if err != nil {
+			return nil, err
+		}
+		for _, id := range ids {
+			pieces = append(pieces, store.ContentItemCount{
+				Entry: id, Count: 1, Name: briefs[id].Name, DisplayID: briefs[id].DisplayID,
+			})
+		}
+		view.ClientListed = true
+	}
+
+	for _, piece := range pieces {
+		view.Pieces = append(view.Pieces, dbItemSetPiece{
+			Entry:     piece.Entry,
+			Name:      piece.Name,
+			Icon:      page.ItemIcon(piece.DisplayID),
+			IsCurrent: piece.Entry == item.Entry,
+		})
+	}
+
+	// The bonus spells are stored as ids; a player reads names.
+	if len(view.Bonuses) > 0 {
+		ids := make([]uint32, 0, len(view.Bonuses))
+		for _, bonus := range view.Bonuses {
+			ids = append(ids, bonus.SpellID)
+		}
+		names, err := s.store.SpellNames(r.Context(), loc, ids)
+		if err != nil {
+			return nil, err
+		}
+		for i := range view.Bonuses {
+			view.Bonuses[i].Name = names[view.Bonuses[i].SpellID]
+		}
+	}
+	return view, nil
+}
+
+// questTargets splits the "kill or collect" ids a quest stores into creatures and
+// gameobjects: the core writes a gameobject as the negative of its entry.
+func questTargets(quest *store.ContentQuest) (creatures, objects []uint32) {
+	for _, target := range quest.RequiredMobs {
+		if target.IsGameObject {
+			objects = append(objects, target.Entry)
+			continue
+		}
+		creatures = append(creatures, target.Entry)
+	}
+	return creatures, objects
 }
 
 // dbTooltipView is the hover tooltip for one item.
@@ -582,9 +696,13 @@ type dbQuestView struct {
 	Quest store.ContentQuest
 	// Relations are who hands the quest out and who takes it back.
 	Relations *store.QuestRelations
-	// Point is the objective on a map, when the quest has one.
+	// Point is the objective on a map, when the quest has one. On this realm no
+	// quest sets those coordinates, so Targets is the block that usually shows.
 	Point *MapView
-	Query string
+	// Targets are the zones where the creatures and objects the quest asks for
+	// live, one map per zone.
+	Targets []MapView
+	Query   string
 	// HasText lists the prose blocks that are present, so the page can skip the
 	// ones that are empty rather than printing empty headings.
 	HasDetails    bool
@@ -633,6 +751,21 @@ func (s *Server) handleDBQuest(w http.ResponseWriter, r *http.Request, page *Pag
 		}
 	}
 
+	// Where the things it asks for are. A quest's own objective coordinates are
+	// the better answer when they exist, so this only runs when they do not.
+	var targets []MapView
+	if point == nil {
+		creatures, objects := questTargets(quest)
+		if len(creatures) > 0 || len(objects) > 0 {
+			spawns, err := s.store.QuestTargetSpawns(r.Context(), loc, creatures, objects)
+			if err != nil {
+				s.serverError(w, r, "load quest targets", err)
+				return
+			}
+			targets = page.TargetMaps(spawns)
+		}
+	}
+
 	page.Title = quest.Title
 	page.Active = "db"
 	s.rend.Render(w, http.StatusOK, "db_quest", dbQuestView{
@@ -640,6 +773,7 @@ func (s *Server) handleDBQuest(w http.ResponseWriter, r *http.Request, page *Pag
 		Quest:         *quest,
 		Relations:     relations,
 		Point:         point,
+		Targets:       targets,
 		HasDetails:    strings.TrimSpace(quest.Details) != "",
 		HasObjectives: strings.TrimSpace(quest.Objectives) != "",
 		HasReward:     strings.TrimSpace(quest.OfferRewardText) != "",

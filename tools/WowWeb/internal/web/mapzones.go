@@ -161,17 +161,49 @@ func (p PageData) MapPoint(mapID uint16, x, y float64) (MapView, bool) {
 // Points on a map with no zone box are dropped: a coordinate that cannot be
 // placed would otherwise be drawn at a made-up position.
 func (p PageData) SpawnMaps(spawns []store.CreatureSpawn) []MapView {
+	points := make([]mapPoint, 0, len(spawns))
+	for _, spawn := range spawns {
+		points = append(points, mapPoint{
+			Map: spawn.Map, X: spawn.X, Y: spawn.Y,
+			Label: strconv.FormatFloat(spawn.X, 'f', 1, 64) + ", " +
+				strconv.FormatFloat(spawn.Y, 'f', 1, 64),
+		})
+	}
+	return p.mapViews(points)
+}
+
+// TargetMaps groups where a quest's targets live, one map per zone, with each dot
+// labelled by the creature or object it is.
+func (p PageData) TargetMaps(targets []store.QuestTargetSpawn) []MapView {
+	points := make([]mapPoint, 0, len(targets))
+	for _, target := range targets {
+		points = append(points, mapPoint{
+			Map: target.Map, X: target.X, Y: target.Y, Label: target.Name,
+		})
+	}
+	return p.mapViews(points)
+}
+
+// mapPoint is a world position with the label its dot carries.
+type mapPoint struct {
+	Map   uint16
+	X, Y  float64
+	Label string
+}
+
+// mapViews is the grouping both of the above share.
+func (p PageData) mapViews(points []mapPoint) []MapView {
 	var views []MapView
 	byArea := map[uint32]int{}
 
-	for _, spawn := range spawns {
-		area, ok := ZoneAt(spawn.Map, spawn.X, spawn.Y)
+	for _, point := range points {
+		area, ok := ZoneAt(point.Map, point.X, point.Y)
 		if !ok {
 			continue
 		}
 		box := zoneByArea[area]
-		px, py := box.marker(spawn.X, spawn.Y)
-		marker := MapMarker{X: round2(px), Y: round2(py), Label: coords(xy{spawn.X, spawn.Y})}
+		px, py := box.marker(point.X, point.Y)
+		marker := MapMarker{X: round2(px), Y: round2(py), Label: point.Label}
 
 		if at, seen := byArea[area]; seen {
 			views[at].Markers = append(views[at].Markers, marker)
@@ -186,15 +218,6 @@ func (p PageData) SpawnMaps(spawns []store.CreatureSpawn) []MapView {
 		})
 	}
 	return views
-}
-
-// xy is a pair of world coordinates, for the helper below.
-type xy struct{ x, y float64 }
-
-// coords formats a world position the way the game shows it, which is how a
-// player gets from the map to "go to 42, 66".
-func coords(p xy) string {
-	return strconv.FormatFloat(p.x, 'f', 1, 64) + ", " + strconv.FormatFloat(p.y, 'f', 1, 64)
 }
 
 // MapPointLabel is the caption for a single quest objective point.

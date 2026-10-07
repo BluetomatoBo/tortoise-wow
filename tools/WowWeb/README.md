@@ -516,6 +516,18 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 > 也是唯一一处服务端之外的地方会往页面里插 HTML —— 插的是同源、由 `html/template`
 > 转义过的服务端片段，脚本里没有一处是自己拼字符串拼出来的。
 
+### 套装与分解
+
+物品页上还有两块，数据都在客户端或那张小表里：
+
+- **套装**：`ItemSet.dbc` 给出套装名（bilingual：英文名后第 4 格是中文）与**套装奖励**——8 组
+  「(N) 件套：法术」；部件列表则以**服务器数据为准**（`item_template.set_id`），因为每件物品自己
+  就记着它属于哪个套装。两边不一致时页面跟着服务器走：本服有 11 个套装两边不同（见下）。
+- **分解**：`disenchant_loot_template` 给出分解结果。键是 **`item_template.disenchant_id` 这一列**，
+  不是那张表注释里推荐的 `item_level*100+quality`——核心也是这么读的（`Player.cpp` 里
+  `FillLoot(proto->DisenchantID, LootTemplates_Disenchant, ...)`）。表的形状与其它掉落表一致，
+  所以复用同一个读取器（含引用展开）。传说物品的 `disenchant_id` 是 0，页面上就不会出现这一块。
+
 ### 出没位置与目标点（地图）
 
 生物页画出这只怪的出生点、任务页画出目标点，都落在客户端自己的区域地图上。两样东西齐了才做得到：
@@ -546,6 +558,10 @@ python3 tools/WowWeb/gen_maps.py                          # 重跑，图就画�
 落点逻辑：一个世界点可能同时落在多个框里（区域、以及它所在的大陆），**取最小的那个框**——也就是
 客户端会为它显示的那张图。大陆行（area 0）特意保留，这样没有自己地图的区域也还能落到大陆图上。
 不在任何框里的点**不画**，不会凭空造一个位置。
+
+**任务页上真正会出现的是「这些目标在哪儿」**：本服**所有任务的 `PointMapId` 都是 0**（没有任何任务
+设了目标坐标），所以上面那套目标点逻辑在本服永远不会触发。任务页改为查它要求杀的生物/捡的物件
+（`ReqCreatureOrGOId`）的出生点，按区域分组画出来，每个点标注是哪只怪——这才是玩家真正要问的问题。
 
 ### 把数字变成名字
 
@@ -1626,6 +1642,23 @@ template (no page shell), so the bow and the page can never disagree.
 > HTML into a page — and what it inserts is a same-origin fragment the server
 > rendered and escaped. Nothing in the script builds markup out of strings.
 
+## Sets and disenchanting
+
+Two more blocks on the item page, both fed from the client or from one small table:
+
+* **Sets**: `ItemSet.dbc` holds the set's name (in both languages - the Chinese one
+  sits four slots after the English) and its **bonuses**: eight "(N) pieces: spell"
+  entries. The *piece list* comes from the server's own data
+  (`item_template.set_id`), because every item records the set it belongs to. Where
+  the two disagree the page follows the server: this realm has eleven sets like
+  that (see below).
+* **Disenchanting**: `disenchant_loot_template` says what an enchanter gets. It is
+  keyed by **`item_template.disenchant_id`**, not by the `item_level*100+quality`
+  its own comment recommends - the core reads the column too (`Player.cpp`,
+  `FillLoot(proto->DisenchantID, LootTemplates_Disenchant, ...)`). The table has the
+  same shape as the other loot tables, so it goes through the same reader, reference
+  expansion included. A legendary has `disenchant_id` 0 and the block does not appear.
+
 ## Where it stands, and where the objective is (maps)
 
 A creature page draws the creature's spawn points and a quest page the objective, both on
@@ -1662,6 +1695,12 @@ A world point can fall inside several boxes - a zone and the continent it sits o
 continent rows (area 0) are kept on purpose so a point in a zone with no map of its own
 still lands on the continent. A point inside no box is **not drawn**: no invented
 positions.
+
+**On a quest page the block that actually appears is "where to find them"**: every quest
+in this realm has `PointMapId = 0`, so the objective-coordinate path above never fires
+here. The page instead looks up where the creatures and objects the quest asks for live
+(`ReqCreatureOrGOId`), groups them by zone and labels each dot with what it is - which is
+the question a player actually has.
 
 ## Names for the numbers
 

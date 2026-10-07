@@ -175,3 +175,55 @@ func TestIconsAreServed(t *testing.T) {
 		t.Errorf("no Cache-Control on an icon")
 	}
 }
+
+// TestItemPageShowsSetAndDisenchant covers the two blocks the item page gained:
+// the set an item belongs to and what an enchanter gets for it.
+func TestItemPageShowsSetAndDisenchant(t *testing.T) {
+	rend, err := newRenderer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := namePage(t, i18n.ZH)
+
+	render := func(view any) string {
+		var buf bytes.Buffer
+		if err := rend.cache["db_item"].ExecuteTemplate(&buf, "layout", view); err != nil {
+			t.Fatalf("render: %v", err)
+		}
+		return buf.String()
+	}
+
+	// An item in a set, with a disenchant result.
+	view := dbItemView{PageData: page,
+		Item: store.ContentItem{Entry: 70509, Name: "秩序之源头盔", Class: 4, SubClass: 4, SetID: 1,
+			DisenchantID: 65},
+		Set: &dbItemSetView{
+			Name: "角斗士",
+			Pieces: []dbItemSetPiece{
+				{Entry: 70509, Name: "秩序之源头盔", IsCurrent: true},
+				{Entry: 70510, Name: "秩序之源护肩"},
+			},
+			Bonuses: []SetBonus{{Pieces: 2, SpellID: 15666, Name: "套装效果（2 件）"}},
+		},
+		Disenchant: []store.ContentLootItem{{Entry: 12363, Name: "连结水晶", Chance: 100, MinCount: 1, MaxCount: 1}},
+	}
+	got := render(view)
+	for _, want := range []string{"角斗士", "秩序之源护肩", "当前物品", "套装奖励", "连结水晶", "100.0%"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the item page is missing %q:\n%s", want, first(got, 1500))
+		}
+	}
+	// The piece being viewed is marked, the others are not.
+	if strings.Count(got, "当前物品") != 1 {
+		t.Errorf("the current-item marker appears %d times, want 1", strings.Count(got, "当前物品"))
+	}
+
+	// An item in no set and with nothing to disenchant shows neither block.
+	plain := render(dbItemView{PageData: page,
+		Item: store.ContentItem{Entry: 5, Name: "螺丝", Class: 7}})
+	for _, unwanted := range []string{"套装奖励", "分解得到", "当前物品"} {
+		if strings.Contains(plain, unwanted) {
+			t.Errorf("a plain item printed %q:\n%s", unwanted, first(plain, 900))
+		}
+	}
+}

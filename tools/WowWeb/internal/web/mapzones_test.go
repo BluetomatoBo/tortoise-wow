@@ -200,3 +200,49 @@ func TestMapFilesExist(t *testing.T) {
 		}
 	}
 }
+
+// TestTargetMapsLabelsDots covers the quest page's block: the dots have to be
+// labelled by the creature or object they belong to, not by a raw coordinate, or
+// a map with four dots says nothing about which is which.
+func TestTargetMapsLabelsDots(t *testing.T) {
+	page := namePage(t, i18n.ZH)
+	views := page.TargetMaps([]store.QuestTargetSpawn{
+		{Entry: 1561, Name: "血帆劫掠者", Map: 0, X: -9466.4, Y: 21.4},
+		{Entry: 1562, Name: "血帆法师", Map: 0, X: -9450, Y: 40},
+		{Entry: 4001, Name: "通缉告示", IsGameObject: true, Map: 0, X: -9450, Y: 40},
+	})
+	if len(views) != 1 {
+		t.Fatalf("got %d maps, want 1 (all three points are in Elwynn)", len(views))
+	}
+	if len(views[0].Markers) != 3 {
+		t.Fatalf("got %d dots, want 3", len(views[0].Markers))
+	}
+	for _, marker := range views[0].Markers {
+		if marker.Label == "" {
+			t.Errorf("a dot has no label: %+v", marker)
+		}
+		if strings.Contains(marker.Label, "46") {
+			t.Errorf("the dot is labelled with coordinates, not a name: %q", marker.Label)
+		}
+	}
+}
+
+// TestQuestTargetsSplit covers the helper that reads a quest's "kill or collect"
+// ids: the core writes a gameobject as the negative of its entry, and a page that
+// looks those up as creatures finds nothing.
+func TestQuestTargetsSplit(t *testing.T) {
+	quest := &store.ContentQuest{
+		RequiredMobs: []store.ContentCreatureCount{
+			{Entry: 1561, Count: 5},
+			{Entry: 4001, IsGameObject: true, Count: 1},
+			{Entry: 2546, Count: 2},
+		},
+	}
+	creatures, objects := questTargets(quest)
+	if len(creatures) != 2 || creatures[0] != 1561 || creatures[1] != 2546 {
+		t.Errorf("creatures = %v", creatures)
+	}
+	if len(objects) != 1 || objects[0] != 4001 {
+		t.Errorf("objects = %v", objects)
+	}
+}

@@ -848,5 +848,10 @@
   "db.tooltip.hint": "鼠标停在物品链接上会浮出它的属性；键盘 Tab 到链接也一样。",
   "db.spawns": "出没位置",
   "db.spawnsTruncated": "这只生物的出生点很多，地图上只画出了前 200 个。",
-  "db.questPoint": "目标位置"
+  "db.questPoint": "目标位置",
+  "db.setThis": "当前物品",
+  "db.setBonus": "套装奖励：",
+  "db.setFromClient": "服务器数据里没有物品引用这个套装，这里的部件取自客户端自己的列表。",
+  "db.disenchant": "分解得到",
+  "db.questTargets": "这些目标在哪儿"
 }

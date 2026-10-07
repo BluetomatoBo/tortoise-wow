@@ -2,6 +2,7 @@ package web
 
 import (
 	_ "embed"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -57,6 +58,8 @@ var (
 	questSortNames = map[uint32]dbcName{}
 	subclassNames  = map[subclassKey]dbcName{}
 	itemSetNames   = map[uint32]dbcName{}
+	setItems       = map[uint32][]uint32{}
+	setBonuses     = map[uint32][]SetBonus{}
 )
 
 // maxID is the value a DBC pads unused key columns with (0xFFFFFFFF); it is not
@@ -69,11 +72,42 @@ func init() {
 			continue
 		}
 		field := strings.Split(line, "\t")
-		if len(field) < 4 {
+		if len(field) < 3 {
 			continue
 		}
 		kind := field[0]
+		switch kind {
+		case "SETITEM":
+			if len(field) != 3 {
+				continue
+			}
+			set, err1 := strconv.ParseUint(field[1], 10, 32)
+			item, err2 := strconv.ParseUint(field[2], 10, 32)
+			if err1 == nil && err2 == nil {
+				setItems[uint32(set)] = append(setItems[uint32(set)], uint32(item))
+			}
+			continue
+		case "SETBONUS":
+			if len(field) != 4 {
+				continue
+			}
+			set, err1 := strconv.ParseUint(field[1], 10, 32)
+			pieces, err2 := strconv.ParseUint(field[2], 10, 32)
+			spell, err3 := strconv.ParseUint(field[3], 10, 32)
+			if err1 == nil && err2 == nil && err3 == nil {
+				setBonuses[uint32(set)] = append(setBonuses[uint32(set)], SetBonus{
+					Pieces: int(pieces), SpellID: uint32(spell),
+				})
+			}
+			continue
+		}
+
+		// Everything past here carries a name in two languages, last two fields.
+		if len(field) < 4 {
+			continue
+		}
 		name := dbcName{en: field[len(field)-2], zh: field[len(field)-1]}
+
 		if kind == "SUBCLASS" {
 			if len(field) != 5 {
 				continue
@@ -148,9 +182,44 @@ func (p PageData) ItemSetName(id uint32) string {
 	return itemSetNames[id].pick(p.Lang())
 }
 
+// SetBonus is one of an item set's bonuses: the number of pieces that switches it
+// on, and the spell it grants.
+type SetBonus struct {
+	Pieces  int
+	SpellID uint32
+	Name    string
+}
+
+// SetPieces is the client's own list of what is in a set, used when the server's
+// item templates point at a set id but no item carries it.
+func (p PageData) SetPieces(setID uint32) []uint32 {
+	return setItems[setID]
+}
+
+// SetBonuses lists a set's bonuses in the order a player earns them.
+func (p PageData) SetBonuses(setID uint32) []SetBonus {
+	bonuses := setBonuses[setID]
+	out := make([]SetBonus, 0, len(bonuses))
+	for _, b := range bonuses {
+		out = append(out, b)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Pieces != out[j].Pieces {
+			return out[i].Pieces < out[j].Pieces
+		}
+		return out[i].SpellID < out[j].SpellID
+	})
+	return out
+}
+
 // DBCNameCounts reports how many rows each table holds, for the tests and for
 // anyone wondering how much of the client's data is covered.
 func DBCNameCounts() (areas, factions, maps, sorts, subclasses, sets int) {
 	return len(areaNames), len(factionNames), len(mapNames),
 		len(questSortNames), len(subclassNames), len(itemSetNames)
+}
+
+// SetDataCounts reports how many sets have members and bonuses loaded.
+func SetDataCounts() (withItems, withBonuses int) {
+	return len(setItems), len(setBonuses)
 }

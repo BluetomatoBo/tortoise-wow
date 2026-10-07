@@ -44,6 +44,55 @@
   {{end}}
 </section>
 
+{{if .Disenchant}}
+<section class="card">
+  <h2>{{.T "db.disenchant"}}</h2>
+  <table class="kv">
+    {{range .Disenchant}}
+      <tr>
+        <th>
+          {{with $.ItemIcon .DisplayID}}<img class="ico" src="{{.}}" alt="" width="18" height="18" loading="lazy">{{end}}
+          <a href="/db/items/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}#{{.Entry}}{{end}}</a>
+        </th>
+        <td class="right">
+          {{if gt .Chance 0.0}}{{printf "%.1f%%" .Chance}}{{end}}
+          {{if gt .MaxCount 1}}<span class="muted">×{{.MaxCount}}</span>{{else if gt .MinCount 1}}<span class="muted">×{{.MinCount}}</span>{{end}}
+        </td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{with .Set}}
+<section class="card">
+  <h2>{{$.T "db.set"}} <span class="muted">{{.Name}}</span></h2>
+  <table class="kv">
+    {{range .Pieces}}
+      <tr>
+        <th>
+          {{with .Icon}}<img class="ico" src="{{.}}" alt="" width="18" height="18" loading="lazy">{{end}}
+          <a href="/db/items/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}#{{.Entry}}{{end}}</a>
+          {{if .IsCurrent}}<span class="pill">{{$.T "db.setThis"}}</span>{{end}}
+        </th>
+        <td class="right muted">{{len $.Set.Pieces}}</td>
+      </tr>
+    {{end}}
+  </table>
+  {{if .Bonuses}}
+    <table class="kv">
+      {{range .Bonuses}}
+        <tr>
+          <th class="muted">({{.Pieces}})</th>
+          <td>{{$.T "db.setBonus"}} {{if .Name}}{{.Name}}{{else}}#{{.SpellID}}{{end}}</td>
+        </tr>
+      {{end}}
+    </table>
+  {{end}}
+  {{if .ClientListed}}<p class="hint">{{$.T "db.setFromClient"}}</p>{{end}}
+</section>
+{{end}}
+
 {{if .Item.Stats}}
 <section class="card">
   <h2>{{.T "db.stats"}}</h2>

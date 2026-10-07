@@ -168,8 +168,13 @@ type ContentItem struct {
 	PageText      uint32
 	StartQuest    uint32
 	SetID         uint32
-	Duration      uint32
-	Flags         uint32
+	// DisenchantID is the key into disenchant_loot_template: what an enchanter
+	// gets for breaking the item down. The core reads the same column
+	// (Player.cpp, FillLoot with LootTemplates_Disenchant) - it is a column on the
+	// item, not the item level the loot table's own comment suggests.
+	DisenchantID uint32
+	Duration     uint32
+	Flags        uint32
 
 	Resistances []ContentItemResistance
 	Stats       []ContentItemStat
@@ -250,7 +255,7 @@ func itemColumns(loc ContentLocale) string {
 		i.quality, i.class, i.subclass, i.display_id, i.item_level, i.required_level,
 		i.inventory_type, i.buy_price, i.sell_price, i.max_count, i.stackable,
 		i.armor, i.block, i.delay, i.dmg_min1, i.dmg_max1,
-		i.bonding, i.page_text, i.start_quest, i.set_id, i.duration, i.flags,
+		i.bonding, i.page_text, i.start_quest, i.set_id, i.disenchant_id, i.duration, i.flags,
 		i.holy_res, i.fire_res, i.nature_res, i.frost_res, i.shadow_res, i.arcane_res,
 		i.stat_type1, i.stat_value1, i.stat_type2, i.stat_value2, i.stat_type3, i.stat_value3,
 		i.stat_type4, i.stat_value4, i.stat_type5, i.stat_value5, i.stat_type6, i.stat_value6,
@@ -291,7 +296,7 @@ func (it *ContentItem) scanTargets() []any {
 		&it.Quality, &it.Class, &it.SubClass, &it.DisplayID, &it.ItemLevel, &it.RequiredLevel,
 		&it.InventoryType, &it.BuyPrice, &it.SellPrice, &it.MaxCount, &it.Stackable,
 		&it.Armor, &it.Block, &it.Delay, &it.DamageMin, &it.DamageMax,
-		&it.Bonding, &it.PageText, &it.StartQuest, &it.SetID, &it.Duration, &it.Flags,
+		&it.Bonding, &it.PageText, &it.StartQuest, &it.SetID, &it.DisenchantID, &it.Duration, &it.Flags,
 		&it.holyRes, &it.fireRes, &it.natureRes, &it.frostRes, &it.shadowRes, &it.arcaneRes,
 		&it.statType[0], &it.statValue[0], &it.statType[1], &it.statValue[1],
 		&it.statType[2], &it.statValue[2], &it.statType[3], &it.statValue[3],

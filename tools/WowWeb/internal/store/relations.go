@@ -628,6 +628,172 @@ func (s *Store) fillLootNames(ctx context.Context, loc ContentLocale, lists ...[
 }
 
 // ---------------------------------------------------------------------------
+// Disenchanting
+// ---------------------------------------------------------------------------
+
+// ItemDisenchant lists what an item breaks into for an enchanter.
+//
+// The items come from disenchant_loot_template, keyed by the item's own
+// disenchant_id - the table's comment recommends item_level*100+quality, but the
+// data and the core both use the column (LootTemplates_Disenchant is filled with
+// proto->DisenchantID). The table has the same shape as the other loot tables, so
+// it goes through the same reader, references and all.
+func (s *Store) ItemDisenchant(ctx context.Context, loc ContentLocale, disenchantID uint32) ([]ContentLootItem, error) {
+	if disenchantID == 0 {
+		return nil, nil
+	}
+	items, err := s.scanLootItems(ctx, "disenchant_loot_template", disenchantID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.fillLootNames(ctx, loc, items); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+// QuestTargetSpawn is one place a creature or object a quest asks for stands.
+type QuestTargetSpawn struct {
+	Entry        uint32
+	Name         string
+	IsGameObject bool
+	Map          uint16
+	X, Y, Z      float64
+}
+
+// targetSpawnLimit caps how many points a quest page plots. A quest that asks for
+// a mob living all over a continent would otherwise return thousands.
+const targetSpawnLimit = 200
+
+// QuestTargetSpawns finds where the creatures and objects a quest asks for live.
+//
+// It is what makes a quest page show a map on a realm whose quests have no
+// objective coordinates at all - this one has PointMapId = 0 on every quest - by
+// answering the question a player actually has: where do I find these?
+func (s *Store) QuestTargetSpawns(ctx context.Context, loc ContentLocale, creatures, objects []uint32) ([]QuestTargetSpawn, error) {
+	var out []QuestTargetSpawn
+
+	if len(creatures) > 0 {
+		q := "SELECT c.id, " + loc.localized("lc", "c", "name") +
+			", t.map, t.position_x, t.position_y, t.position_z" +
+			" FROM creature t JOIN creature_template c ON c.entry = t.id" +
+			loc.join("lc", "locales_creature", "entry", "c") +
+			" WHERE t.id IN (" + placeholders(len(creatures)) + ") ORDER BY t.id, t.guid LIMIT ?"
+		args := make([]any, 0, len(creatures)+1)
+		for _, id := range creatures {
+			args = append(args, id)
+		}
+		args = append(args, targetSpawnLimit)
+
+		rows, err := s.World.QueryContext(ctx, q, args...)
+		if err != nil {
+			return nil, fmt.Errorf("quest target spawns: %w", err)
+		}
+		list, err := scanTargetSpawns(rows)
+		rows.Close()
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, list...)
+	}
+
+	if len(objects) > 0 {
+		q := "SELECT g.id, " + loc.localized("lg", "g", "name") +
+			", t.map, t.position_x, t.position_y, t.position_z" +
+			" FROM gameobject t JOIN gameobject_template g ON g.entry = t.id" +
+			loc.join("lg", "locales_gameobject", "entry", "g") +
+			" WHERE t.id IN (" + placeholders(len(objects)) + ") ORDER BY t.id, t.guid LIMIT ?"
+		args := make([]any, 0, len(objects)+1)
+		for _, id := range objects {
+			args = append(args, id)
+		}
+		args = append(args, targetSpawnLimit)
+
+		rows, err := s.World.QueryContext(ctx, q, args...)
+		if err != nil {
+			return nil, fmt.Errorf("quest target object spawns: %w", err)
+		}
+		list, err := scanTargetSpawns(rows)
+		rows.Close()
+		if err != nil {
+			return nil, err
+		}
+		for i := range list {
+			list[i].IsGameObject = true
+		}
+		out = append(out, list...)
+	}
+
+	return out, nil
+}
+
+// scanTargetSpawns reads the (id, name, map, x, y, z) shape the two queries share.
+func scanTargetSpawns(rows *sql.Rows) ([]QuestTargetSpawn, error) {
+	var out []QuestTargetSpawn
+	for rows.Next() {
+		var spawn QuestTargetSpawn
+		if err := rows.Scan(&spawn.Entry, &spawn.Name, &spawn.Map,
+			&spawn.X, &spawn.Y, &spawn.Z); err != nil {
+			return nil, fmt.Errorf("scan target spawn: %w", err)
+		}
+		out = append(out, spawn)
+	}
+	return out, rows.Err()
+}
+
+// ---------------------------------------------------------------------------
+// Item sets
+// ---------------------------------------------------------------------------
+
+// setLimit caps the pieces a set page lists. The largest set in this realm has 17.
+const setLimit = 32
+
+// ItemsInSet lists the items that carry a set id.
+//
+// This is the server's own view of a set: every item template stores the set it
+// belongs to. The client also has a list of its own in ItemSet.dbc, and where the
+// two disagree - this realm has eleven sets like that, where a custom item reuses
+// an old set id - the server's is the one that matches what the item pages say.
+func (s *Store) ItemsInSet(ctx context.Context, loc ContentLocale, setID uint32) ([]ContentItemCount, error) {
+	rows, err := s.World.QueryContext(ctx,
+		"SELECT entry FROM item_template WHERE set_id = ? ORDER BY entry LIMIT ?", setID, setLimit)
+	if err != nil {
+		return nil, fmt.Errorf("items in set %d: %w", setID, err)
+	}
+	defer rows.Close()
+
+	var out []ContentItemCount
+	for rows.Next() {
+		piece := ContentItemCount{Count: 1}
+		if err := rows.Scan(&piece.Entry); err != nil {
+			return nil, fmt.Errorf("scan set piece: %w", err)
+		}
+		out = append(out, piece)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// The names and display ids come from the same lookup the quest rewards use.
+	groups := []*[]ContentItemCount{&out}
+	for _, group := range groups {
+		if err := s.fillItemNames(ctx, loc, *group); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+// ItemBriefs reads the name and display id of the given items. It is exported for
+// the page that shows a set's pieces, which only has their ids.
+func (s *Store) ItemBriefs(ctx context.Context, loc ContentLocale, ids []uint32) (map[uint32]ItemBrief, error) {
+	return s.itemBriefs(ctx, loc, ids)
+}
+
+// ItemBrief is the name and display id of one item.
+type ItemBrief = itemBrief
+
+// ---------------------------------------------------------------------------
 // Spawn points
 // ---------------------------------------------------------------------------
 

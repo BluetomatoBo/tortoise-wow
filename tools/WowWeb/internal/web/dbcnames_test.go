@@ -159,14 +159,83 @@ func TestPagesShowNames(t *testing.T) {
 // dbcnames.txt - a truncated embed would otherwise show up as scattered missing
 // names on live pages.
 func TestDBCNameCountsMatchTheFile(t *testing.T) {
-	lines := 0
+	var nameLines, itemLines, bonusLines int
 	for _, line := range strings.Split(dbcNamesData, "\n") {
-		if line != "" && !strings.HasPrefix(line, "#") {
-			lines++
+		switch {
+		case line == "" || strings.HasPrefix(line, "#"):
+		case strings.HasPrefix(line, "SETITEM\t"):
+			itemLines++
+		case strings.HasPrefix(line, "SETBONUS\t"):
+			bonusLines++
+		default:
+			nameLines++
 		}
 	}
+
 	areas, factions, maps, sorts, subclasses, sets := DBCNameCounts()
-	if sum := areas + factions + maps + sorts + subclasses + sets; sum != lines {
-		t.Errorf("parsed %d rows from %d lines of dbcnames.txt", sum, lines)
+	if sum := areas + factions + maps + sorts + subclasses + sets; sum != nameLines {
+		t.Errorf("parsed %d name rows from %d name lines of dbcnames.txt", sum, nameLines)
+	}
+
+	// Every set line has to end up in one of the two maps: a line the parser skips
+	// is a piece or a bonus that silently goes missing from the item page.
+	var loadedItems, loadedBonuses int
+	for _, items := range setItems {
+		loadedItems += len(items)
+	}
+	for _, bonuses := range setBonuses {
+		loadedBonuses += len(bonuses)
+	}
+	if loadedItems != itemLines {
+		t.Errorf("parsed %d set pieces from %d lines", loadedItems, itemLines)
+	}
+	if loadedBonuses != bonusLines {
+		t.Errorf("parsed %d set bonuses from %d lines", loadedBonuses, bonusLines)
+	}
+}
+
+// TestSetDataLoads covers the set tables: 219 sets are referenced by this realm's
+// items and 494 bonus spells ride on them, all of which have to be in the client
+// data for the item page to say anything useful.
+func TestSetDataLoads(t *testing.T) {
+	withItems, withBonuses := SetDataCounts()
+	t.Logf("套装：%d 个有部件列表，%d 个有奖励", withItems, withBonuses)
+	if withItems < 300 || withBonuses < 300 {
+		t.Fatalf("set tables look truncated: %d / %d", withItems, withBonuses)
+	}
+
+	page := namePage(t, i18n.ZH)
+
+	// Set 1 is "The Gladiator": five pieces and four bonuses.
+	if got := page.ItemSetName(1); got != "角斗士" {
+		t.Errorf("ItemSetName(1) = %q", got)
+	}
+	if pieces := page.SetPieces(1); len(pieces) != 5 {
+		t.Errorf("set 1 has %d pieces: %v", len(pieces), pieces)
+	}
+	bonuses := page.SetBonuses(1)
+	if len(bonuses) != 4 {
+		t.Fatalf("set 1 has %d bonuses: %+v", len(bonuses), bonuses)
+	}
+	// Sorted by the piece count that switches each one on, so a page reads in the
+	// order a player earns them.
+	for i := 1; i < len(bonuses); i++ {
+		if bonuses[i-1].Pieces > bonuses[i].Pieces {
+			t.Errorf("bonuses are out of order: %+v", bonuses)
+			break
+		}
+	}
+	for _, bonus := range bonuses {
+		if bonus.Pieces == 0 || bonus.SpellID == 0 {
+			t.Errorf("bonus with no pieces or spell: %+v", bonus)
+		}
+	}
+
+	// A set nobody uses says nothing rather than inventing an empty one.
+	if pieces := page.SetPieces(999999); len(pieces) != 0 {
+		t.Errorf("unknown set returned %d pieces", len(pieces))
+	}
+	if bonuses := page.SetBonuses(999999); len(bonuses) != 0 {
+		t.Errorf("unknown set returned %d bonuses", len(bonuses))
 	}
 }

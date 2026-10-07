@@ -13,6 +13,15 @@
 </section>
 {{end}}
 
+{{if .Targets}}
+<section class="card">
+  <h2>{{$.T "db.questTargets"}}</h2>
+  <div class="maprow">
+    {{range .Targets}}{{template "zonemap" .}}{{end}}
+  </div>
+</section>
+{{end}}
+
 <section class="card">
   <table class="kv">
     <tr><th>{{.T "db.entry"}}</th><td><code>{{.Quest.Entry}}</code></td></tr>
