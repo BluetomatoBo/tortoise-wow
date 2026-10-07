@@ -28,6 +28,10 @@ Needs StormLib, the library the client patch tool already uses:
 
 Usage:
 
+    # gen_maps.py can also read a client directly, which is what decides the map
+    # labels' language; this tool is the offline/step-by-step route.
+    python3 tools/WowWeb/gen_maps.py --client /path/to/wow-client
+
     # 1. find out what is missing (each generator writes its own list)
     python3 tools/WowWeb/gen_icons.py --dump ... --sql ...
     python3 tools/WowWeb/gen_maps.py

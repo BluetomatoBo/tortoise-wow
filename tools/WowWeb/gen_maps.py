@@ -41,6 +41,16 @@ where Gadgetzan stands and the town, its walls and its name are in the overlay.
 Without the overlays the maps read as terrain with no places on it - which is the
 "this map shows no details" half of the same complaint.
 
+The labels are painted into the artwork, so *which* client the files come from
+decides what language they are in. The verified file list (clientfiles.py) carries
+Turtle's EU patches only - patch-8 and patch-9, named patch_EU and hotfix_EU - and a
+client loads those *before* its own patch-X and patch-Z. Taking the art from the list
+therefore ships "Gadgetzan" where the game shows "加基森": the labels are in the
+files, and the files that win in the client are the ones with the Chinese ones. So a
+client install is the authoritative source and the list is the fallback:
+
+    python3 tools/WowWeb/gen_maps.py --client /path/to/wow-client
+
 Writes:
 
   internal/web/assets/maps/<zone>.png   one per zone, paletted, half size
@@ -48,16 +58,18 @@ Writes:
 
 Usage:
 
-    python3 tools/WowWeb/gen_maps.py                 # writes both, using the CDN
-    python3 tools/WowWeb/gen_maps.py --scale 1       # keep the frame's own size
+    python3 tools/WowWeb/gen_maps.py --client /path/to/wow-client   # the real thing
+    python3 tools/WowWeb/gen_maps.py --no-client                     # from the file list
+    python3 tools/WowWeb/gen_maps.py --scale 1                       # keep the frame's size
 
-The files come from the same client file list the icons do (clientfiles.py downloads
-and sha256-checks them). A client install works too - gen_maps.py writes whatever it
-could not find into the shared cache as `needed-maps.txt`, which
-extract_client_files.py pulls out of a client's MPQs:
+Files are looked for in this order, and the run reports how many came from each:
 
-    python3 tools/WowWeb/extract_client_files.py --client /path/to/wow-client
-    python3 tools/WowWeb/gen_maps.py --no-client
+  1. the client's own MPQs, highest patch priority first (--client)
+  2. files an earlier run extracted into the shared cache
+  3. the CDN file list, which only has the EU patches
+
+Without a client the tool still works, but every label on every map is whatever the
+EU patches happen to say.
 """
 
 import argparse
@@ -131,28 +143,110 @@ def overlay_parts(zone_dir, name, width, height):
     return parts
 
 
-def find_file(client, blp_dir, path):
-    """One client file: the CDN first, then a client someone extracted into blp_dir."""
-    local = client.fetched(path) if client is not None else None
-    if local is None:
-        candidate = os.path.join(blp_dir, cache_name(path))
+CLIENT_HINT = (
+    "这条路走的是 CDN 清单，而清单里只有 EU 的 patch-8/patch-9；客户端自己的 patch-X/Z\n"
+    "优先级更高，中文地名就在那里面。加上 --client <客户端目录> 让客户端说了算。"
+)
+
+
+class Sources:
+    """Where each file came from, in the order that decides who wins.
+
+    A client install beats an earlier extraction, and both beat the CDN list: the
+    list only carries the EU patches, so a label that was localized in the client
+    is English in the list's copy of the same file.
+    """
+
+    def __init__(self, client_reader, blp_dir, client):
+        self.client_reader = client_reader
+        self.blp_dir = blp_dir
+        self.client = client
+        self.counts = {}
+        self.missing = []
+
+    def found(self, path):
+        if self.client_reader is not None:
+            local = self.client_reader(path)
+            if local:
+                self.counts["客户端"] = self.counts.get("客户端", 0) + 1
+                return local
+        candidate = os.path.join(self.blp_dir, cache_name(path))
         if os.path.isfile(candidate):
-            local = candidate
-    return local
+            self.counts["本地抽取"] = self.counts.get("本地抽取", 0) + 1
+            return candidate
+        if self.client is not None:
+            local = self.client.fetched(path)
+            if local:
+                self.counts["CDN"] = self.counts.get("CDN", 0) + 1
+                return local
+        self.missing.append(path)
+        return None
+
+    def report(self):
+        parts = ["%s %d" % (name, count) for name, count in sorted(self.counts.items())]
+        print("取文件：" + ("，".join(parts) if parts else "一个都没有"))
+        if self.counts.get("CDN") and not self.counts.get("客户端"):
+            print("注意：这次没有任何文件来自客户端安装。")
+            print("      " + CLIENT_HINT)
 
 
-def find_zone(client, blp_dir, string, area_row_id, zone_dir, overlays):
+def client_reader(root, cache_dir):
+    """A path -> local file lookup straight out of an installed client's archives.
+
+    Highest patch priority first, exactly as the client loads them, so the copy
+    that comes out is the copy the game would use. Extracted files are cached, so
+    a second run does not touch the MPQs.
+    """
+    import extract_client_files as extract
+
+    data_dir = None
+    for candidate in ("Data", "data"):
+        if os.path.isdir(os.path.join(root, candidate)):
+            data_dir = os.path.join(root, candidate)
+            break
+    if data_dir is None:
+        sys.exit("no Data directory below %s" % root)
+
+    archives = []
+    for name in sorted(os.listdir(data_dir)):
+        if not name.lower().endswith(".mpq"):
+            continue
+        try:
+            archives.append(extract.Archive(os.path.join(data_dir, name)))
+        except OSError as exc:
+            print("跳过 %s（%s）" % (name, exc))
+    if not archives:
+        sys.exit("no readable MPQ archives in %s" % data_dir)
+    archives.sort(key=lambda a: extract.patch_priority(os.path.basename(a.path)), reverse=True)
+    print("客户端 %s：%d 个 MPQ，按补丁优先级降序" % (root, len(archives)))
+    os.makedirs(cache_dir, exist_ok=True)
+
+    def read(path):
+        dest = os.path.join(cache_dir, cache_name(path))
+        if os.path.isfile(dest):
+            return dest
+        want = path.replace("/", "\\")
+        for archive in archives:
+            data = archive.read(want)
+            if data:
+                with open(dest, "wb") as f:
+                    f.write(data)
+                return dest
+        return None
+
+    return read
+
+
+def find_zone(sources, string, area_row_id, zone_dir, overlays):
     """Everything a zone is drawn from, and every file that could not be found.
 
     Returns the twelve tile files and the landmark paintings, each painting being
     the parts to read with the place in the frame each of them goes.
     """
-    tiles, missing = [], []
+    tiles = []
     for path in tile_paths(zone_dir):
-        local = find_file(client, blp_dir, path)
-        if local is None:
-            missing.append(path)
-        else:
+        local = sources.found(path)
+        if local is not None:
             tiles.append(local)
 
     paintings = []
@@ -164,14 +258,13 @@ def find_zone(client, blp_dir, string, area_row_id, zone_dir, overlays):
         offset_x, offset_y = row[OVERLAY_OFFSET]
         parts = []
         for path, dx, dy, part_w, part_h in overlay_parts(zone_dir, name, width, height):
-            local = find_file(client, blp_dir, path)
+            local = sources.found(path)
             if local is None:
-                missing.append(path)
                 continue
             parts.append((local, offset_x + dx, offset_y + dy, part_w, part_h))
         if parts:
             paintings.append((row, parts))
-    return tiles, paintings, missing
+    return tiles, paintings
 
 
 def assemble(tile_files, paintings):
@@ -299,6 +392,10 @@ def main():
                     help="shrink the 1002x668 frame by this factor (default 2)")
     ap.add_argument("--colors", type=int, default=256, help="palette size (default 256)")
     ap.add_argument("--jobs", type=int, default=0, help="zones to build at once (default: cpu count)")
+    ap.add_argument("--client", default=None,
+                    help="an installed client; its MPQs decide which files win (see the module doc)")
+    ap.add_argument("--client-cache", default=None,
+                    help="where files read from --client are cached (default: <cache>/client)")
     ap.add_argument("--no-client", action="store_true", help="do not download from the CDN")
     ap.add_argument("--cache", default=CACHE, help="where downloaded/extracted files live")
     ap.add_argument("--blp-dir", default=None,
@@ -312,6 +409,13 @@ def main():
 
     blp_dir = args.blp_dir or os.path.join(args.cache, "blps")
     client = None if args.no_client else Client(args.manifest, args.cache)
+    client_reader_func = None
+    if args.client:
+        if not os.path.isdir(args.client):
+            sys.exit("no such client directory: %s" % args.client)
+        client_reader_func = client_reader(
+            args.client, args.client_cache or os.path.join(args.cache, "client"))
+    sources = Sources(client_reader_func, blp_dir, client)
 
     def dbc(name):
         """A client DBC: from the CDN, or from an earlier run's cache."""
@@ -336,7 +440,7 @@ def main():
             hit_problems.append(problem)
 
     os.makedirs(args.out, exist_ok=True)
-    boxes, jobs, needed, skipped, seen = [], [], [], [], {}
+    boxes, jobs, skipped, seen = [], [], [], {}
     for row in area_rows:
         area, row_id = row[2], row[0]
         zone_dir = area_string(row[3]).strip()
@@ -353,16 +457,17 @@ def main():
             continue
 
         if zone_dir not in seen:
-            seen[zone_dir] = find_zone(client, blp_dir, overlay_string, row_id, zone_dir, overlays)
-        tiles, paintings, missing = seen[zone_dir]
-        if missing:
+            seen[zone_dir] = find_zone(sources, overlay_string, row_id, zone_dir, overlays)
+        tiles, paintings = seen[zone_dir]
+        if len(tiles) < TILES or not paintings and overlays.get(row_id):
             if zone_dir not in skipped:
                 skipped.append(zone_dir)
-                needed.extend(missing)
             continue
         jobs.append((zone_dir, tiles, paintings,
                      os.path.join(args.out, local_name(zone_dir) + ".png"), args.scale, args.colors))
         boxes.append((area, zone_dir, row[1], x_min, x_max, y_min, y_max))
+
+    sources.report()
 
     # The field-layout check is about the DBC, not a zone: report it once.
     for problem in hit_problems[:3]:
@@ -404,7 +509,7 @@ def main():
 
     needed_path = os.path.join(args.cache, "needed-maps.txt")
     with open(needed_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(needed) + ("\n" if needed else ""))
+        f.write("\n".join(sources.missing) + ("\n" if sources.missing else ""))
 
     print("区域：%d 个有坐标框" % len(lines))
     print("地图：写出 %d 张，共 %.1f MB，%d 幅地标画，最差平均误差 %.2f" %
@@ -413,8 +518,9 @@ def main():
     if skipped:
         print("\n%d 个区域缺文件，已从表里去掉（落在这些区域的点会画到大陆图上）：" % len(skipped))
         print("   " + "、".join(sorted(skipped)[:10]) + ("…" if len(skipped) > 10 else ""))
-        print("  要取的清单已经写到 %s；在装有客户端的机器上跑：" % needed_path)
-        print("    python3 tools/WowWeb/extract_client_files.py --client <客户端目录>")
+        if not args.client:
+            print("  试过的地方记在 %s；用客户端再跑一遍能补全，而且地名是中文的：" % needed_path)
+            print("    python3 tools/WowWeb/gen_maps.py --client <客户端目录>")
 
 
 if __name__ == "__main__":

@@ -574,13 +574,33 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
    区域地图一直算「没有」，贴图只能从本地客户端抽。现在 `clientfiles.py` 按客户端的规则查：
    **大小写和分隔符都不重要**（`client_key`）。
 
-```bash
-python3 tools/WowWeb/gen_maps.py                     # 直接生成：贴图从 CDN 取（首次约 1600 个文件）
-python3 tools/WowWeb/gen_maps.py --scale 1           # 想按原始 1002x668 存（文件大四倍）
-# 离线时：先用客户端把贴图抽出来，再让生成器只用本地文件
-python3 tools/WowWeb/extract_client_files.py --client <客户端目录>
-python3 tools/WowWeb/gen_maps.py --no-client
-```
+3. **地名是画在贴图里的**，所以「取哪份贴图」直接决定地名是哪国语言。清单（`clientfiles.py` 用的
+   那份）里只有 Turtle 的欧洲补丁——`patch-8`（`patch_EU`）和 `patch-9`（`hotfix_EU`）——而客户端
+   加载补丁是**按字母排优先级**的，自己的 `patch-X`/`patch-Z` 排在它们后面。于是同一块地标画有两个
+   版本，清单里那份是英文的：
+
+   | 来源 | 加扎赞那块（OCR 读出来的） |
+   |---|---|
+   | CDN 清单（EU patch-9） | `GADCETZAN`（Gadgetzan） |
+   | 客户端 `patch-X` | `加口基` → **加基森** |
+
+   （OCR 用的是 macOS 自带的 Vision，`/tmp/ocr` 只是临时工具，没进仓库。）所以**装好的客户端才是
+   权威来源**，清单退居备用：
+
+   ```bash
+   python3 tools/WowWeb/gen_maps.py --client <客户端目录>   # 推荐：地名跟着客户端走
+   python3 tools/WowWeb/gen_maps.py --no-client             # 只用清单（没有客户端时）
+   python3 tools/WowWeb/gen_maps.py --client <客户端目录> --scale 1   # 想按原始 1002x668 存
+   ```
+
+   取文件有三档，运行结束会打印各档的数量；**只要一个文件都不是从客户端来的，就会警告**：
+
+   1. `--client` 指定的客户端 MPQ（按补丁优先级，和客户端自己加载的顺序一致）
+   2. 以前抽出来放在共享缓存里的副本
+   3. CDN 清单（只有 EU 补丁，地名是英文的）
+
+   实测：131 张图 2591 个文件全部来自客户端，`暴风城`、`西部荒野`、`无尽之海`、`杜隆塔尔` 都出来了；
+   同一批图换成清单来源，OCR 读到的是 `STORMWIND`、`WESTFALL`、`THE GREAT SEA`、`BARRENS`。
 
 落点逻辑：一个世界点可能同时落在多个框里（区域、以及它所在的大陆），**取最小的那个框**——也就是
 客户端会为它显示的那张图。大陆行（area 0）特意保留，这样没有自己地图的区域也还能落到大陆图上。
@@ -648,7 +668,7 @@ python3 tools/WowWeb/gen_icons.py \
     --sql /tmp/aowow.sql --size medium
 
 # 3. 还有缺的？从你自己的客户端里抽（需要 StormLib）
-python3 tools/WowWeb/extract_client_icons.py --client /path/to/wow-client
+python3 tools/WowWeb/extract_client_files.py --client /path/to/wow-client
 python3 tools/WowWeb/gen_icons.py --dump ... --sql /tmp/aowow.sql   # 重跑，自动用上
 ```
 
@@ -1746,13 +1766,34 @@ the client's own zone maps. That needs two things:
    `clientfiles.py` now looks a path up the way the client does: **case and separators do
    not matter** (`client_key`).
 
-```bash
-python3 tools/WowWeb/gen_maps.py                     # draws everything; tiles come from the CDN
-python3 tools/WowWeb/gen_maps.py --scale 1           # keep the frame's own 1002x668 (four times the size)
-# offline: pull the tiles out of a client install first, then use only local files
-python3 tools/WowWeb/extract_client_files.py --client /path/to/wow-client
-python3 tools/WowWeb/gen_maps.py --no-client
-```
+3. **The labels are painted into the art**, so *which* copy of a file goes in decides what
+   language the places are named in. The manifest carries Turtle's EU patches only -
+   `patch-8` (`patch_EU`) and `patch-9` (`hotfix_EU`) - and a client loads its own
+   higher-lettered patches *after* those, so patch-X/patch-Z win. The two copies of the same
+   landmark painting differ in exactly that:
+
+   | Source | OCR of the Gadgetzan painting |
+   |---|---|
+   | the manifest (EU patch-9) | `GADCETZAN` (Gadgetzan) |
+   | the client's patch-X | `加口基` -> **加基森** |
+
+   So an installed client is the authoritative source and the manifest is the fallback:
+
+   ```bash
+   python3 tools/WowWeb/gen_maps.py --client /path/to/wow-client   # labels follow the client
+   python3 tools/WowWeb/gen_maps.py --no-client                     # the manifest only
+   ```
+
+   Files are looked for in three places and the run prints how many came from each; **if not
+   one came from a client, it warns**:
+
+   1. the client's MPQs (`--client`), in the client's own patch order
+   2. copies an earlier run extracted into the shared cache
+   3. the CDN file list, whose labels are the EU ones
+
+   Measured: 131 maps, all 2591 files from the client, and the labels come out `暴风城`,
+   `西部荒野`, `无尽之海`, `杜隆塔尔`; regenerating the same maps from the manifest gives
+   `STORMWIND`, `WESTFALL`, `THE GREAT SEA`, `BARRENS`.
 
 A world point can fall inside several boxes - a zone and the continent it sits on - and
 **the smallest one wins**, because that is the map the client would show for it. The
@@ -1835,7 +1876,7 @@ python3 tools/WowWeb/gen_icons.py \
     --sql /tmp/aowow.sql --size medium
 
 # 3. still missing some? pull them out of your own client (needs StormLib)
-python3 tools/WowWeb/extract_client_icons.py --client /path/to/wow-client
+python3 tools/WowWeb/extract_client_files.py --client /path/to/wow-client
 python3 tools/WowWeb/gen_icons.py --dump ... --sql /tmp/aowow.sql   # rerun, it picks them up
 ```
 
