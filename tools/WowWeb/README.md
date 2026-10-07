@@ -470,6 +470,12 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 | 生物 | 开始的任务 / 交付的任务 | `creature_questrelation`、`creature_involvedrelation` |
 | 任务 | 任务给予者 / 任务交付者 | 上面两张表，加上 `gameobject_questrelation`、`gameobject_involvedrelation` |
 
+> **战利品表的外键是 loot id，不是生物 entry。** 核心读的是 `creature_template.loot_id`、
+> `skinning_loot_id`、`pickpocket_loot_id`（`ObjectMgr.cpp`），而 gameobject 只有**宝箱与鱼群**类型
+> 才把 `data1` 当 loot id（`GameObject.h` 的 `GetLootId`）。两者在本服 5231/5404 个生物上恰好相等，
+> 所以按 entry 查大多数行看起来是对的、其余的行会静默查空——例如 `Dragunastrasz`（entry 9941、
+> loot_id 1042）有 89 条战利品，按 entry 查是 0 条。
+
 引用战利品（`mincountOrRef` 为负、`item` 列放的是 `reference_loot_template` 条目）会**递归展开**
 （深度上限 8，重复条目不重复进入，防止数据里的环），几率按路径相乘——与核心加载战利品时的算法
 一致。`groupid` 与 `condition_id` **不参与解释**：页面给的是那一行存的几率，也就是能拿去
@@ -1421,6 +1427,14 @@ Worth knowing:
   are multiplied, depth is capped, and an entry already on the path is not
   entered twice - so a drop that arrives through three levels of reference still
   shows one usable number. `groupid` and `condition_id` are not interpreted.
+* **Loot tables are keyed by a loot id, not by the owner's entry.** The core
+  reads `creature_template.loot_id`, `skinning_loot_id` and
+  `pickpocket_loot_id` (`ObjectMgr.cpp`), and for gameobjects only chests and
+  fishing holes expose `data1` as their loot id (`GameObject.h`, `GetLootId`).
+  The two values coincide for 5231 of this realm's 5404 loot-bearing creatures,
+  so joining on `entry` answers most rows and silently answers nothing for the
+  rest - `Dragunastrasz` (entry 9941, loot_id 1042) has 89 loot rows and zero
+  under its entry.
 * **Language**: a Chinese visitor reads the `*_loc4` columns (this realm's Chinese
   lives there, and the shop module reads the same ones), everyone else the base
   columns, with `COALESCE` inside the query so a row with no translation still
