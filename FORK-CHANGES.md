@@ -2,7 +2,7 @@
 
 - **基准 / Baseline**：上游 [`tortoise-wow/tortoise-wow`](https://github.com/tortoise-wow/tortoise-wow) 的 `1181dev` 分支，共同祖先 `187af78`
 - **分支 / Branch**：[`BluetomatoBo/tortoise-wow`](https://github.com/BluetomatoBo/tortoise-wow) 的 `1181-zhcn-localization`
-- **规模 / Size**：本分支自己的提交 43 个，合计 120 个文件（104 新增 / 16 修改），+54549 / −18
+- **规模 / Size**（截至 `40df267`，下面的命令给出的才是当前值 / measured at `40df267`; the commands below print the current numbers）：本分支自己的提交 43 个，合计 120 个文件（104 新增 / 16 修改），+54549 / −18
 - **上游同步 / Upstream sync**：已并入上游 `main` 的最新提交 `d94947b`（见第 10 节）
 
 这条清单可以自己复现 / Reproduce this list:
