@@ -16,3 +16,26 @@ UPDATE `locales_creature` SET `name_loc4` = '劳埃德'
 
 UPDATE `locales_creature` SET `name_loc4` = '诺拉·汽望'
  WHERE `entry` = 62034 AND `name_loc4` = '诺拉斯特伊姆西特';
+
+-- 第二批：任务文本已按这些译名书写，库内原值要么是错配、要么是一整串音译
+UPDATE `locales_creature` SET `name_loc4` = '黑暗者纳科格'
+ WHERE `entry` = 62739 AND `name_loc4` = '追踪者奥尔索尔';          -- Narkogg the Dark
+
+UPDATE `locales_creature` SET `name_loc4` = '阿尔古尔·锈印'
+ WHERE `entry` = 63188 AND `name_loc4` = '阿尔古尔鲁斯特布拉恩德';   -- Argur Rustbrand
+
+UPDATE `locales_creature` SET `name_loc4` = '哨兵指挥官银痕'
+ WHERE `entry` = 62901 AND `name_loc4` = '哨兵指挥官西尔维尔斯特尔伊克';  -- Sentinel Commander Silverstreak
+
+UPDATE `locales_creature` SET `name_loc4` = '伊瑞丝·月舞者'
+ WHERE `entry` = 63201 AND `name_loc4` = '伊瑞斯月舞者';            -- Moondancer
+
+UPDATE `locales_creature` SET `name_loc4` = '大德鲁伊瑞内斯尔·月水'
+ WHERE `entry` = 62900 AND `name_loc4` = '大德鲁伊瑞内斯尔阿月水';   -- Arch Druid Renethra Moonwater
+
+UPDATE `locales_creature` SET `name_loc4` = '塞彭提亚女士'
+ WHERE `entry` = 63148 AND `name_loc4` = '雷蒂塞尔彭蒂娅';          -- Lady Serpentia
+
+UPDATE `locales_creature` SET `name_loc4` = '马甘'
+ WHERE `entry` = 62994 AND `name_loc4` = '马格阿恩';               -- Maghan
+
