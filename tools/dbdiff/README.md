@@ -189,7 +189,12 @@ UPDATE creature_loot_template SET ChanceOrQuestChance=ChanceOrQuestChance*0.5 WH
   日志里那行括号里的数字就是内核自己算的合计，直接拿来当分母最准：
 
   ```bash
-  python3 tools/dbdiff/gen_group_chance_from_log.py /data_2T/ts_wow/logs/server_*.log > /tmp/fix_group_chance.sql
+  # 只喂最新那一份日志（喂多份历史日志会把早已修好的组也列进来，虽然语句自带守卫不会误伤）
+  LOG=$(ls -t /data_2T/ts_wow/logs/server_*.log | head -1)
+  python3 tools/dbdiff/gen_group_chance_from_log.py "$LOG" > /tmp/fix_group_chance.sql
   grep -c '^UPDATE' /tmp/fix_group_chance.sql
   mysql -h127.0.0.1 -uroot -p tw_world < /tmp/fix_group_chance.sql
   ```
+
+  生成的每条语句都写成 `UPDATE t AS l JOIN (SELECT SUM(...) AS s ...) cur SET ... WHERE ... AND cur.s > 101;`
+  —— 只有「当前合计仍然 >101」时才缩放，所以**重复执行、或拿旧日志生成的脚本都不会误伤**。

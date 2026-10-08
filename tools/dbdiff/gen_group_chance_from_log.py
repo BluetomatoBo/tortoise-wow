@@ -37,6 +37,10 @@ def main():
     files = sys.argv[1:]
     if not files:
         sys.exit(__doc__)
+    if len(files) > 1:
+        sys.stderr.write("提示：给了 %d 个日志文件；如果你的 glob 匹配到多份历史日志，\n"
+                         "      会把早已修好的组也列进来（生成的语句带 cur.s > 101 守卫，不会误伤，\n"
+                         "      但建议只喂最新那份：LOG=$(ls -t .../server_*.log | head -1)\n" % len(files))
     seen = set()
     out = []
     for path in files:
@@ -54,9 +58,13 @@ def main():
                 continue
             seen.add(key)
             out.append(
-                "UPDATE `%s` SET `ChanceOrQuestChance` = ROUND(`ChanceOrQuestChance` * 100 / %s, 6)"
-                " WHERE `entry` = %d AND `groupid` = %d AND `ChanceOrQuestChance` > 0;"
-                % (table, ("%.6f" % total).rstrip("0").rstrip("."), entry, group))
+                "UPDATE `{t}` AS l\n"
+                "  JOIN (SELECT SUM(`ChanceOrQuestChance`) AS s FROM `{t}`\n"
+                "         WHERE `entry` = {e} AND `groupid` = {g} AND `ChanceOrQuestChance` > 0) AS cur\n"
+                "  SET l.`ChanceOrQuestChance` = ROUND(l.`ChanceOrQuestChance` * 100 / {s}, 6)\n"
+                " WHERE l.`entry` = {e} AND l.`groupid` = {g} AND l.`ChanceOrQuestChance` > 0\n"
+                "   AND cur.s > 101;   -- 只有当前合计仍然 >101 才缩放（幂等；旧日志里的过期组不会误伤）"
+                .format(t=table, e=entry, g=group, s=("%.6f" % total).rstrip("0").rstrip(".")))
 
     sys.stdout.write(
         "-- 由 tools/dbdiff/gen_group_chance_from_log.py 从内核日志生成\n"
