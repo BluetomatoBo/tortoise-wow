@@ -52,6 +52,18 @@ SELECT 'spell_affect 光环类型不对' AS 项目, COUNT(*) AS 行数
          OR (a.effectId = 1 AND s.effect2 = 6  AND s.effectApplyAuraName2 IN (107,108,109,112))
          OR (a.effectId = 2 AND s.effect3 = 6  AND s.effectApplyAuraName3 IN (107,108,109,112)));
 
+SELECT '掉落表里 chance=0 且 groupid=0 的行（内核跳过）' AS 项目, COUNT(*) AS 行数
+  FROM reference_loot_template
+ WHERE groupid = 0 AND ChanceOrQuestChance = 0 AND mincountOrRef > 0;
+
+SELECT 'item_loot_template 里不是可拾取物品的条目' AS 项目,
+       COUNT(DISTINCT entry) AS 条目数, COUNT(*) AS 行数
+  FROM item_loot_template l
+ WHERE NOT EXISTS (SELECT 1 FROM item_template i WHERE i.entry = l.entry AND (i.Flags & 4) <> 0)
+   AND l.entry NOT IN (
+     SELECT DISTINCT -mincountOrRef FROM creature_loot_template      WHERE mincountOrRef < 0
+     UNION SELECT DISTINCT -mincountOrRef FROM reference_loot_template WHERE mincountOrRef < 0);
+
 SELECT 'npc_vendor_template 没商人使用' AS 项目,
        COUNT(DISTINCT entry) AS 条目数, COUNT(*) AS 行数
   FROM npc_vendor_template v
@@ -85,7 +97,8 @@ DELETE r FROM reference_loot_template r
    UNION SELECT DISTINCT -mincountOrRef FROM fishing_loot_template     WHERE mincountOrRef < 0
    UNION SELECT DISTINCT -mincountOrRef FROM disenchant_loot_template  WHERE mincountOrRef < 0
    UNION SELECT DISTINCT -mincountOrRef FROM mail_loot_template        WHERE mincountOrRef < 0
-   UNION SELECT DISTINCT -mincountOrRef FROM (SELECT -mincountOrRef AS ref FROM reference_loot_template WHERE mincountOrRef < 0) self_ref);
+   UNION SELECT DISTINCT -mincountOrRef FROM (SELECT -mincountOrRef AS ref FROM reference_loot_template WHERE mincountOrRef < 0) self_ref
+   UNION SELECT `player_loot_id` FROM `battleground_template` WHERE `player_loot_id` <> 0);
 
 -- 3) 训练师：挂在不存在的生物上 / 教不存在的法术 / 教的不是学习类法术
 --    （ObjectMgr::LoadTrainers，ObjectMgr.cpp:8072 起；SPELL_EFFECT_LEARN_SPELL = 36）
@@ -103,7 +116,19 @@ DELETE t FROM npc_trainer t
 DELETE v FROM npc_vendor_template v
  WHERE NOT EXISTS (SELECT 1 FROM creature_template c WHERE c.vendor_id = v.entry);
 
--- 5) spell_affect：内核明确跳过的两类行（SpellMgr::LoadSpellAffects，SpellMgr.cpp:3115/3130）
+-- 5) 行级：chance=0 但没写 groupid 的组内条目（LootStoreItem::IsValid，LootMgr.cpp:330）
+DELETE l FROM reference_loot_template l
+ WHERE l.groupid = 0 AND l.ChanceOrQuestChance = 0 AND l.mincountOrRef > 0;
+
+-- 6) item_loot_template：整条 entry 既不是「可拾取物品」、也没被别的掉落表引用
+--    （LoadLootTemplates_Item，LootMgr.cpp:1588；ITEM_FLAG_LOOTABLE = 4）
+DELETE l FROM item_loot_template l
+ WHERE NOT EXISTS (SELECT 1 FROM item_template i WHERE i.entry = l.entry AND (i.Flags & 4) <> 0)
+   AND l.entry NOT IN (
+     SELECT DISTINCT -mincountOrRef FROM creature_loot_template      WHERE mincountOrRef < 0
+     UNION SELECT DISTINCT -mincountOrRef FROM reference_loot_template WHERE mincountOrRef < 0);
+
+-- 7) spell_affect：内核明确跳过的两类行（SpellMgr::LoadSpellAffects，SpellMgr.cpp:3115/3130）
 --    5a. 光环类型不对（不是「以法术修饰」类）—— 注意 effect = 6 是 SPELL_EFFECT_APPLY_AURA
 DELETE a FROM spell_affect a JOIN spell_template s ON s.entry = a.entry
  WHERE NOT ((a.effectId = 0 AND s.effect1 = 6 AND s.effectApplyAuraName1 IN (107,108,109,112))
