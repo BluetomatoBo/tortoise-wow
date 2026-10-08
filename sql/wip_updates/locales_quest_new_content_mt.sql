@@ -2,11 +2,11 @@
 --
 -- 同上：只写库里还没有中文的条目，带「已有汉字不覆盖」保护。
 --
--- 594 条。生效：mangosd 控制台 `.reload locales_quest`
+-- 701 条。生效：mangosd 控制台 `.reload locales_quest`
 
 SET NAMES utf8mb4;
 
--- ---- Title_loc4（11 条）----
+-- ---- Title_loc4（13 条）----
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`)
   SELECT 41921, '熟悉的异动' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `Title_loc4` FROM `locales_quest` WHERE `entry` = 41921) x
@@ -15,6 +15,16 @@ INSERT INTO `locales_quest` (`entry`, `Title_loc4`)
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`)
   SELECT 41923, '石梦灰谷' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `Title_loc4` FROM `locales_quest` WHERE `entry` = 41923) x
+                      WHERE x.`Title_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `Title_loc4` = IF(`Title_loc4` REGEXP '[一-龥]', `Title_loc4`, VALUES(`Title_loc4`));
+INSERT INTO `locales_quest` (`entry`, `Title_loc4`)
+  SELECT 41924, '石梦菲拉斯' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `Title_loc4` FROM `locales_quest` WHERE `entry` = 41924) x
+                      WHERE x.`Title_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `Title_loc4` = IF(`Title_loc4` REGEXP '[一-龥]', `Title_loc4`, VALUES(`Title_loc4`));
+INSERT INTO `locales_quest` (`entry`, `Title_loc4`)
+  SELECT 41925, '石梦暮色森林' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `Title_loc4` FROM `locales_quest` WHERE `entry` = 41925) x
                       WHERE x.`Title_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `Title_loc4` = IF(`Title_loc4` REGEXP '[一-龥]', `Title_loc4`, VALUES(`Title_loc4`));
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`)
@@ -637,10 +647,15 @@ INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`)
                       WHERE x.`Objectives_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `Objectives_loc4` = IF(`Objectives_loc4` REGEXP '[一-龥]', `Objectives_loc4`, VALUES(`Objectives_loc4`));
 
--- ---- OfferRewardText_loc4（85 条）----
+-- ---- OfferRewardText_loc4（90 条）----
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
   SELECT 85, '你不见了什么?喔，我可没拿什么项炼，因为我不是小偷!$B我可能知道是谁干的……<奸笑>……不过我太饿了，想不起来。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `OfferRewardText_loc4` FROM `locales_quest` WHERE `entry` = 85) x
+                      WHERE x.`OfferRewardText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = IF(`OfferRewardText_loc4` REGEXP '[一-龥]', `OfferRewardText_loc4`, VALUES(`OfferRewardText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
+  SELECT 100, '谢谢你，萨满。$B堕落已经褪去，然而生命依然衰弱，我们需要萨满的力量来保护所有的生灵。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `OfferRewardText_loc4` FROM `locales_quest` WHERE `entry` = 100) x
                       WHERE x.`OfferRewardText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = IF(`OfferRewardText_loc4` REGEXP '[一-龥]', `OfferRewardText_loc4`, VALUES(`OfferRewardText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
@@ -686,6 +701,11 @@ INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
   SELECT 5647, '你终于来了，很好，$N。我们的种族是光荣而又强大的，关于这一点，你不仅要自己清晰地认识到这一点，还应该让别人也有这样的感觉。你准备好了吗，$G小伙子:小姑娘;?' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `OfferRewardText_loc4` FROM `locales_quest` WHERE `entry` = 5647) x
+                      WHERE x.`OfferRewardText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = IF(`OfferRewardText_loc4` REGEXP '[一-龥]', `OfferRewardText_loc4`, VALUES(`OfferRewardText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
+  SELECT 6606, '啊，是哈鲁让你来的?好吧，那么，你是谁呢?你是来找我帮忙的吧?' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `OfferRewardText_loc4` FROM `locales_quest` WHERE `entry` = 6606) x
                       WHERE x.`OfferRewardText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = IF(`OfferRewardText_loc4` REGEXP '[一-龥]', `OfferRewardText_loc4`, VALUES(`OfferRewardText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
@@ -774,8 +794,18 @@ INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
                       WHERE x.`OfferRewardText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = IF(`OfferRewardText_loc4` REGEXP '[一-龥]', `OfferRewardText_loc4`, VALUES(`OfferRewardText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
+  SELECT 8678, '你的灵魂生气蓬勃，年轻的{class}。我接受你的致敬并回敬你这个硬币……' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `OfferRewardText_loc4` FROM `locales_quest` WHERE `entry` = 8678) x
+                      WHERE x.`OfferRewardText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = IF(`OfferRewardText_loc4` REGEXP '[一-龥]', `OfferRewardText_loc4`, VALUES(`OfferRewardText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
   SELECT 8742, '一千年过去了，正如命中注定的那样，一位勇士站在了我的面前。这位勇士将会带领他的人民走向新的纪元。$B上古之神在颤抖，$N。是的，它在你坚定的信念面前恐惧地颤抖着。打破克苏恩的预言吧。$B它知道你会到来的，勇士─它还知道卡林多的力量与你同在。当你做好准备之后，请通知我，我将把流沙权杖赐予你。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `OfferRewardText_loc4` FROM `locales_quest` WHERE `entry` = 8742) x
+                      WHERE x.`OfferRewardText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = IF(`OfferRewardText_loc4` REGEXP '[一-龥]', `OfferRewardText_loc4`, VALUES(`OfferRewardText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
+  SELECT 8745, '你好，勇士。我是神圣之锣和青铜龙军团的永恒观察者，乔纳森。$B永恒之王授权我让你从他永恒的宝物箱里选择一样物品。愿它能在你对抗克苏恩的战役中帮助你。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `OfferRewardText_loc4` FROM `locales_quest` WHERE `entry` = 8745) x
                       WHERE x.`OfferRewardText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = IF(`OfferRewardText_loc4` REGEXP '[一-龥]', `OfferRewardText_loc4`, VALUES(`OfferRewardText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
@@ -851,6 +881,11 @@ INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
   SELECT 40114, '＜我该做准备了。一旦我激活那座石座，谁也不知道里面等着的是什么。＞' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `OfferRewardText_loc4` FROM `locales_quest` WHERE `entry` = 40114) x
+                      WHERE x.`OfferRewardText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = IF(`OfferRewardText_loc4` REGEXP '[一-龥]', `OfferRewardText_loc4`, VALUES(`OfferRewardText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
+  SELECT 40944, '外来者来了？看来格雷迈恩之墙的开放确实为我们带来了新的盟友。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `OfferRewardText_loc4` FROM `locales_quest` WHERE `entry` = 40944) x
                       WHERE x.`OfferRewardText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = IF(`OfferRewardText_loc4` REGEXP '[一-龥]', `OfferRewardText_loc4`, VALUES(`OfferRewardText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
@@ -1064,7 +1099,7 @@ INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
                       WHERE x.`OfferRewardText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = IF(`OfferRewardText_loc4` REGEXP '[一-龥]', `OfferRewardText_loc4`, VALUES(`OfferRewardText_loc4`));
 
--- ---- RequestItemsText_loc4（349 条）----
+-- ---- RequestItemsText_loc4（431 条）----
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 8107, 'Honor is earned amongst the Zandalar trolls, $R. With honor comes reward - friendship, alliance...$BHand me the talisman so that I may enhance its power.' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 8107) x
@@ -1231,6 +1266,16 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 40184, '完成 奖励 完成任务后可获得：500 点经验值，辛德拉 -100 点声望' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 40184) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 40259, '$N。完成 奖励 完成任务后可获得：8500 点经验值，银色黎明 -500 点声望' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 40259) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 40616, '$N。完成 从今往后，你就是无畏者！带着骄傲与我们同行吧。我们从此与你共享一切。奖励 完成任务后可获得：4000 点经验值，玛格拉姆半人马部族 1500 点声望，吉尔吉斯半人马部族 -7500 点声望' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 40616) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
@@ -1261,6 +1306,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41280, '完成 下一步在等着你。奖励 完成任务后可获得：3200 点经验值' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41280) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41281, '完成 瑟格雷恩转向你，赞许地点了点头。最后一步就在眼前了。奖励 完成任务后可获得：4700 点经验值' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41281) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
@@ -1268,6 +1318,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41282, '完成 你通过了试炼！瑟格雷恩把你引到他的桌旁，迫不及待地想把自己的知识传授给这名新徒弟。奖励 完成任务后可获得：3400 点经验值' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41282) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41284, '这些东西可不会长在树上，你懂吧？也不会长在地下，更不会长在任何地方。算了，你就赶紧交上来吧！' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41284) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1281,6 +1336,16 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41292, '坚持下去。那些愿意一次次经历失败的人，早已反复证明自己正朝着这门手艺的行家迈进。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41292) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41293, '别想用速度来打动我。我一向敬重那些肯花时间细细琢磨的人。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41293) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41294, '我们的作品是用来造福他人还是危害他人，并不归我们管。工匠打造自己的作品时不会去想谁是使用者，只想着它的用途。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41294) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
@@ -1288,6 +1353,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41295, '有时一想到她的下落，我就会变得多愁善感。可为 她 担忧终究毫无用处，尽管这念头很难压下去。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41295) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41297, '你的本事都丢了吗？没用的渣滓，我当初就不该在你身上浪费时间。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41297) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1326,6 +1396,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41312, '有人或许会说这是不可能完成的事。但你展现出的本事，已经足够让我看清你和你的耐力。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41312) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41313, '门纳尔湖是一处奥术能量的汇聚点，蓝龙军团聚集在那里并不令人费解。不过血精灵究竟在这里做什么，我就想不通了。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41313) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
@@ -1338,6 +1413,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41316, '哦，一张熟面孔。又回来受训了？' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41316) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41317, '说真的，我已经等不及要拿到这本书里那份美滋滋的图纸了！' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41317) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1406,6 +1486,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41338, '你好，冒险者。为了确保我们的世界得以延续，任何愿意出手相助的人我们都欢迎。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41338) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41339, '这片山丘潜藏的力量，即使是不通自然之道的人也能感受到。它会引来恶徒，这一点我们不能视而不见。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41339) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
@@ -1413,6 +1498,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41340, '$N！大德鲁伊梦风告诉了我海加尔山发生的事。梦境碎片你带在身上了吗？完成 干得好，$N。看到你这么迅速就完成了任务，我就更不必担心接下来要请你做的事了。你或许不知道，我和我的同胞都是玛洛恩的后裔。正是他与月神伊露恩的结合，孕育了我们的父神塞纳留斯——而他又创造了我们。这件事不仅关乎海加尔山的安危，关乎我的家族，更关乎整个艾泽拉斯。奖励 完成任务后可获得：6600 点经验值，塞纳里奥议会 100 点声望' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41340) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41341, '像玛洛恩这样高贵的存在，他对自然的爱与关怀远超我们所知的任何事物，必须受到保护。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41341) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1446,8 +1536,18 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41356, '我能感觉到，你曾面对过比这些巨人更强的敌人。我想你不需要更多的指点了。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41356) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41362, '黑铁矮人向来以能驾驭山脉的身躯而自豪。在支配黑铁矿石以及地壳中那些数不清的奇特宝石方面，很少有别人能展现出这样的造诣。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41362) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41363, '小心。这处噩梦之巢极其危险，而你途经部落领地的旅途同样凶险。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41363) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1458,6 +1558,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41371, '想想我在幻象中看到的那个地方。也许你听到的东西，让你想起了旅途上已经见过的某事或某人。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41371) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41372, '别让我们等太久。我们可不想让这些魔法一直处于失控状态。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41372) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1571,8 +1676,18 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41520, '徒弟，看到你如此用功，我很高兴。诺拉把事情都告诉了我。她派你去做的事，你完成了吗？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41520) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41522, '你好！我平时都在忙着解读 Sakgoth 带给我的这些旧文献，不过这会儿还有点空。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41522) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41523, '徒弟，看到你如此用功，我很高兴。诺拉把事情都告诉了我。她派你去做的事，你完成了吗？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41523) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1581,8 +1696,18 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41526, '徒弟，看到你如此用功，我很高兴。诺拉把事情都告诉了我。她派你去做的事，你完成了吗？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41526) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41528, '你好！我平时都在忙着解读 Sakgoth 带给我的这些旧文献，不过这会儿还有点空。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41528) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41529, '徒弟，看到你如此用功，我很高兴。诺拉把事情都告诉了我。她派你去做的事，你完成了吗？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41529) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1591,8 +1716,18 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41532, '徒弟，看到你如此用功，我很高兴。诺拉把事情都告诉了我。她派你去做的事，你完成了吗？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41532) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41534, '你好！我平时都在忙着解读 Sakgoth 带给我的这些旧文献，不过这会儿还有点空。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41534) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41535, '徒弟，看到你如此用功，我很高兴。诺拉把事情都告诉了我。她派你去做的事，你完成了吗？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41535) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1601,8 +1736,18 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41538, '徒弟，看到你如此用功，我很高兴。诺拉把事情都告诉了我。她派你去做的事，你完成了吗？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41538) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41540, '你好！我平时都在忙着解读 Sakgoth 带给我的这些旧文献，不过这会儿还有点空。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41540) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41541, '徒弟，看到你如此用功，我很高兴。诺拉把事情都告诉了我。她派你去做的事，你完成了吗？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41541) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1611,13 +1756,28 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41544, '徒弟，看到你如此用功，我很高兴。诺拉把事情都告诉了我。她派你去做的事，你完成了吗？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41544) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41546, '你好！我平时都在忙着解读 Sakgoth 带给我的这些旧文献，不过这会儿还有点空。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41546) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41547, '徒弟，看到你如此用功，我很高兴。诺拉把事情都告诉了我。她派你去做的事，你完成了吗？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41547) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41549, '你好！我平时都在忙着解读 Sakgoth 带给我的这些旧文献，不过这会儿还有点空。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41549) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41550, '徒弟，看到你如此用功，我很高兴。诺拉把事情都告诉了我。她派你去做的事，你完成了吗？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41550) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1716,6 +1876,81 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41579, '你若想驾驭这件物品的力量，就必须拿到所需的材料。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41579) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41581, '相信你自己能找到那些材料；你若想让我们继续下去，就必须做到。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41581) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41587, '相信你自己能找到那些材料；你若想让我们继续下去，就必须做到。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41587) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41593, '相信你自己能找到那些材料；你若想让我们继续下去，就必须做到。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41593) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41599, '相信你自己能找到那些材料；你若想让我们继续下去，就必须做到。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41599) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41605, '相信你自己能找到那些材料；你若想让我们继续下去，就必须做到。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41605) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41611, '相信你自己能找到那些材料；你若想让我们继续下去，就必须做到。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41611) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41617, '相信你自己能找到那些材料；你若想让我们继续下去，就必须做到。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41617) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41623, '相信你自己能找到那些材料；你若想让我们继续下去，就必须做到。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41623) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41629, '相信你自己能找到那些材料；你若想让我们继续下去，就必须做到。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41629) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41635, '注意安全，冒险者。北风领的山丘不该被无辜者的鲜血浸透。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41635) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41636, '欢迎来到我们这座简陋的教堂。你是来探望某位逝者，还是想来安静地祈祷？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41636) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41637, '你那边情况如何？希望那些小家伙不至于太难对付。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41637) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41638, '战争结束了，我本以为北风领终于能回归它宁静的本来面目。也许是我太天真了。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41638) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41640, '你成功了吗？拜托，小心一点，别为了我而鲁莽行事。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41640) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41641, '它们的敌意毫无道理。我在想，它们究竟有什么目的？' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41641) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
@@ -1743,6 +1978,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41646, '如果你也想帮忙把主力部队赶出北风领，当地的一位执法官正在“丰满的南瓜”里筹划自己的行动。它在东南方的格里门湖边上。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41646) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41649, '记住：绿色，滑杆向下，然后把旋钮往左拧！' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41649) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1811,6 +2051,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41701, '用它们黏糊糊的血把海面染红吧，不过要留意在这片水域游荡的鲨鱼。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41701) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41702, '看它们的举动，你会以为这里有什么它们想要的东西，可我想破头也想不出那究竟是什么。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41702) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
@@ -1818,6 +2063,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41703, '修理可占不了我们太多时间，这里的潮湿可不能小看。我可不想飞艇的船壳半路在荆棘谷上散架，所以快点，行吗？' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41703) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41704, '他们的哀号萦绕在我这具不死的躯体上，那片嘈杂在控诉我身为领主却如此无能。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41704) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1848,6 +2098,16 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41710, '根据我们收集到的情报，我猜鱼人正在收集破碎珍珠的碎片，想把它重新拼合起来。它们确实有一定智力，足以施放法术，可就算这样，对普通鱼人来说也还是太反常了。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41710) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41711, '这一切都让人困惑不解，但眼下需要的是行动，不是猜测。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41711) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41725, '黑铁零件取回来了吗？还是说，你只是顺路来打个招呼？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41725) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1891,13 +2151,43 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41749, '别让我干等着，伙计。我已经派了五个冒险者去找这块该死的石头了，你是第五个。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41749) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41753, '这些蠢货根本不明白自己在摆弄什么样的力量。一旦它落入我们手中，就能真正发挥出全部潜能。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41753) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41754, '欢迎来到我们的盛大展览！如果你对我们的展品有任何疑问，别客气，尽管问。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41754) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41758, '剃刀沼泽的巢穴是一片荆棘丛生的扭曲之地。我建议你为这趟行程做好准备。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41758) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41759, '当自然秩序受到威胁时，我们必须尽力相助，恢复平衡。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41759) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41760, '巴洛的历史仍在书写，它会走向何方，我不知道。但它的过去这一章必须做个了结，这一点我很确定。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41760) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41763, '如果你找到了它，千万别打开！你还没准备好欣赏它们那种……独特的美。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41763) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41766, '我的工人们开始把休息时间过得太舒坦了。我们得把这事了结，让产量回到正轨。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41766) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -1986,6 +2276,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41787, '这也许对你要求太高了，但到了这一步，我们已经没有半点余裕了。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41787) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41790, '当心，$N。他是个可怕的敌人。完成 那么……结束了。一件必要的事，办得也够妥当。可……我的思绪里仍有一道阴影。万一乌尔索尔自己也已经堕落了呢？万一那份沉默不是出于不屑，而是出于疯狂……腐化？这个念头太危险，我不敢轻易深想。大德鲁伊必须知道这件事。感谢你的……协助。愿风把你带离这片受诅咒的地方。奖励 完成任务后可获得：1150 点经验值，达纳苏斯 200 点声望' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41790) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
@@ -2021,6 +2316,21 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41817, '人生就是一场战斗，一场与你自身无法完全掌控的部分之间的战斗。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41817) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41819, '那些蠕动的蛇类，自封的海洋与湖泊的统治者——真是让人头疼。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41819) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41836, '我很好奇她手里握着什么样黑暗而邪异的器物，竟能让她拥有一份钥匙的副本。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41836) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41840, '哦，Sara，我亲爱的天使……以圣光之名，请保佑我的 Timothy 平安……！完成 什么……？这是什么？你从哪儿……？！不，不，不！Timothy！我的小 Timmy，不！哦，圣光啊，你为什么抛弃了我？！他还是个孩子，我亲爱的、天真的孩子！奖励 完成任务后可获得：1200 点经验值，暴风城 100 点声望' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41840) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
@@ -2041,6 +2351,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41845, '她是个以折磨灵魂取乐的怪物。对她的惩罚，来得越早越好。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41845) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41851, '铁趾多半在苦痛堡垒附近扎了营。至少换作我会这么做。那地方以古代遗物而闻名。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41851) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
@@ -2051,8 +2366,73 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41855, '我对执法官并无怨恨。我明白龙喉的威胁比矿场更重要。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41855) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41859, '完成 奖励 完成任务后可获得：1550 点经验值，暴风城 100 点声望' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41859) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41863, '我派了一支规模不小的巡逻队去查探斯托尔加兹城堡的残迹……可从那以后就一点消息都没有了。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41863) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41865, '斯托尔加兹城堡是以我祖父的名字命名的。我绝不会看着它在兽人的皮靴下烂掉。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41865) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41867, '在外头小心点。软泥怪看着不起眼，但潜伏在黑暗中的扭曲之物可不止它们。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41867) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41868, '真希望能和你一起去，不过……唉，我吃过苦头才明白，我拿书比拿刀顺手。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41868) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41869, '我的小伙子们的血在呼喊正义。不让那些畜生付出代价，就别回来。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41869) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41873, '怎么了？你是在 Brangar 的旧农庄找到的？' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41873) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41875, '外头到处都是碎石和废墟。我们只要够聪明，就能把它们用起来。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41875) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41880, '扎姆格斯不是独狼该去的地方。召集你的盟友，让那些兽人尝尝联盟的怒火！' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41880) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41881, '在外头小心点……斥候说，如今布兰加之愚里盘踞的东西比兽人更黑暗。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41881) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41886, '还活着？我是说——啊，你已经回来了？没有？那就睁大眼睛，别让靴子湿着……' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41886) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41889, '火焰正在升腾。别空着手回来——除非你想和它们一起化作灰烬。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41889) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41890, '你每拖延一刻，敌人就更大胆一分。向我证明部落依然令人畏惧。把纹章带回来。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41890) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -2061,8 +2441,18 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41892, '火焰正在升腾。别空着手回来——除非你想和它们一起化作灰烬。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41892) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41894, '我能为你做什么，$N？完成 瞧瞧这小宝贝？多彩动力的涡轮增压好货！这东西能让我重新站起来。我凑了凑能拿出来的当报酬，不多，但希望够付。现在，滚吧，我还有活儿要捣鼓。奖励 完成任务后可获得：1850 点经验值，300 点声望' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41894) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41897, '我们没有时间可以挥霍。那些怪物每多喘一口气，就会更强一分。让我看看你确实与它们交过手。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41897) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -2103,6 +2493,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41906, '这样的结局并不是我们当初答应给他们的。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41906) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41907, '我族人的传承必须延续下去，哪怕他们的灵魂如今已与先祖同行。我们的历史不能就此失传。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41907) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -2158,6 +2553,16 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41923, '伊瑟拉之哀嚎 明亮梦境碎片（10）完成 奖励 完成任务后可获得：2300 点经验值' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41923) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41924, '伊瑟拉之哀嚎 明亮梦境碎片（10）完成 奖励 完成任务后可获得：2300 点经验值' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41924) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41925, '伊瑟拉之哀嚎 明亮梦境碎片（10）完成 奖励 完成任务后可获得：2300 点经验值' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41925) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -2321,8 +2726,23 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41966, '你回来了！快告诉我！我们的计划成功了吗？我的族人终于自由了吗？' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41966) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41967, '我们的人已经所剩不多，我必须确保已经饱受折磨的同胞不会再有一个死于非命。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41967) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41968, '我可不想浪费时间。你要是弄不到那些角，我就另找别人。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41968) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41970, '有消息带回来吗？无论好坏。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41970) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -2333,6 +2753,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 41977, '行事小心些，恐怖图腾已经加固了风角峡谷，并把它据为己有。那些高耸陡峭的崖壁是绝佳的防御工事。如果你想帮忙，我建议你带上同伴。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41977) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 41978, '让他们体会我所承受的一切，只是时间问题。他们会为自己的所作所为付出代价，而我必将复仇。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41978) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -2581,6 +3006,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 42038, '在那些该死的巨魔身边千万别放松警惕。他们毫无荣誉可言，就算你背过身去也会动手。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 42038) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 42039, '做好万全准备，霜鬃巨魔是狡猾的敌人。完成 这么说，Ubukaz被干掉了？我简直不敢相信自己的耳朵。我毫不怀疑还会有另一个巨魔站出来当上酋长，但接下来的这些日子里，丹莫罗总算能太平了。趁他们内斗还没结束，我们还有时间庆祝一番！奖励 完成任务后可获得：1200 点经验值，铁炉堡 300 点声望' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 42039) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
@@ -2593,6 +3023,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 42041, '哦嚯嚯！看来我小看你了，$N。这些割藤刀几乎能切开空气；这些口粮又顶饱又好吃！我真是服了，你这几下子把我彻底镇住了。按说好的，我教你几手小窍门——那些能让你在最凶险的荒野里也活下来的窍门。完成 别磨蹭了！年轻人，时间可不等人。奖励 完成任务后可获得：4800 点经验值' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 42041) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 42042, '无论是什么东西，竟比我的父神塞纳留斯更受他们尊崇，那一定强大得无法想象。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 42042) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
@@ -2726,6 +3161,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 42082, '我必须提醒你，取到羽毛时务必轻柔，它们很脆弱！' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 42082) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 42086, '搜查废墟时要当心。哪怕最微不足道的遗物，也可能藏着值得铭记的故事。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 42086) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
@@ -2776,6 +3216,11 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
+  SELECT 42098, '挺起胸膛，士兵。磨利你的头脑，鼓起你的勇气，这场战斗很快就会结束。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 42098) x
+                      WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 42099, '矮人及其盟友为了保证任务成功，用起阴招来从不手软。别让他们占了上风！' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 42099) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
@@ -2811,7 +3256,7 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 
--- ---- EndText_loc4（6 条）----
+-- ---- EndText_loc4（7 条）----
 INSERT INTO `locales_quest` (`entry`, `EndText_loc4`)
   SELECT 41569, '在醉酒状态下与一名人类、兽人、巨魔或矮人玩家共舞。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `EndText_loc4` FROM `locales_quest` WHERE `entry` = 41569) x
@@ -2833,6 +3278,11 @@ INSERT INTO `locales_quest` (`entry`, `EndText_loc4`)
                       WHERE x.`EndText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `EndText_loc4` = IF(`EndText_loc4` REGEXP '[一-龥]', `EndText_loc4`, VALUES(`EndText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `EndText_loc4`)
+  SELECT 42098, '荆棘峡谷之战获胜。' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `EndText_loc4` FROM `locales_quest` WHERE `entry` = 42098) x
+                      WHERE x.`EndText_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `EndText_loc4` = IF(`EndText_loc4` REGEXP '[一-龥]', `EndText_loc4`, VALUES(`EndText_loc4`));
+INSERT INTO `locales_quest` (`entry`, `EndText_loc4`)
   SELECT 42099, '荆棘峡谷之战获胜。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `EndText_loc4` FROM `locales_quest` WHERE `entry` = 42099) x
                       WHERE x.`EndText_loc4` REGEXP '[一-龥]')
@@ -2843,10 +3293,15 @@ INSERT INTO `locales_quest` (`entry`, `EndText_loc4`)
                       WHERE x.`EndText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `EndText_loc4` = IF(`EndText_loc4` REGEXP '[一-龥]', `EndText_loc4`, VALUES(`EndText_loc4`));
 
--- ---- ObjectiveText1_loc4（15 条）----
+-- ---- ObjectiveText1_loc4（22 条）----
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
   SELECT 9270, '净化埃提耶什' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText1_loc4` FROM `locales_quest` WHERE `entry` = 9270) x
+                      WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
+  SELECT 9323, '诅咒之地烈焰' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText1_loc4` FROM `locales_quest` WHERE `entry` = 9323) x
                       WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
@@ -2855,13 +3310,28 @@ INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
                       WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
+  SELECT 41372, '等待仪式结束' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText1_loc4` FROM `locales_quest` WHERE `entry` = 41372) x
+                      WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
   SELECT 41388, '通过了试炼' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText1_loc4` FROM `locales_quest` WHERE `entry` = 41388) x
                       WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
+  SELECT 41637, '与劳埃德交谈' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText1_loc4` FROM `locales_quest` WHERE `entry` = 41637) x
+                      WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
   SELECT 41643, '审讯伊格纳兹' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText1_loc4` FROM `locales_quest` WHERE `entry` = 41643) x
+                      WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
+  SELECT 41649, '聆听了广播录音' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText1_loc4` FROM `locales_quest` WHERE `entry` = 41649) x
                       WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
@@ -2877,6 +3347,11 @@ INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
   SELECT 41698, '在熔炉安置炸药' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText1_loc4` FROM `locales_quest` WHERE `entry` = 41698) x
+                      WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
+  SELECT 41711, '平息了珍珠的怒火' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText1_loc4` FROM `locales_quest` WHERE `entry` = 41711) x
                       WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
@@ -2905,6 +3380,11 @@ INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
                       WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
+  SELECT 41970, '已调查第一支商队' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText1_loc4` FROM `locales_quest` WHERE `entry` = 41970) x
+                      WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
   SELECT 42051, '旋风神殿' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText1_loc4` FROM `locales_quest` WHERE `entry` = 42051) x
                       WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
@@ -2915,15 +3395,30 @@ INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
                       WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
+  SELECT 50321, '向加兹鲁维扔雪球' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText1_loc4` FROM `locales_quest` WHERE `entry` = 50321) x
+                      WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText1_loc4`)
   SELECT 60036, '把正义宝珠和无暇的德莱尼水晶球交给时尚达人学徒，作为报酬获得 3 枚幻化币。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText1_loc4` FROM `locales_quest` WHERE `entry` = 60036) x
                       WHERE x.`ObjectiveText1_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText1_loc4` = IF(`ObjectiveText1_loc4` REGEXP '[一-龥]', `ObjectiveText1_loc4`, VALUES(`ObjectiveText1_loc4`));
 
--- ---- ObjectiveText2_loc4（7 条）----
+-- ---- ObjectiveText2_loc4（10 条）----
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText2_loc4`)
+  SELECT 9323, '瘟疫之地烈焰' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText2_loc4` FROM `locales_quest` WHERE `entry` = 9323) x
+                      WHERE x.`ObjectiveText2_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText2_loc4` = IF(`ObjectiveText2_loc4` REGEXP '[一-龥]', `ObjectiveText2_loc4`, VALUES(`ObjectiveText2_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText2_loc4`)
   SELECT 41388, '聆听了萨克戈斯' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText2_loc4` FROM `locales_quest` WHERE `entry` = 41388) x
+                      WHERE x.`ObjectiveText2_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText2_loc4` = IF(`ObjectiveText2_loc4` REGEXP '[一-龥]', `ObjectiveText2_loc4`, VALUES(`ObjectiveText2_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText2_loc4`)
+  SELECT 41637, '与埃莉交谈' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText2_loc4` FROM `locales_quest` WHERE `entry` = 41637) x
                       WHERE x.`ObjectiveText2_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText2_loc4` = IF(`ObjectiveText2_loc4` REGEXP '[一-龥]', `ObjectiveText2_loc4`, VALUES(`ObjectiveText2_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText2_loc4`)
@@ -2947,6 +3442,11 @@ INSERT INTO `locales_quest` (`entry`, `ObjectiveText2_loc4`)
                       WHERE x.`ObjectiveText2_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText2_loc4` = IF(`ObjectiveText2_loc4` REGEXP '[一-龥]', `ObjectiveText2_loc4`, VALUES(`ObjectiveText2_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText2_loc4`)
+  SELECT 41970, '已调查第二支商队' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText2_loc4` FROM `locales_quest` WHERE `entry` = 41970) x
+                      WHERE x.`ObjectiveText2_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText2_loc4` = IF(`ObjectiveText2_loc4` REGEXP '[一-龥]', `ObjectiveText2_loc4`, VALUES(`ObjectiveText2_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText2_loc4`)
   SELECT 42051, '炽火神殿' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText2_loc4` FROM `locales_quest` WHERE `entry` = 42051) x
                       WHERE x.`ObjectiveText2_loc4` REGEXP '[一-龥]')
@@ -2957,10 +3457,20 @@ INSERT INTO `locales_quest` (`entry`, `ObjectiveText2_loc4`)
                       WHERE x.`ObjectiveText2_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText2_loc4` = IF(`ObjectiveText2_loc4` REGEXP '[一-龥]', `ObjectiveText2_loc4`, VALUES(`ObjectiveText2_loc4`));
 
--- ---- ObjectiveText3_loc4（6 条）----
+-- ---- ObjectiveText3_loc4（10 条）----
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText3_loc4`)
+  SELECT 9323, '辛特兰烈焰' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText3_loc4` FROM `locales_quest` WHERE `entry` = 9323) x
+                      WHERE x.`ObjectiveText3_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText3_loc4` = IF(`ObjectiveText3_loc4` REGEXP '[一-龥]', `ObjectiveText3_loc4`, VALUES(`ObjectiveText3_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText3_loc4`)
   SELECT 41388, '聆听了克兰诺克' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText3_loc4` FROM `locales_quest` WHERE `entry` = 41388) x
+                      WHERE x.`ObjectiveText3_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText3_loc4` = IF(`ObjectiveText3_loc4` REGEXP '[一-龥]', `ObjectiveText3_loc4`, VALUES(`ObjectiveText3_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText3_loc4`)
+  SELECT 41637, '与拉多夫交谈' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText3_loc4` FROM `locales_quest` WHERE `entry` = 41637) x
                       WHERE x.`ObjectiveText3_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText3_loc4` = IF(`ObjectiveText3_loc4` REGEXP '[一-龥]', `ObjectiveText3_loc4`, VALUES(`ObjectiveText3_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText3_loc4`)
@@ -2984,15 +3494,40 @@ INSERT INTO `locales_quest` (`entry`, `ObjectiveText3_loc4`)
                       WHERE x.`ObjectiveText3_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText3_loc4` = IF(`ObjectiveText3_loc4` REGEXP '[一-龥]', `ObjectiveText3_loc4`, VALUES(`ObjectiveText3_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText3_loc4`)
+  SELECT 41970, '已调查第三支商队' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText3_loc4` FROM `locales_quest` WHERE `entry` = 41970) x
+                      WHERE x.`ObjectiveText3_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText3_loc4` = IF(`ObjectiveText3_loc4` REGEXP '[一-龥]', `ObjectiveText3_loc4`, VALUES(`ObjectiveText3_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText3_loc4`)
   SELECT 42051, '峭岩神殿' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText3_loc4` FROM `locales_quest` WHERE `entry` = 42051) x
                       WHERE x.`ObjectiveText3_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText3_loc4` = IF(`ObjectiveText3_loc4` REGEXP '[一-龥]', `ObjectiveText3_loc4`, VALUES(`ObjectiveText3_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText3_loc4`)
+  SELECT 50321, '向老泥眼扔雪球' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText3_loc4` FROM `locales_quest` WHERE `entry` = 50321) x
+                      WHERE x.`ObjectiveText3_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText3_loc4` = IF(`ObjectiveText3_loc4` REGEXP '[一-龥]', `ObjectiveText3_loc4`, VALUES(`ObjectiveText3_loc4`));
 
--- ---- ObjectiveText4_loc4（1 条）----
+-- ---- ObjectiveText4_loc4（4 条）----
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText4_loc4`)
+  SELECT 9323, '灼热峡谷烈焰' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText4_loc4` FROM `locales_quest` WHERE `entry` = 9323) x
+                      WHERE x.`ObjectiveText4_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText4_loc4` = IF(`ObjectiveText4_loc4` REGEXP '[一-龥]', `ObjectiveText4_loc4`, VALUES(`ObjectiveText4_loc4`));
 INSERT INTO `locales_quest` (`entry`, `ObjectiveText4_loc4`)
   SELECT 41388, '聆听了卡夫艾' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText4_loc4` FROM `locales_quest` WHERE `entry` = 41388) x
+                      WHERE x.`ObjectiveText4_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText4_loc4` = IF(`ObjectiveText4_loc4` REGEXP '[一-龥]', `ObjectiveText4_loc4`, VALUES(`ObjectiveText4_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText4_loc4`)
+  SELECT 41637, '与特伊奥交谈' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText4_loc4` FROM `locales_quest` WHERE `entry` = 41637) x
+                      WHERE x.`ObjectiveText4_loc4` REGEXP '[一-龥]')
+  ON DUPLICATE KEY UPDATE `ObjectiveText4_loc4` = IF(`ObjectiveText4_loc4` REGEXP '[一-龥]', `ObjectiveText4_loc4`, VALUES(`ObjectiveText4_loc4`));
+INSERT INTO `locales_quest` (`entry`, `ObjectiveText4_loc4`)
+  SELECT 50321, '向阿鲁高之子扔雪球' FROM DUAL
+   WHERE NOT EXISTS (SELECT 1 FROM (SELECT `ObjectiveText4_loc4` FROM `locales_quest` WHERE `entry` = 50321) x
                       WHERE x.`ObjectiveText4_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `ObjectiveText4_loc4` = IF(`ObjectiveText4_loc4` REGEXP '[一-龥]', `ObjectiveText4_loc4`, VALUES(`ObjectiveText4_loc4`));
 
