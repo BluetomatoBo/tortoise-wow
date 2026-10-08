@@ -24,6 +24,12 @@ python3 tools/dbdiff/dbdiff.py --counts \
 # 输出里「线上少 N」的表就是要查的。例如：
 #   reference_loot_template   67746  67637   -109  ← 线上少 109
 
+# 1b) 更彻底：逐表按主键全量对比（--counts 会被 upstream 的 DELETE/UPDATE 掩盖，
+#     想要「一张不漏」就加 --all-tables，并把补数据脚本都写出来）
+python3 tools/dbdiff/dbdiff.py --all-tables --emit-dir /tmp/dbfix \
+    --mysql "mysql -h127.0.0.1 -uroot -p你的密码 tw_world" --sql-root sql
+#   → /tmp/dbfix/fix_<表名>.sql，逐张确认后导入
+
 # 2) 针对某张表逐行比主键，并生成补数据的脚本
 python3 tools/dbdiff/dbdiff.py \
     --mysql "mysql -h127.0.0.1 -uroot -p你的密码 tw_world" \
@@ -53,6 +59,10 @@ python3 tools/dbdiff/dbdiff.py --from-dump /tmp/tw_world_live.sql --sql-root sql
   有 DELETETE/UPDATE 把行改掉了）。
 * 比较是按主键（`create_databases.sql` 里的 PRIMARY KEY / 第一个 UNIQUE KEY）；
   没有主键的表只能 `--counts` 比行数。
+* 键在做比较前会统一去掉两端空白与引号（仓库里有的是 `12002`、有的是 `'12002'`，MySQL 里是同一个键）。
+* `--counts` 只是快筛：如果 upstream 的增量里 DELETE/UPDATE 掉了别的行，行数可能看不出来缺口，
+  真正「一张不漏」要看 `--all-tables`（输出里会提示有哪些语句本工具不解析，例如 `INSERT ... SELECT`，
+  这些表的期望值可能偏低，需要人工看一眼）。
 * 生成的补数据脚本一律 `INSERT IGNORE`，**只补不覆盖**，可以放心重复执行。
 * 有些表线上「少」是因为你们的数据是有意精简过的（例如 `pet_spell_list`、`creature_equip_template`
   这种仓库里本来就没有对应 id 的表，会表现为两边都缺、不报差异）。

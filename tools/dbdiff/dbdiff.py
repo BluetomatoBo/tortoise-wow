@@ -30,24 +30,20 @@ HEAD = re.compile(r"\b(?:INSERT|REPLACE)(?:\s+IGNORE)?\s+INTO\s+`([^`]+)`\s*(?:\
 CREATET = re.compile(r"CREATE TABLE `([^`]+)` \((.*?)\n\) ENGINE", re.S)
 
 
+TOKEN = re.compile(r"""'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|;|\\.|[^'"\\;]+""", re.S)
+
+
 def split_statements(text):
-    """按分号切分，跳过字符串里的分号（与内核 AutoUpdater 的逻辑一致，但会先剥掉整行注释）。"""
+    """按分号切分（跳过字符串里的分号，与内核 AutoUpdater 语义一致），先剥掉整行注释。"""
     text = "\n".join(l for l in text.split("\n") if not l.lstrip().startswith("--"))
-    out, buf, quote, i, n = [], [], None, 0, len(text)
-    while i < n:
-        c = text[i]
-        if quote:
-            buf.append(c)
-            if c == "\\":
-                buf.append(text[i + 1:i + 2]); i += 2; continue
-            if c == quote: quote = None
-            i += 1; continue
-        if c in "'\"":
-            quote = c; buf.append(c); i += 1; continue
-        if c == ";":
-            out.append("".join(buf)); buf = []; i += 1; continue
-        buf.append(c); i += 1
-    if buf: out.append("".join(buf))
+    out, cur = [], []
+    for m in TOKEN.finditer(text):
+        tok = m.group(0)
+        if tok == ";":
+            out.append("".join(cur)); cur = []
+        else:
+            cur.append(tok)
+    if cur: out.append("".join(cur))
     return out
 
 
@@ -92,6 +88,13 @@ def split_fields(row):
     return out
 
 
+def norm(v):
+    v = (v or "").strip()
+    if len(v) >= 2 and v[0] == "'" and v[-1] == "'":
+        v = v[1:-1]
+    return v
+
+
 def unset(s):
     return "NULL" if s.upper() == "NULL" else s
 
@@ -114,6 +117,7 @@ class Repo(object):
         self.keys = {}
         self._files = None
         self._stmts_cache = {}
+        self.unhandled = collections.Counter()
         self._load_ddl()
 
     def _stmts(self, path):
@@ -155,6 +159,32 @@ class Repo(object):
         return sorted(os.path.basename(p)[len("tw_world_"):-len(".sql")]
                       for p in glob.glob(os.path.join(self.root, "base", "tw_world_*.sql")))
 
+    def tree_fingerprint(self):
+        parts = []
+        for t in self.tables():
+            for f in self.files(t):
+                if os.path.exists(f):
+                    st = os.stat(f)
+                    parts.append("%s:%d:%d" % (f, st.st_size, int(st.st_mtime)))
+        return "%d-%d" % (len(parts), hash(tuple(parts)))
+
+    def cached_counts(self, cache_path):
+        try:
+            import json
+            if not os.path.exists(cache_path): return None
+            d = json.load(open(cache_path))
+            if d.get("fingerprint") != self.tree_fingerprint(): return None
+            return d.get("counts")
+        except Exception:
+            return None
+
+    def save_counts(self, cache_path, counts):
+        try:
+            import json
+            json.dump({"fingerprint": self.tree_fingerprint(), "counts": counts}, open(cache_path, "w"))
+        except Exception:
+            pass
+
     def expected(self, table):
         """把 base + 所有增量叠加成最终状态：{主键元组: 行字典}；没有主键时返回行列表。"""
         cols = self.ddl.get(table)
@@ -175,7 +205,7 @@ class Repo(object):
                         if len(f) != len(use): continue
                         d = dict(zip(use, [unset(x) for x in f]))
                         if key:
-                            k = tuple((d.get(c) or "").strip() for c in key)
+                            k = tuple(norm(d.get(c)) for c in key)
                             rows[k] = d
                         else:
                             plain.append(d)
@@ -198,6 +228,9 @@ class Repo(object):
                         if self._match(d, cond):
                             for a in self._assignments(sets):
                                 d[a[0]] = a[1]
+                    continue
+                if re.match(r"\s*(INSERT|REPLACE|UPDATE|DELETE)\b", s, re.I):
+                    self.unhandled[table] += 1
         return rows if key else plain
 
     @staticmethod
@@ -295,7 +328,7 @@ class MysqlSource(object):
 
     def keys(self, table, cols):
         expr = ",".join("IFNULL(`%s`,'')" % c for c in cols)
-        return [tuple(r) for r in mysql_run(self.cmd, "SELECT %s FROM `%s`" % (expr, table))]
+        return [tuple(norm(x) for x in r) for r in mysql_run(self.cmd, "SELECT %s FROM `%s`" % (expr, table))]
 
 
 # ---------------------------------------------------------------- 对比逻辑
@@ -305,11 +338,17 @@ def cmp_counts(repo, source):
     print("-" * 70)
     missing = []
     tables = repo.tables()
+    cached = repo.cached_counts(os.path.join(os.getcwd(), ".dbdiff_counts.json")) or {}
+    fresh = {}
     for i, t in enumerate(tables, 1):
-        sys.stderr.write("\r[%d/%d] 解析仓库里的 %-34s" % (i, len(tables), t))
-        sys.stderr.flush()
-        exp = repo.expected(t)
-        n_exp = len(exp) if exp is not None else 0
+        if t in cached:
+            n_exp = cached[t]
+        else:
+            sys.stderr.write("\r[%d/%d] 解析仓库里的 %-34s" % (i, len(tables), t))
+            sys.stderr.flush()
+            exp = repo.expected(t)
+            n_exp = len(exp) if exp is not None else 0
+            fresh[t] = n_exp
         n_live = source.count(t)
         delta = n_live - n_exp
         flag = ""
@@ -320,7 +359,16 @@ def cmp_counts(repo, source):
             flag = "  （线上多 %d，通常是你们自己的改动）" % delta
         print("%-34s %10d %10d %10d%s" % (t, n_exp, n_live, delta, flag))
     sys.stderr.write("\n")
+    if fresh:
+        cached.update(fresh)
+        repo.save_counts(os.path.join(os.getcwd(), ".dbdiff_counts.json"), cached)
+        sys.stderr.write("（期望行数已缓存到 %s，下次 --counts 秒回）\n" % os.path.join(os.getcwd(), ".dbdiff_counts.json"))
     print()
+    if repo.unhandled:
+        print("提示：这些表里有本工具不解析的语句（例如 INSERT ... SELECT），期望行数可能偏低：")
+        for t, n in repo.unhandled.most_common(8):
+            print("   %-38s %d 条" % (t, n))
+        print()
     if missing:
         print("线上比仓库少的表（先查这些）：")
         for t in missing:
@@ -345,7 +393,7 @@ def cmp_table(repo, source, table, emit_sql=None, limit=50):
         want = set()
         for c, f in source.table(table):
             d = dict(zip(c or cols, f))
-            want.add(tuple((d.get(k) or "").strip() for k in key))
+            want.add(tuple(norm(d.get(k)) for k in key))
         live = want
     missing = [k for k in exp if k not in live]
     extra = [k for k in live if k not in exp]
@@ -375,6 +423,56 @@ def cmp_table(repo, source, table, emit_sql=None, limit=50):
     return missing
 
 
+def all_tables(repo, source, emit_dir=None, quiet=False):
+    """逐表按主键对比（比 --counts 精确：upstream 的 UPDATE/DELETE 也可能让行数看不出缺口）。"""
+    rows = []
+    for i, t in enumerate(repo.tables(), 1):
+        key = repo.keys.get(t)
+        if not key:
+            continue
+        sys.stderr.write("\r[%d/%d] 对比 %-40s" % (i, len(repo.tables()), t))
+        sys.stderr.flush()
+        exp = repo.expected(t) or {}
+        if isinstance(source, MysqlSource):
+            live = set(source.keys(t, key))
+        else:
+            live = set()
+            for c, f in source.table(t):
+                d = dict(zip(c or repo.ddl.get(t) or [], f))
+                live.add(tuple(norm(d.get(k)) for k in key))
+        missing = [k for k in exp if k not in live]
+        rows.append((t, len(exp), len(live), len(missing), len(live) - len(exp)))
+        if missing and emit_dir:
+            path = os.path.join(emit_dir, "fix_%s.sql" % t)
+            _emit(repo, t, exp, missing, path)
+    sys.stderr.write("\n")
+    print("%-38s %9s %9s %8s" % ("表", "仓库", "线上", "线上缺"))
+    print("-" * 68)
+    total = 0
+    for t, ne, nl, nm, delta in sorted(rows, key=lambda r: -r[3]):
+        if nm == 0 and delta <= 0:
+            continue
+        total += nm
+        print("%-38s %9d %9d %8d%s" % (t, ne, nl, nm, "   ← 要补" if nm else ""))
+    print("-" * 68)
+    print("合计缺失行：%d" % total)
+    if emit_dir and total:
+        print("补数据脚本写在 %s/fix_*.sql（INSERT IGNORE，只补不覆盖）" % emit_dir)
+    elif total:
+        print("要生成补数据脚本，加 --emit-dir <目录>")
+    return rows
+
+
+def _emit(repo, table, exp, missing, path):
+    cols = repo.ddl[table]
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("-- dbdiff 生成：表 %s 缺失 %d 行（INSERT IGNORE，已存在则跳过）\n" % (table, len(missing)))
+        fh.write("INSERT IGNORE INTO `%s` (%s) VALUES\n" % (table, ", ".join("`%s`" % c for c in cols)))
+        vals = ["(" + ", ".join(sql_literal(exp[k].get(c)) for c in cols) + ")" for k in missing]
+        for i in range(0, len(vals), 5):
+            fh.write("    " + ",\n    ".join(vals[i:i + 5]) + (";\n" if i + 5 >= len(vals) else ",\n"))
+
+
 def sql_literal(v):
     if v is None: return "NULL"
     v = str(v)
@@ -390,6 +488,8 @@ def main():
     ap.add_argument("--counts", action="store_true", help="逐表比行数")
     ap.add_argument("--table", help="按主键细比某个表")
     ap.add_argument("--emit-sql", help="把 --table 缺失的行写成 INSERT IGNORE 脚本")
+    ap.add_argument("--all-tables", action="store_true", help="逐表按主键全量对比（最彻底，也最慢）")
+    ap.add_argument("--emit-dir", help="配合 --all-tables：把每张表缺失的行写成 fix_<表>.sql")
     ap.add_argument("--limit", type=int, default=50, help="打印多个缺失键（默认 50）")
     args = ap.parse_args()
 
@@ -402,7 +502,11 @@ def main():
         tables = [args.table] if args.table else repo.tables()
         source = DumpSource(args.from_dump, None if not args.table else tables)
 
-    if args.counts or not args.table:
+    if args.emit_dir and not os.path.isdir(args.emit_dir):
+        os.makedirs(args.emit_dir)
+    if args.all_tables:
+        all_tables(repo, source, args.emit_dir)
+    elif args.counts or not args.table:
         cmp_counts(repo, source)
     if args.table:
         cmp_table(repo, source, args.table, args.emit_sql, args.limit)
