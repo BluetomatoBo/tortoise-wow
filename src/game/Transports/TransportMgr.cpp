@@ -74,7 +74,11 @@ void TransportMgr::LoadTransportTemplates()
             continue;
         }
 
-        if (goInfo->moTransport.taxiPathId >= sTaxiPathNodesByPath.size())
+        // A transport walks its taxi path, so the path has to have nodes: the same
+        // test the template check in ObjectMgr does. Reaching GeneratePath with an
+        // empty node list would read past the end of it (`allPoints.front()`).
+        if (goInfo->moTransport.taxiPathId >= sTaxiPathNodesByPath.size()
+            || sTaxiPathNodesByPath[goInfo->moTransport.taxiPathId].empty())
         {
             sLog.outErrorDb("Transport %u (name: %s) has an invalid path specified in `gameobject_template`.`data0` (%u) field, skipped.", entry, goInfo->name.c_str(), goInfo->moTransport.taxiPathId);
             continue;

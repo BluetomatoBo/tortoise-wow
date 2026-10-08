@@ -6037,8 +6037,16 @@ void ObjectMgr::CheckGameObjectInfos()
             }
             case GAMEOBJECT_TYPE_SPELLCASTER:               //22
             {
-                // always must have spell
-                CheckGOSpellId(&itr->second, itr->second.spellcaster.spellId, 0);
+                // A spellcaster casts its spell when it is used; a template without
+                // one simply does nothing. Zero is not a spell entry, so checking it
+                // read as "have data0=0 but Spell (Entry 0) not exist" - a message
+                // that sends people looking for a spell nothing ever referenced. Note
+                // it in strict mode only, like the other half-filled rows here.
+                if (uint32 spellId = itr->second.spellcaster.spellId)
+                    CheckGOSpellId(&itr->second, spellId, 0);
+                else
+                    ERROR_DB_STRICT_LOG("Gameobject (Entry: %u GoType: %u) has no spell in data0 and will do nothing.",
+                        itr->second.id, itr->second.type);
                 break;
             }
             case GAMEOBJECT_TYPE_FLAGSTAND:                 //24
