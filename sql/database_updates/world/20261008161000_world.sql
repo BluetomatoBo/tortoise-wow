@@ -32,9 +32,15 @@ UPDATE `creature` SET `movement_type` = 2 WHERE `movement_type` <> 2 AND `guid` 
 -- 同样是 1(random)/非巡逻，说明它们在 1.12 里也没被使用）→ 无主死数据。
 -- 其中 2 条正好有同 entry 的出生点就站在路径起点（0.5 / 4.4 码）→ 路径改指过去并让它巡逻，
 -- 这样不是删掉而是救回来：
-UPDATE `creature_movement` SET `id` = 2581434 WHERE `id` = 2581433;  -- entry 80235：出生点 2581434 就在路径起点（0.46 码）
-UPDATE `creature_movement` SET `id` = 2700777 WHERE `id` = 2593426;  -- entry 62841：出生点 2700777 就在路径起点（4.35 码）
-UPDATE `creature` SET `movement_type` = 2 WHERE `movement_type` <> 2 AND `guid` IN (2581434, 2700777);
+-- creature_movement 的主键是 (id, point)：只有目标 guid 还没有任何路径点时才改指，避免撞主键
+SET @free_a := (SELECT COUNT(*) FROM `creature_movement` WHERE `id` = 2581434);
+SET @free_b := (SELECT COUNT(*) FROM `creature_movement` WHERE `id` = 2700777);
+UPDATE `creature_movement` SET `id` = 2581434 WHERE `id` = 2581433 AND @free_a = 0;
+UPDATE `creature_movement` SET `id` = 2700777 WHERE `id` = 2593426 AND @free_b = 0;
+-- 只有确实拿到路径了才把巡逻打开（否则会变成「标了巡逻却没有路径」的新报错）
+UPDATE `creature` SET `movement_type` = 2
+ WHERE `movement_type` <> 2 AND `guid` IN (2581434, 2700777)
+   AND `guid` IN (SELECT `id` FROM `creature_movement`);
 -- 余下 6 个 guid 的路径（起点离出生点很远、也没有可归属的出生点；1.12 里同 guid 的路径同样没被使用）：
 DELETE FROM `creature_movement` WHERE `id` IN (
     2413, 2453, 2470, 2562216, 2593727, 2593728
