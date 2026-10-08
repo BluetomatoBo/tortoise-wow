@@ -73,6 +73,7 @@ void WaypointManager::Load()
 
         // error after load, we check if creature guid corresponding to the path id has proper MovementType
         std::set<uint32> creatureNoMoveType;
+        std::set<uint32> creatureNoGuid;
 
         do
         {
@@ -97,7 +98,7 @@ void WaypointManager::Load()
             if (!cData)
             {
                 if (!sObjectMgr.IsExistingCreatureGuid(id))
-                    sLog.outErrorDb("Table creature_movement contain path for creature guid %u, but this creature guid does not exist. Skipping.", id);
+                    creatureNoGuid.insert(id);
                 continue;
             }
 
@@ -155,6 +156,12 @@ void WaypointManager::Load()
                 if (cInfo->movement_type == WAYPOINT_MOTION_TYPE)
                     sLog.outErrorDb("    creature_template for this entry has MovementType WAYPOINT_MOTION_TYPE(2), did you intend to use creature_movement_template ?");
             }
+        }
+
+        if (!creatureNoGuid.empty())
+        {
+            for (const auto itr : creatureNoGuid)
+                sLog.outErrorDb("Table creature_movement contain path for creature guid %u, but this creature guid does not exist. Skipping whole path.", itr);
         }
 
         

@@ -255,7 +255,7 @@ struct DoSpellProcEvent
         else
         {
             if (spell->procFlags == spe.procFlags)
-                sLog.outErrorDb("Spell %u listed in `spell_proc_event` has exactly same proc flags as in spell.dbc, field value redundant", spell->Id);
+                sLog.outErrorDb("Spell %u listed in `spell_proc_event` has exactly same proc flags as in `spell_template`, field value redundant", spell->Id);
             else
                 isCustom = true;
         }
@@ -270,7 +270,7 @@ struct DoSpellProcEvent
         else
         {
             if (spell->procChance == spe.customChance)
-                sLog.outErrorDb("Spell %u listed in `spell_proc_event` has exactly same custom chance as in spell.dbc, field value redundant", spell->Id);
+                sLog.outErrorDb("Spell %u listed in `spell_proc_event` has exactly same custom chance as in `spell_template`, field value redundant", spell->Id);
             else
                 isCustom = true;
         }

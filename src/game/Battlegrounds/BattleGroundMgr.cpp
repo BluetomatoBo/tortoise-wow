@@ -1455,8 +1455,8 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
         uint32 playerSkinReflootId = fields[11].GetUInt32();
         if (playerSkinReflootId && !ExistsRefLootTemplate(playerSkinReflootId))
         {
-            playerSkinReflootId = 0;
             sLog.outErrorDb("Table `battleground_template` for id %u associated with nonexistent refloot id %u. Setting to 0.", bgTypeID, playerSkinReflootId);
+            playerSkinReflootId = 0;
         }
 
         if (playerSkinReflootId)
