@@ -39,22 +39,32 @@ def split_like_autoupdater(text):
 
 
 def check(path):
+    # 只有内核会自动执行的文件（sql/database_updates/**）才需要严格按更新器规则检查；
+    # 手工执行的脚本（如 verify_refs.sql、prune_imported_cruft.sql）里「分号后的纯注释」无害。
+    auto = ("database_updates" in path) or ("/updates/" in path)
     text = open(path, encoding="utf-8", errors="replace").read()
     queries, tail, scope = split_like_autoupdater(text)
-    problems = []
+    problems, notes = [], []
     if scope != 0:
         problems.append("结尾仍处于字符串中 → 更新器会报 mid-string query at the end of SQL")
     if tail.strip("\t\r\n ;"):
         if all(l.strip().startswith("--") or not l.strip() for l in tail.split("\n")):
-            problems.append("最后一个 ; 之后还有纯注释内容 → 更新器会把它当语句执行（Query was empty）")
+            msg = "最后一个 ; 之后还有纯注释内容 → 更新器会把它当语句执行（Query was empty）"
+            (problems if auto else notes).append(msg if auto else "(仅自动更新文件需要注意) " + msg)
     # 纯注释的语句块
     for i, q in enumerate(queries):
         body = [l for l in q.split("\n") if l.strip() and not l.lstrip().startswith("--")]
         if not body:
-            problems.append("第 %d 块是纯注释（更新器仍会执行）" % (i + 1))
+            msg = "第 %d 块是纯注释（更新器仍会执行）" % (i + 1)
+            (problems if auto else notes).append(msg)
     n_real = len([q for q in queries if any(l.strip() and not l.lstrip().startswith("--") for l in q.split("\n"))])
-    print("%-46s 语句 %3d 条，单引号 %4d 个 %s" % (path.split("/")[-1], n_real, text.count("'"),
-          "OK" if not problems else "!! " + "；".join(problems)))
+    if problems:
+        verdict = "!! " + "；".join(problems)
+    elif notes:
+        verdict = "OK（非自动更新文件，注释块提示略过）"
+    else:
+        verdict = "OK"
+    print("%-46s 语句 %3d 条，单引号 %4d 个 %s" % (path.split("/")[-1], n_real, text.count("'"), verdict))
     return not problems
 
 
