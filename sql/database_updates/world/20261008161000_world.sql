@@ -91,9 +91,16 @@ DELETE FROM `spell_script_target` WHERE `entry` = 4170 AND `targetEntry` IN (259
 -- 这三组的数就是这么错的：65020 第二组 11 行各 11.11（=100/9，把 11 个项目按 9 个来分），
 -- 57642 第三组同理，20469 第一组是把 1.12 里那 8 个 Twilight 文本的概率归一化后又多乘了 1.136。
 -- 缩放回去后组内相对权重不变、合计正好 100%，即作者本意。
-UPDATE `creature_loot_template` SET `ChanceOrQuestChance` = ROUND(`ChanceOrQuestChance` * 100 / 122.209999, 4) WHERE `entry` = 65020 AND `groupid` = 2;
-UPDATE `creature_loot_template` SET `ChanceOrQuestChance` = ROUND(`ChanceOrQuestChance` * 100 / 122.220001, 4) WHERE `entry` = 57642 AND `groupid` = 3;
-UPDATE `item_loot_template`     SET `ChanceOrQuestChance` = ROUND(`ChanceOrQuestChance` * 100 / 113.595001, 4) WHERE `entry` = 20469 AND `groupid` = 1;
+-- 用会话变量取「现在的合计」，只在合计还是原始的错误值时缩放一次（重复执行不会二次缩放）
+SET @sum_a := (SELECT SUM(`ChanceOrQuestChance`) FROM `creature_loot_template` WHERE `entry` = 65020 AND `groupid` = 2);
+SET @sum_b := (SELECT SUM(`ChanceOrQuestChance`) FROM `creature_loot_template` WHERE `entry` = 57642 AND `groupid` = 3);
+SET @sum_c := (SELECT SUM(`ChanceOrQuestChance`) FROM `item_loot_template`     WHERE `entry` = 20469 AND `groupid` = 1);
+UPDATE `creature_loot_template` SET `ChanceOrQuestChance` = ROUND(`ChanceOrQuestChance` * 100 / @sum_a, 4)
+ WHERE `entry` = 65020 AND `groupid` = 2 AND @sum_a BETWEEN 100.01 AND 1000;
+UPDATE `creature_loot_template` SET `ChanceOrQuestChance` = ROUND(`ChanceOrQuestChance` * 100 / @sum_b, 4)
+ WHERE `entry` = 57642 AND `groupid` = 3 AND @sum_b BETWEEN 100.01 AND 1000;
+UPDATE `item_loot_template`     SET `ChanceOrQuestChance` = ROUND(`ChanceOrQuestChance` * 100 / @sum_c, 4)
+ WHERE `entry` = 20469 AND `groupid` = 1 AND @sum_c BETWEEN 100.01 AND 1000;
 
 -- ======================================================================
 -- 6) 生物血/蓝百分比为 0（原日志 2 行）

@@ -69,6 +69,14 @@ UPDATE `battleground_template` SET `player_loot_id` = 0 WHERE `id` IN (
      1) AND `player_loot_id` <> 0;
 
 -- 墓地挂在了「子区域」而不是「区域」上，按 area_template 的 zone_id 改成父区域（2 条）
+-- 表的主键是 (id, ghost_zone)：万一同一个墓地已经有「父区域」那行，先把指向子区域的重复行删掉，
+-- 否则直接改会撞主键（内核加载时本来就跳过子区域行，删掉不改变行为）
+DELETE gg FROM `game_graveyard_zone` gg
+  JOIN `game_graveyard_zone` gz ON gz.`id` = gg.`id` AND gz.`ghost_zone` = 5179
+ WHERE gg.`ghost_zone` = 5180;
+DELETE gg FROM `game_graveyard_zone` gg
+  JOIN `game_graveyard_zone` gz ON gz.`id` = gg.`id` AND gz.`ghost_zone` = 406
+ WHERE gg.`ghost_zone` = 2041;
 UPDATE `game_graveyard_zone` SET `ghost_zone` = 5179 WHERE `ghost_zone` = 5180;
 UPDATE `game_graveyard_zone` SET `ghost_zone` = 406 WHERE `ghost_zone` = 2041;
 

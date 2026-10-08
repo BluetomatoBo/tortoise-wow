@@ -11,7 +11,10 @@
 --   * 余下 899705（Genn Greymane - Say at 50% HP，缺的是台词 id）与 1069602（Refuge Pointe Defender -
 --     Emote Talk OOC）：两个数据源里都没有对应记录，无法凭空补 → 见报告。
 
-INSERT IGNORE INTO `creature_ai_scripts` (`id`, `delay`, `priority`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `target_param1`, `target_param2`, `target_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) VALUES
-    ('185202', '0', '0', '15', '12556', '3', '0', '0', '0', '0', '1', '4', '0', '0', '0', '0', '0', '0', '0', '0', '0', 'Araj the Summoner - Cast Spell Frost Armor'),
-    ('1007801', '0', '0', '15', '11966', '1', '0', '0', '0', '0', '1', '4', '0', '0', '0', '0', '0', '0', '0', '0', '0', 'Terrorspark - Cast Spell Fire Shield'),
-    ('799901', '0', '0', '16', '5885', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', 'Tyrande Whisperwind - Play Sound 5885 on Aggro (按 1.12 dump 同 id 记录译成 SCRIPT_COMMAND_PLAY_SOUND)');
+-- creature_ai_scripts 这张表没有主键，所以逐条用 NOT EXISTS 守卫，重复执行不会插重复行
+INSERT INTO `creature_ai_scripts` (`id`, `delay`, `priority`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `target_param1`, `target_param2`, `target_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) SELECT '185202', '0', '0', '15', '12556', '3', '0', '0', '0', '0', '1', '4', '0', '0', '0', '0', '0', '0', '0', '0', '0', 'Araj the Summoner - Cast Spell Frost Armor' FROM DUAL
+ WHERE NOT EXISTS (SELECT 1 FROM `creature_ai_scripts` WHERE `id` = 185202);
+INSERT INTO `creature_ai_scripts` (`id`, `delay`, `priority`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `target_param1`, `target_param2`, `target_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) SELECT '1007801', '0', '0', '15', '11966', '1', '0', '0', '0', '0', '1', '4', '0', '0', '0', '0', '0', '0', '0', '0', '0', 'Terrorspark - Cast Spell Fire Shield' FROM DUAL
+ WHERE NOT EXISTS (SELECT 1 FROM `creature_ai_scripts` WHERE `id` = 1007801);
+INSERT INTO `creature_ai_scripts` (`id`, `delay`, `priority`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `target_param1`, `target_param2`, `target_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) SELECT '799901', '0', '0', '16', '5885', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', 'Tyrande Whisperwind - Play Sound 5885 on Aggro (按 1.12 dump 同 id 记录译成 SCRIPT_COMMAND_PLAY_SOUND)' FROM DUAL
+ WHERE NOT EXISTS (SELECT 1 FROM `creature_ai_scripts` WHERE `id` = 799901);
