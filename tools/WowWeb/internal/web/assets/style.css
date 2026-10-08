@@ -250,19 +250,30 @@ pre {
 /* ---- zone maps ----
    The image is the client's own zone map, assembled from its twelve tiles and
    shipped at half size (501x334, see gen_maps.py); the dots are placed in percent
-   by the server, so a map needs no script. */
+   by the server, so a map needs no script.
+
+   A dot's percentage is of the artwork, so it is positioned against .map-frame -
+   a box that is nothing but the image - and not against the figure, which also
+   holds the caption below the picture. The difference is not cosmetic: the
+   caption is about a tenth of the figure's height, which is enough to draw a
+   spawn on a zone's southern edge underneath the artwork, outside the map. */
 .maprow { display: flex; flex-wrap: wrap; gap: 1rem; }
 .map { margin: 0; }
+.map-frame {
+  position: relative;
+  display: inline-block;
+  vertical-align: top;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
 .map img {
   display: block;
   width: 480px;
   max-width: 100%;
   height: auto;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 5px;
   image-rendering: auto;
 }
-.map { position: relative; }
 .map-dot {
   position: absolute;
   width: 10px;

@@ -202,6 +202,7 @@ func TestPagesDrawMaps(t *testing.T) {
 	if !strings.Contains(npc, "map-dot") {
 		t.Errorf("the creature page draws no dot:\n%s", first(npc, 1200))
 	}
+	checkDotsShareTheImage(t, "the creature page", npc)
 
 	point, ok := page.MapPoint(0, -9466.4, 21.4)
 	if !ok {
@@ -218,6 +219,36 @@ func TestPagesDrawMaps(t *testing.T) {
 	plain := render("db_quest", dbQuestView{PageData: page, Quest: store.ContentQuest{Entry: 2, Title: "无坐标"}})
 	if strings.Contains(plain, "/assets/maps/") {
 		t.Errorf("a quest without a point drew a map:\n%s", first(plain, 1200))
+	}
+}
+
+// checkDotsShareTheImage asserts a page's dots are positioned against a box that
+// holds nothing but the map image.
+//
+// The percentage a dot carries is of the artwork, so the element it is absolutely
+// positioned in has to be the image and not the figure around it: the figure also
+// holds the caption below the picture, which makes it taller, and a dot then lands
+// lower than the world coordinate it came from - far enough down that a spawn on a
+// zone's southern edge is drawn below the map. The check is the order of the pieces
+// in the markup - image, dots, caption - because that is what decides the box the
+// browser resolves the percentage against.
+func checkDotsShareTheImage(t *testing.T, what, page string) {
+	t.Helper()
+	frame := strings.Index(page, `class="map-frame"`)
+	img := strings.Index(page, "<img src=\"/assets/maps/")
+	dot := strings.Index(page, `class="map-dot"`)
+	caption := strings.Index(page, "<figcaption>")
+	if frame < 0 || img < 0 || dot < 0 {
+		t.Errorf("%s: map, image or dot missing (frame %d, img %d, dot %d)", what, frame, img, dot)
+		return
+	}
+	if !(frame < img && img < dot) {
+		t.Errorf("%s: the dot is not inside the map frame (frame %d, img %d, dot %d):\n%s",
+			what, frame, img, dot, first(page[frame:], 400))
+	}
+	if caption >= 0 && dot > caption {
+		t.Errorf("%s: the dot comes after the caption, so it is a percentage of the figure:\n%s",
+			what, first(page[dot:], 300))
 	}
 }
 

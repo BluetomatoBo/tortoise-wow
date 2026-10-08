@@ -71,3 +71,51 @@ func first(s string, n int) string {
 	}
 	return s
 }
+
+// TestMapDotsAreMeasuredAgainstTheArtwork covers the stylesheet half of the dot
+// placement.
+//
+// A dot's left/top are percentages of the map image, so the element the browser
+// resolves them against has to be the element wrapped around the <img> alone -
+// .map-frame, with position: relative. The figure it sits in also holds the
+// caption, so a dot positioned against the figure lands lower than the coordinate
+// it came from (and off the bottom of the map for the southern edges of a zone).
+func TestMapDotsAreMeasuredAgainstTheArtwork(t *testing.T) {
+	css, err := templateFS.ReadFile("assets/style.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(css)
+
+	frame := styleRule(text, ".map-frame")
+	if frame == "" {
+		t.Fatal("the stylesheet has no .map-frame rule: the dots have no box of their own")
+	}
+	if !strings.Contains(frame, "position: relative") {
+		t.Errorf(".map-frame is not positioned, so a dot inside it resolves against an ancestor:\n%s", frame)
+	}
+	if rule := styleRule(text, ".map { margin: 0"); strings.Contains(rule, "position:") {
+		t.Errorf("the figure is positioned again, which would let a dot resolve against the caption's box:\n%s", rule)
+	}
+	dot := styleRule(text, ".map-dot")
+	if !strings.Contains(dot, "position: absolute") {
+		t.Errorf(".map-dot is not absolutely positioned:\n%s", dot)
+	}
+}
+
+// styleRule returns the body of the (first) rule whose selector starts with the
+// given prefix at the start of a line, or "" when there is none. The line check
+// keeps the selector from matching prose in a comment above it.
+func styleRule(css, prefix string) string {
+	at := strings.Index(css, "\n"+prefix)
+	if at < 0 {
+		return ""
+	}
+	at++
+	open := strings.Index(css[at:], "{")
+	end := strings.Index(css[at:], "}")
+	if open < 0 || end < open {
+		return ""
+	}
+	return css[at : at+end+1]
+}
