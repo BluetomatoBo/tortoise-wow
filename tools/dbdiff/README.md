@@ -155,3 +155,25 @@ mysql -h127.0.0.1 -uroot -p tw_world < tools/dbdiff/prune_imported_cruft.sql
 
 注意：`has total chance > 100%` 那类是**掉落概率数据本身**的警告（仍会被使用），
 清不掉也不该盲删；要处理得按「100/合计」缩放（见本文件第五节的同类做法）。
+
+## 八、`DBErrorFixFile`（内核自己生成的清理脚本）
+
+`mangosd.conf` 里设 `DBErrorFixFile = "dbfix.log"` 后，内核会把「这条数据该怎么写才合法」
+的现成 SQL 写进这个文件，形如：
+
+```
+DELETE FROM creature_loot_template WHERE entry=1234;      -- 没有任何生物引用这条掉落表
+UPDATE creature_template SET `base_attack_time`=2000 WHERE entry=7;   -- 内核运行时已经这么用了
+UPDATE creature_loot_template SET ChanceOrQuestChance=ChanceOrQuestChance*0.5 WHERE groupid=1;   -- ⚠️ 缺 entry=
+```
+
+**怎么用：**
+
+* `DELETE FROM <掉落表> WHERE entry=N;` —— 可以整批执行（我已经把等价条件写进
+  `prune_imported_cruft.sql`，两者条数应当一致：567 gameobject / 520 creature / 94 skinning /
+  93 pickpocketing / 18 reference）。
+* `UPDATE creature_template SET base_attack_time / ranged_attack_time / equipment_id` —— 可以执行
+  （内核加载时本来就把内存里的值改成这个，ObjectMgr.cpp:1339/1345/1423）。
+* ⚠️ `UPDATE ... SET ChanceOrQuestChance=ChanceOrQuestChance*X WHERE groupid=N;` —— **不要直接执行**：
+  内核打印时漏了 `entry=`，直接跑会把全表同 groupid 的所有行一起缩放。要修就用
+  `tools/dbdiff/gen_group_chance_fix.sql`（它会按 entry 逐组生成、只缩放合计 >100 的那几组）。
