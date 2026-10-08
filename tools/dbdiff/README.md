@@ -116,3 +116,42 @@ python3 tools/dbdiff/check_update_file.py
 
 它检查两件事：**结尾是否还处于字符串中**（注释里有落单的英文单引号时会发生）、
 **最后一个 `;` 之后是否还有纯注释内容**（更新器会把它当语句执行）。
+
+## 七、补完 base dump 缺口之后的「善后」
+
+把仓库里缺的行整批补进线上库（`fix_*.sql`）之后，日志里会出现一批**新**报错 —— 不是补错了，
+而是把上游数据库里的历史包袱也一并搬了进来（这些行在内核里本来就是「加载时跳过」的）：
+
+```
+567  Table 'gameobject_loot_template' entry N isn't gameobject lootid and not referenced from loot, and then useless.
+520  Table 'creature_loot_template' entry N isn't creature entry and not referenced from loot, and then useless.
+159  Spell N listed in `spell_affect` have redundant (same with EffectItemTypeN) data ... skipped.
+126  Table 'creature_loot_template' entry N group N has total chance > 100%
+ 94  Table 'skinning_loot_template' ... useless
+ 93  Table 'pickpocketing_loot_template' ... useless
+ 32  Table `npc_trainer` for trainer (Entry: N) has non-learning spell N, ignore
+```
+
+两条路：
+
+**A. 让内核自己给出清理脚本（推荐）** —— 内核为这些问题准备了 `LOG_DBERRFIX` 输出，
+就是一条条现成的 `DELETE FROM ... WHERE ...;`。默认关闭，在 `mangosd.conf` 里打开即可：
+
+```ini
+DBErrorFixFile = "dbfix.log"
+```
+
+重启后 `logs/dbfix.log`（或服务器目录下）就是可执行的清理脚本，人工过一遍再执行。
+
+**B. 直接用我准备的脚本**（条件逐条照内核源码写的，只删内核本来就会跳过的行）：
+
+```bash
+mysql -h127.0.0.1 -uroot -p tw_world < tools/dbdiff/prune_imported_cruft.sql
+```
+
+脚本分两段：前半段「体检」只查不改（先看行数），后半段才是 DELETE。全是 DELETE，可重复执行。
+覆盖：无人引用的战利品表条目（creature/gameobject/pickpocketing/skinning/reference）、
+`npc_trainer` 的三类非法行、没人使用的 `npc_vendor_template`、内核判定为多余的 `spell_affect` 行。
+
+注意：`has total chance > 100%` 那类是**掉落概率数据本身**的警告（仍会被使用），
+清不掉也不该盲删；要处理得按「100/合计」缩放（见本文件第五节的同类做法）。
