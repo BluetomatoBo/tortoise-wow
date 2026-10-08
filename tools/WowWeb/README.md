@@ -11,6 +11,9 @@ already uses**, so nothing has to be patched or rebuilt on the server side.
 
 ## 中文说明
 
+> **进度与待办：** 做到哪了、还差什么、下一步先做什么，见 [PROGRESS.md](PROGRESS.md)。
+> 这一份 README 讲的是「每个功能怎么做、为什么这么做」。
+
 ### 它解决什么问题
 
 | 没有它 | 有了它 |
