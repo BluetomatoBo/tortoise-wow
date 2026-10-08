@@ -198,3 +198,21 @@ UPDATE creature_loot_template SET ChanceOrQuestChance=ChanceOrQuestChance*0.5 WH
 
   生成的每条语句都写成 `UPDATE t AS l JOIN (SELECT SUM(...) AS s ...) cur SET ... WHERE ... AND cur.s > 101;`
   —— 只有「当前合计仍然 >101」时才缩放，所以**重复执行、或拿旧日志生成的脚本都不会误伤**。
+
+## 九、⚠️ 一个已经修掉的解析陷阱（`\'` 转义）
+
+`dbdiff` 早期版本的 `split_tuples` / `split_fields` 对 **转义单引号** 处理不对：进了字符串后遇到
+`\` 只把反斜杠复制一份、**没有跳过下一个字符**，于是 `'An\'telas'` 里的 `\'` 被当成
+「字符串结束」，后面几行的文本会一路粘进同一个字段；同一批里另一些行则整行没被读出来。
+
+影响面（已核对）：只有 **字符串列** 的表会受害 —— 我们导出过的 20 张表里只有
+`area_template.name`、`taxi_nodes.name`、`playercreateinfo_spell.note` 是字符串，
+其中 note 没有转义字符、不受影响；`area_template` / `taxi_nodes` 需要重修，
+修好的脚本是 `sql/database_updates/world/20261008190000_world.sql`
+（按修正后的解析把这两张表在 dump 里的全部条目删掉重插，未在 dump 里的自建条目不动）。
+
+现在的实现是：字符串里遇到 `\` 时把「反斜杠 + 下一个字符」一起吃掉；读取时用
+`unescape()` 还原真实值（`\'`→`'`、`\\`→`\`…），写出时再由 `sql_literal()` 重新转义，
+并做了「原文 → 解析 → 重新生成 → 逐字段比对」的往返验证。
+
+**教训**：任何「导出/回写」的脚本都必须做一次往返验证，光看语句能执行是不够的。

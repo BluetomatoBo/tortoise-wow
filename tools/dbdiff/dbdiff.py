@@ -48,37 +48,47 @@ def split_statements(text):
 
 
 def split_tuples(body):
-    """把 VALUES 后的 (a,b),(c,d) 切成 [ 'a,b', 'c,d' ]（尊重引号与括号）。"""
-    out, buf, depth, quote = [], [], 0, None
-    for c in body:
+    """把 VALUES 后的 (a,b),(c,d) 切成 [ 'a,b', 'c,d' ]（尊重引号、反斜杠转义与括号）。
+
+    注意：进入字符串后遇到 `\\` 必须把「反斜杠 + 下一个字符」一起吃掉，否则 `\'`
+    会被当成「字符串结束」，后面整段行文本都会粘进同一个字段（历史上就是这么错的）。
+    """
+    out, buf, depth, quote, i, n = [], [], 0, None, 0, len(body)
+    while i < n:
+        c = body[i]
         if quote:
             buf.append(c)
-            if c == "\\": buf.append(c)
-            elif c == quote: quote = None
-            continue
+            if c == "\\" and i + 1 < n:
+                buf.append(body[i + 1]); i += 2; continue
+            if c == quote: quote = None
+            i += 1; continue
         if c in "'\"":
-            quote = c; buf.append(c); continue
+            quote = c; buf.append(c); i += 1; continue
         if c == "(":
             depth += 1
-            if depth == 1: buf = []; continue
+            if depth == 1:
+                buf = []; i += 1; continue
         elif c == ")":
             depth -= 1
-            if depth == 0: out.append("".join(buf)); buf = []; continue
+            if depth == 0:
+                out.append("".join(buf)); buf = []; i += 1; continue
         if depth: buf.append(c)
+        i += 1
     return out
 
 
 def split_fields(row):
-    out, buf, quote = [], [], None
-    i = 0
-    while i < len(row):
+    """把一行 (a,b,c) 的正文切成字段；字符串里的逗号不切。
+    `\\x` 是转义（保留原样，交给 sql_literal/unset 处理），`\'` 不会提前结束字符串。"""
+    out, buf, quote, i, n = [], [], None, 0, len(row)
+    while i < n:
         c = row[i]
         if quote:
-            if c == "\\":
+            if c == "\\" and i + 1 < n:
                 buf.append(row[i:i + 2]); i += 2; continue
-            if c == quote: quote = None
-            else: buf.append(c)
-            i += 1; continue
+            if c == quote:
+                quote = None; i += 1; continue
+            buf.append(c); i += 1; continue
         if c in "'\"":
             quote = c; i += 1; continue
         if c == ",":
@@ -86,6 +96,27 @@ def split_fields(row):
         buf.append(c); i += 1
     out.append("".join(buf).strip())
     return out
+
+
+_UNESCAPE = {"0": "\0", "b": "\b", "n": "\n", "r": "\r", "t": "\t", "Z": "\x1a",
+             "\\": "\\", "'": "'", '"': '"', "%": "%", "_": "_"}
+
+
+def unescape(text):
+    """把 mysqldump 写出来的转义还原成真实值：\' → '、\\ → \、\n → 换行 ……"""
+    if "\\" not in text:
+        return text
+    out, i, n = [], 0, len(text)
+    while i < n:
+        c = text[i]
+        if c == "\\" and i + 1 < n:
+            nxt = text[i + 1]
+            out.append(_UNESCAPE.get(nxt, nxt))
+            i += 2
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
 
 
 def norm(v):
@@ -96,7 +127,13 @@ def norm(v):
 
 
 def unset(s):
-    return "NULL" if s.upper() == "NULL" else s
+    """字段文本 → 真实值（NULL 归一化 + 反转义）"""
+    s = s.strip()
+    if s.upper() == "NULL":
+        return "NULL"
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in "\"'":
+        s = s[1:-1]
+    return unescape(s)
 
 
 def iter_inserts(text, table):
