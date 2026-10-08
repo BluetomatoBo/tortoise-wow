@@ -176,4 +176,9 @@ UPDATE creature_loot_template SET ChanceOrQuestChance=ChanceOrQuestChance*0.5 WH
   （内核加载时本来就把内存里的值改成这个，ObjectMgr.cpp:1339/1345/1423）。
 * ⚠️ `UPDATE ... SET ChanceOrQuestChance=ChanceOrQuestChance*X WHERE groupid=N;` —— **不要直接执行**：
   内核打印时漏了 `entry=`，直接跑会把全表同 groupid 的所有行一起缩放。要修就用
-  `tools/dbdiff/gen_group_chance_fix.sql`（它会按 entry 逐组生成、只缩放合计 >100 的那几组）。
+  `tools/dbdiff/gen_group_chance_fix.sql`，它按 entry 逐组生成，并且与内核判定完全对齐：
+  * 阈值用 **> 101**（内核 `LootMgr.cpp:1294` 就是 `chance > 101.0f`，留了 1% 容差），
+    不是 100.01 —— 否则会把内核根本不报的组也一起改；
+  * 分母只累加**正值**（内核 `RawTotalChance()` 只算非任务条目），也只缩放正值行，
+    任务掉落（负值）是独立判定、不参与竞争，不动它。
+  条数应当与内核日志里「has total chance > 100%」的行数接近；跑完再跑一次不会有命中（幂等）。
