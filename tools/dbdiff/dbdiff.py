@@ -118,6 +118,8 @@ class Repo(object):
         self._files = None
         self._stmts_cache = {}
         self.unhandled = collections.Counter()
+        self.unreliable = collections.Counter()
+        self._vars = {}
         self._load_ddl()
 
     def _stmts(self, path):
@@ -161,6 +163,11 @@ class Repo(object):
 
     def tree_fingerprint(self):
         parts = []
+        try:
+            with open(__file__, "rb") as fh:
+                parts.append("tool:%d" % len(fh.read()))
+        except Exception:
+            pass
         for t in self.tables():
             for f in self.files(t):
                 if os.path.exists(f):
@@ -192,11 +199,22 @@ class Repo(object):
         key = self.keys.get(table)
         rows = {}
         plain = []
+        var = self._vars          # 会话变量（SET @x := ... 会被求值）
         for path in self.files(table):
             if not os.path.exists(path): continue
             for st in self._stmts(path).get(table, []):
                 s = st.strip()
                 if not s: continue
+                ms = re.match(r"SET\s+@(\w+)\s*:?=\s*(.*)$", s, re.I | re.S)
+                if ms:
+                    expr = ms.group(2).strip()
+                    while expr.startswith("(") and expr.endswith(")"):
+                        expr = expr[1:-1].strip()
+                    try:
+                        self._vars[ms.group(1)] = self._eval_scalar(expr)
+                    except Exception:
+                        self._vars[ms.group(1)] = None
+                    continue
                 m = HEAD.search(s)
                 if m and m.group(1) == table:
                     use = [c.strip().strip('`') for c in m.group(2).split(",")] if m.group(2) else cols
@@ -215,23 +233,243 @@ class Repo(object):
                     cond = (m.group(1) or "").strip()
                     if not cond:
                         rows.clear(); plain = []; continue
-                    for k in [k for k, d in rows.items() if self._match(d, cond)]: del rows[k]
-                    plain = [d for d in plain if not self._match(d, cond)]
+                    pred = self.compile_cond(cond, var)
+                    if pred is None:
+                        self.unreliable[table] += 1
+                        continue
+                    for k in [k for k, d in rows.items() if pred(d)]: del rows[k]
+                    plain = [d for d in plain if not pred(d)]
                     continue
                 m = re.match(r"UPDATE\s+`%s`\s+SET\s+(.*?)\s+WHERE\s+(.*)$" % table, s, re.I | re.S)
                 if m:
                     sets, cond = m.group(1), m.group(2)
-                    for k, d in rows.items():
-                        for a in self._assignments(sets):
-                            d[a[0]] = a[1]
+                    assigns = self._assignments(sets)
+                    pred = self.compile_cond(cond, var)
+                    if pred is None:
+                        self.unreliable[table] += 1
+                        continue
+                    for d in rows.values():
+                        if pred(d):
+                            for a in assigns: d[a[0]] = a[1]
                     for d in plain:
-                        if self._match(d, cond):
-                            for a in self._assignments(sets):
-                                d[a[0]] = a[1]
+                        if pred(d):
+                            for a in assigns: d[a[0]] = a[1]
                     continue
                 if re.match(r"\s*(INSERT|REPLACE|UPDATE|DELETE)\b", s, re.I):
                     self.unhandled[table] += 1
         return rows if key else plain
+
+
+    # ---------------------------------------------------------------- 条件求值
+    # 返回 True / False / None（None = 本工具判不了这个条件，调用方保守处理并标记该表不可靠）
+    _P_BETWEEN_VAR = re.compile(r"^@(?P<v>\w+)\s+BETWEEN\s+(?P<a>.+?)\s+AND\s+(?P<b>.+)$", re.I | re.S)
+    _P_CMP_VAR     = re.compile(r"^@(?P<v>\w+)\s*(?P<op><>|!=|>=|<=|=|>|<)\s*(?P<val>.+)$", re.I | re.S)
+    _P_BETWEEN     = re.compile(r"^`?(?P<col>[A-Za-z0-9_.]+)`?\s+BETWEEN\s+(?P<a>.+?)\s+AND\s+(?P<b>.+)$", re.I | re.S)
+    _P_CMP         = re.compile(r"^`?(?P<col>[A-Za-z0-9_.]+)`?\s*(?P<op><>|!=|>=|<=|=|>|<)\s*(?P<val>.+)$", re.I | re.S)
+    _P_IN          = re.compile(r"^`?(?P<col>[A-Za-z0-9_.]+)`?\s+(?P<inop>NOT\s+IN|IN)\s*\(\s*(?P<list>[^)]*)\)$", re.I | re.S)
+    _P_NULL        = re.compile(r"^`?(?P<col>[A-Za-z0-9_.]+)`?\s+IS\s+(?P<null>NOT\s+NULL|NULL)$", re.I | re.S)
+
+    @staticmethod
+    def _split_and(cond):
+        """按顶层 AND 切开（跳过括号内的、以及 BETWEEN ... AND ... 里的那个 AND）。"""
+        parts, buf, depth, i = [], [], 0, 0
+        while i < len(cond):
+            c = cond[i]
+            if c == "(":
+                depth += 1
+            elif c == ")":
+                depth -= 1
+            if depth == 0 and cond[i:i + 5].upper() == " AND ":
+                if re.search(r"\bBETWEEN\s+[^()]*$", "".join(buf), re.I):
+                    buf.append(cond[i:i + 5]); i += 5; continue
+                parts.append("".join(buf)); buf = []; i += 5; continue
+            buf.append(c); i += 1
+        parts.append("".join(buf))
+        return [x.strip() for x in parts if x.strip()]
+
+    @staticmethod
+    def _num(x):
+        try:
+            return float(str(x).strip())
+        except Exception:
+            return None
+
+    def _value(self, d, txt, var):
+        """字面量 / @变量 / 列名；判不了返回 None。"""
+        txt = (txt or "").strip()
+        if txt.startswith("("):
+            return None
+        if txt.startswith("@"):
+            v = var.get(txt[1:])
+            return None if v is None else str(v)
+        if len(txt) >= 2 and txt[0] == txt[-1] and txt[0] in "\"'":
+            return txt[1:-1]
+        if re.match(r"^-?[\d.]+$", txt):
+            return txt
+        return None
+
+    @staticmethod
+    def _cmp(op, left, right):
+        a, b = Repo._num(left), Repo._num(right)
+        if op == "=":
+            return (a == b) if (a is not None and b is not None) else (str(left) == str(right))
+        if op in ("<>", "!="):
+            return not Repo._cmp("=", left, right)
+        if a is None or b is None:
+            return None
+        return {">": a > b, "<": a < b, ">=": a >= b, "<=": a <= b}[op]
+
+    def _atom(self, d, atom, var):
+        atom = atom.strip()
+        m = self._P_BETWEEN_VAR.match(atom) or self._P_CMP_VAR.match(atom)
+        if m:
+            left = var.get(m.group("v"))
+            if left is None:
+                return None
+            gd = m.groupdict()
+            if "a" in gd and gd.get("a") is not None:
+                a, b = self._value(d, gd["a"], var), self._value(d, gd["b"], var)
+                if a is None or b is None:
+                    return None
+                return self._num(a) <= self._num(left) <= self._num(b)
+            v = self._value(d, gd["val"], var)
+            return None if v is None else self._cmp(gd["op"], left, v)
+
+        m = self._P_BETWEEN.match(atom)
+        if m:
+            cur = d.get(m.group("col"))
+            a, b = self._value(d, m.group("a"), var), self._value(d, m.group("b"), var)
+            if cur is None or a is None or b is None:
+                return None
+            na, nb, nc = self._num(a), self._num(b), self._num(cur)
+            if None in (na, nb, nc):
+                return None
+            return na <= nc <= nb
+
+        m = self._P_IN.match(atom)
+        if m:
+            cur = d.get(m.group("col"))
+            if cur is None:
+                return None
+            vals = [self._value(d, x, var) for x in m.group("list").split(",")]
+            if any(v is None for v in vals):
+                return None
+            cur = self._num(cur)
+            hit = any(self._cmp("=", cur, v) for v in vals)
+            return (not hit) if m.group("inop").upper().startswith("NOT") else hit
+
+        m = self._P_NULL.match(atom)
+        if m:
+            cur = d.get(m.group("col"))
+            if cur is None:
+                return None
+            is_null = str(cur).strip().strip("'").upper() in ("", "NULL")
+            return (not is_null) if m.group("null").upper().startswith("NOT") else is_null
+
+        m = self._P_CMP.match(atom)
+        if m:
+            cur = d.get(m.group("col"))
+            v = self._value(d, m.group("val"), var)
+            if cur is None or v is None:
+                return None
+            return self._cmp(m.group("op"), str(cur).strip().strip("'"), v)
+        return None
+
+    def compile_cond(self, cond, var=None):
+        """把一个 WHERE 条件编译成「逐行求值」的闭包；判不了就返回 None（调用方标记不可靠并跳过）。"""
+        var = var or {}
+        atoms = self._split_and(cond)
+        checks = []
+        for atom in atoms:
+            check = self._compile_atom(atom, var)
+            if check is None:
+                return None
+            checks.append(check)
+
+        def pred(d):
+            for f in checks:
+                if not f(d):
+                    return False
+            return True
+
+        return pred
+
+    def _compile_atom(self, atom, var):
+        """_atom 的「解析一次」版本：返回 f(d) -> bool，或 None。"""
+        atom = atom.strip()
+        m = self._P_BETWEEN_VAR.match(atom) or self._P_CMP_VAR.match(atom)
+        if m:
+            left = var.get(m.group("v"))
+            if left is None:
+                return None
+            gd = m.groupdict()
+            if gd.get("a") is not None:
+                a, b = self._value(None, gd["a"], var), self._value(None, gd["b"], var)
+                if a is None or b is None:
+                    return None
+                na, nb, nl = self._num(a), self._num(b), self._num(left)
+                if None in (na, nb, nl):
+                    return None
+                return lambda d: na <= nl <= nb
+            v = self._value(None, gd["val"], var)
+            if v is None:
+                return None
+            op = gd["op"]
+            return lambda d: self._cmp(op, left, v)
+
+        m = self._P_BETWEEN.match(atom)
+        if m:
+            col, a, b = m.group("col"), self._value(None, m.group("a"), var), self._value(None, m.group("b"), var)
+            if a is None or b is None:
+                return None
+            na, nb = self._num(a), self._num(b)
+            if None in (na, nb):
+                return None
+            return lambda d: (self._num(d.get(col)) is not None and na <= self._num(d.get(col)) <= nb)
+
+        m = self._P_IN.match(atom)
+        if m:
+            col = m.group("col")
+            vals = [self._value(None, x, var) for x in m.group("list").split(",")]
+            if any(v is None for v in vals):
+                return None
+            nums = {self._num(v) for v in vals}
+            strs = set(map(str, vals))
+            neg = m.group("inop").upper().startswith("NOT")
+            def incheck(d):
+                cur = d.get(col)
+                if cur is None:
+                    return False
+                cur = str(cur).strip().strip("'")
+                hit = (cur in strs) or (self._num(cur) in nums if self._num(cur) is not None else False)
+                return (not hit) if neg else hit
+            return incheck
+
+        m = self._P_NULL.match(atom)
+        if m:
+            col, neg = m.group("col"), m.group("null").upper().startswith("NOT")
+            def nullcheck(d):
+                is_null = str(d.get(col) or "").strip().strip("'").upper() in ("", "NULL")
+                return (not is_null) if neg else is_null
+            return nullcheck
+
+        m = self._P_CMP.match(atom)
+        if m:
+            col, op = m.group("col"), m.group("op")
+            v = self._value(None, m.group("val"), var)
+            if v is None:
+                return None
+            return lambda d: self._cmp(op, str(d.get(col) or "").strip().strip("'"), v)
+        return None
+
+    def _eval_scalar(self, expr):
+        """给 SET @var 用的极简求值：数字/字符串字面量；其它（SELECT ...）交给调用方当作未知。"""
+        expr = expr.strip()
+        if re.match(r"^-?[\d.]+$", expr):
+            return expr
+        if len(expr) >= 2 and expr[0] == expr[-1] and expr[0] in "\"'":
+            return expr[1:-1]
+        return None
 
     @staticmethod
     def _assignments(sets):
@@ -364,6 +602,11 @@ def cmp_counts(repo, source):
         repo.save_counts(os.path.join(os.getcwd(), ".dbdiff_counts.json"), cached)
         sys.stderr.write("（期望行数已缓存到 %s，下次 --counts 秒回）\n" % os.path.join(os.getcwd(), ".dbdiff_counts.json"))
     print()
+    if repo.unreliable:
+        print("提示：这些表里有本工具判不了的 WHERE 条件（位运算/子查询等），相应行没被处理，期望行数不可靠：")
+        for t, n in repo.unreliable.most_common(8):
+            print("   %-38s %d 条语句" % (t, n))
+        print()
     if repo.unhandled:
         print("提示：这些表里有本工具不解析的语句（例如 INSERT ... SELECT），期望行数可能偏低：")
         for t, n in repo.unhandled.most_common(8):
