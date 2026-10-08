@@ -99,3 +99,36 @@ SELECT 'taxi_nodes' AS tbl, COUNT(*) AS dangling
 SELECT 'world_safe_locs_facing' AS tbl, COUNT(*) AS dangling
   FROM world_safe_locs_facing f LEFT JOIN game_graveyard_zone g ON g.id = f.id
  WHERE g.id IS NULL;
+
+-- ============================================================
+-- 附：组概率「SQL 视角 >101、但内核不报」的组（诊断用，只查不改）
+-- 内核加载时会丢掉一些行（condition_id 不存在、负引用带条件、maxcount>255、item 不存在、
+-- chance 过小、IsValid 失败……），这些行不进掉落组，所以内核算的合计 < SQL 算的合计。
+-- 下面列出「SQL 合计 >101」的组，并标出它们里有多少行会被内核丢掉 —— 若每组都有丢行，
+-- 说明这些组内核根本不报警，无需缩放。
+-- ============================================================
+SELECT l.entry, l.groupid,
+       COUNT(*)                                              AS 组内行数,
+       ROUND(SUM(CASE WHEN l.ChanceOrQuestChance > 0 THEN l.ChanceOrQuestChance ELSE 0 END), 4) AS 正值合计,
+       SUM(l.condition_id <> 0)                              AS 带条件的行,
+       SUM(l.mincountOrRef < 0)                              AS 引用行,
+       SUM(CASE WHEN l.item NOT IN (SELECT entry FROM item_template) THEN 1 ELSE 0 END) AS item不在库里的行
+  FROM creature_loot_template l
+ WHERE l.groupid <> 0
+ GROUP BY l.entry, l.groupid
+HAVING 正值合计 > 101
+ ORDER BY 正值合计 DESC
+ LIMIT 40;
+
+SELECT l.entry, l.groupid,
+       COUNT(*)                                              AS 组内行数,
+       ROUND(SUM(CASE WHEN l.ChanceOrQuestChance > 0 THEN l.ChanceOrQuestChance ELSE 0 END), 4) AS 正值合计,
+       SUM(l.condition_id <> 0)                              AS 带条件的行,
+       SUM(l.mincountOrRef < 0)                              AS 引用行,
+       SUM(CASE WHEN l.item NOT IN (SELECT entry FROM item_template) THEN 1 ELSE 0 END) AS item不在库里的行
+  FROM item_loot_template l
+ WHERE l.groupid <> 0
+ GROUP BY l.entry, l.groupid
+HAVING 正值合计 > 101
+ ORDER BY 正值合计 DESC
+ LIMIT 20;
