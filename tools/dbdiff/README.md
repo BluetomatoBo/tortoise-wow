@@ -181,4 +181,15 @@ UPDATE creature_loot_template SET ChanceOrQuestChance=ChanceOrQuestChance*0.5 WH
     不是 100.01 —— 否则会把内核根本不报的组也一起改；
   * 分母只累加**正值**（内核 `RawTotalChance()` 只算非任务条目），也只缩放正值行，
     任务掉落（负值）是独立判定、不参与竞争，不动它。
-  条数应当与内核日志里「has total chance > 100%」的行数接近；跑完再跑一次不会有命中（幂等）。
+  跑完再跑一次不会有命中（幂等）。
+
+  **但更推荐直接从日志生成**（`gen_group_chance_from_log.py`）：内核加载时会跳过一些行
+  （`condition_id` 不存在、负引用带条件、maxcount>255、IsValid 失败……），这些行不在掉落组里，
+  所以 SQL 端 SUM 全表得出的组集合/分母和内核可能不一致（表现就是条数比日志里报的多）。
+  日志里那行括号里的数字就是内核自己算的合计，直接拿来当分母最准：
+
+  ```bash
+  python3 tools/dbdiff/gen_group_chance_from_log.py /data_2T/ts_wow/logs/server_*.log > /tmp/fix_group_chance.sql
+  grep -c '^UPDATE' /tmp/fix_group_chance.sql
+  mysql -h127.0.0.1 -uroot -p tw_world < /tmp/fix_group_chance.sql
+  ```
