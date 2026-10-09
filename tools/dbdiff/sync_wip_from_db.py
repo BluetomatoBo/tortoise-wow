@@ -74,6 +74,32 @@ def statement_spans(text):
 RE_SELECT = re.compile(r"INSERT\s+(?:IGNORE\s+)?INTO\s+`(?P<table>[a-z_]+)`\s*\(\s*`(?P<key>[a-z_]+)`\s*,\s*"
                        r"`(?P<col>[a-z_0-9]+)`\s*\)\s*SELECT\s+(?P<keyval>'[^']*'|-?\d+)\s*,\s*'", re.I)
 RE_VALUES = re.compile(r"INSERT\s+(?:IGNORE\s+)?INTO\s+`(?P<table>[a-z_]+)`\s*\((?P<cols>[^)]*)\)\s*VALUES\s*", re.I)
+# UPDATE 形式（mangos_string / quest_greeting / pet_name_generation 等文件用的写法）
+RE_UPDATE = re.compile(r"^\s*UPDATE\s+`(?P<table>[a-z_]+)`\s+SET\s+(?P<sets>.*?)\s+WHERE\s+(?P<where>[^;]*);?\s*$", re.I | re.S)
+RE_UPDATE_KEY = re.compile(r"`(?P<key>\w+)`\s*=\s*'?(?P<val>-?\d+)'?", re.I)
+RE_SET_ONE = re.compile(r"`(?P<col>\w+)`\s*=\s*'", re.I)
+
+
+def literals_in_update(seg):
+    """UPDATE ... SET `c`='v' WHERE `entry`=N → [((列, 主键), (起, 止), 值)]"""
+    out = []
+    m = RE_UPDATE.search(seg)
+    if not m:
+        return out
+    km = RE_UPDATE_KEY.search(m.group("where"))
+    if not km:
+        return out
+    key = km.group("val")
+    sets = m.group("sets")
+    base = seg.index(sets)
+    for sm in RE_SET_ONE.finditer(sets):
+        try:
+            val, end_rel = vwl.read_string_literal(sets, sm.end() - 1)
+        except ValueError:
+            continue
+        start_rel = sm.end() - 1
+        out.append(((sm.group("col"), key), (base + start_rel, base + end_rel), val))
+    return out
 
 
 def literals_in(span_text):
@@ -160,14 +186,17 @@ def main():
         repls = []           # (start, end, new_literal, 列, 主键)
         for (s0, e0) in statement_spans(text):
             seg = text[s0:e0]
-            m_sel, m_val = RE_SELECT.search(seg), RE_VALUES.search(seg)
+            m_sel, m_val, m_up = RE_SELECT.search(seg), RE_VALUES.search(seg), RE_UPDATE.search(seg)
             if m_sel:
                 table, keycol = m_sel.group("table"), m_sel.group("key")
             elif m_val:
                 table, keycol = m_val.group("table"), "entry"
+            elif m_up:
+                table, keycol = m_up.group("table"), "entry"
             else:
                 continue
-            for (col, key), (ls, le), val in literals_in(seg):
+            items_seg = literals_in(seg) or literals_in_update(seg)
+            for (col, key), (ls, le), val in items_seg:
                 lv = live.get((table, keycol, col, key))
                 if lv is None or not lv.strip() or not CJK.search(lv) or lv == val:
                     continue
