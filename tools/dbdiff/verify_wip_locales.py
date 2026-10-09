@@ -45,19 +45,43 @@ def unescape(text):
 
 
 def split_statements(text):
-    """按分号切（跳过字符串内），并剥掉整行注释。"""
-    text = "\n".join(l for l in text.split("\n") if not l.lstrip().startswith("--"))
-    out, buf, quote, i, n = [], [], None, 0, len(text)
+    """按分号切分，正确处理字符串与注释。
+
+    三个坑（都是本项目文件的实际形态）：
+      * 只把 `'` 当字符串定界符 —— MySQL 默认模式下双引号不是定界符，而数据里有 ASCII 双引号
+        （物品描述里的 "制造一块法术石…"），把 `"` 也当定界符会让状态错位；
+      * 行内尾随注释 `...;  -- you're healed ...` —— 注释里的撇号同样是陷阱，
+        必须把 `--`（以及 `#`、`/* */`）当注释吃掉，而不是只过滤「整行以 -- 开头」的行；
+      * `\'` 与 SQL 标准的 `''` 两种转义都要认。
+    """
+    out, buf, i, n, in_str = [], [], 0, len(text), False
     while i < n:
         c = text[i]
-        if quote:
+        if in_str:
             buf.append(c)
             if c == "\\" and i + 1 < n:
                 buf.append(text[i + 1]); i += 2; continue
-            if c == quote: quote = None
+            if c == "'":
+                if i + 1 < n and text[i + 1] == "'":
+                    buf.append("'"); i += 2; continue
+                in_str = False
             i += 1; continue
-        if c in "'\"":
-            quote = c; buf.append(c); i += 1; continue
+        if c == "'":
+            in_str = True; buf.append(c); i += 1; continue
+        if c == "-" and text[i:i + 2] == "--" and (i + 2 >= n or text[i + 2] in " \t\r\n"):
+            j = text.find("\n", i)
+            i = n if j < 0 else j + 1
+            buf.append("\n")
+            continue
+        if c == "#":
+            j = text.find("\n", i)
+            i = n if j < 0 else j + 1
+            buf.append("\n")
+            continue
+        if text[i:i + 2] == "/*":
+            j = text.find("*/", i + 2)
+            i = n if j < 0 else j + 2
+            continue
         if c == ";":
             out.append("".join(buf)); buf = []; i += 1; continue
         buf.append(c); i += 1
@@ -322,7 +346,7 @@ def check_file(path, mysql, limit, quiet=False, show_diffs=0, entry_filter=None)
                         total[key] += 1
                         details.append((table, col, k, key, got[2]))
                         if diff_budget[0] > 0 and k not in shown:
-                            show_diff(mysql, table, col, keycol, k, v, got[2])
+                            show_diff(mysql, table, col, keycol, k, v, got[2], shown=shown)
                             diff_budget[0] -= 1
 
     if not quiet:

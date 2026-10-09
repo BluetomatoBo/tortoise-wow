@@ -30,20 +30,37 @@ HEAD = re.compile(r"\b(?:INSERT|REPLACE)(?:\s+IGNORE)?\s+INTO\s+`([^`]+)`\s*(?:\
 CREATET = re.compile(r"CREATE TABLE `([^`]+)` \((.*?)\n\) ENGINE", re.S)
 
 
-TOKEN = re.compile(r"""'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|;|\\.|[^'"\\;]+""", re.S)
-
-
 def split_statements(text):
-    """按分号切分（跳过字符串里的分号，与内核 AutoUpdater 语义一致），先剥掉整行注释。"""
-    text = "\n".join(l for l in text.split("\n") if not l.lstrip().startswith("--"))
-    out, cur = [], []
-    for m in TOKEN.finditer(text):
-        tok = m.group(0)
-        if tok == ";":
-            out.append("".join(cur)); cur = []
-        else:
-            cur.append(tok)
-    if cur: out.append("".join(cur))
+    """按分号切分，正确处理字符串与注释（与 verify_wip_locales.py 同一套规则）。
+
+    三个坑：① 只认 `'` 为字符串定界符（MySQL 默认模式下双引号不是定界符，数据里有 ASCII 双引号）；
+    ② `--` / `#` / `/* */` 注释要整段吃掉 —— 行内尾随注释（`...;  -- you're healed ...`）里的撇号
+       会让引号状态错位、把语句粘成一条；③ `\'` 与 `''` 两种转义都要认。
+    """
+    out, buf, i, n, in_str = [], [], 0, len(text), False
+    while i < n:
+        c = text[i]
+        if in_str:
+            buf.append(c)
+            if c == "\\" and i + 1 < n:
+                buf.append(text[i + 1]); i += 2; continue
+            if c == "'":
+                if i + 1 < n and text[i + 1] == "'":
+                    buf.append("'"); i += 2; continue
+                in_str = False
+            i += 1; continue
+        if c == "'":
+            in_str = True; buf.append(c); i += 1; continue
+        if c == "-" and text[i:i + 2] == "--" and (i + 2 >= n or text[i + 2] in " \t\r\n"):
+            j = text.find("\n", i); i = n if j < 0 else j + 1; buf.append("\n"); continue
+        if c == "#":
+            j = text.find("\n", i); i = n if j < 0 else j + 1; buf.append("\n"); continue
+        if text[i:i + 2] == "/*":
+            j = text.find("*/", i + 2); i = n if j < 0 else j + 2; continue
+        if c == ";":
+            out.append("".join(buf)); buf = []; i += 1; continue
+        buf.append(c); i += 1
+    if buf: out.append("".join(buf))
     return out
 
 
