@@ -163,6 +163,7 @@ def parse(path):
     """
     text = open(path, encoding="utf-8", errors="replace").read()
     items = []
+    multi_key = []
     for st in split_statements(text):
         # ---- INSERT ... SELECT ----
         m = HEAD_INSERT_SELECT.search(st)
@@ -196,6 +197,9 @@ def parse(path):
             if not km:
                 continue
             keyval = km.group("val")
+            if len(re.findall(r"`?[a-z_0-9]+`?\s*=\s*", where, re.I)) > 1:
+                multi_key.append((m.group("table"), where.strip()))
+                continue
             sets = m.group("sets")
             for sm in SET_ONE.finditer(sets):
                 try:
@@ -204,6 +208,10 @@ def parse(path):
                     continue
                 items.append((m.group("table"), sm.group("col"), keyval, value))
             continue
+    if multi_key:
+        tables = sorted(set(t for t, _ in multi_key))
+        print("   注意：%s 里 %d 条 UPDATE 的 WHERE 有多个条件（复合主键，如 entry+half+word），"
+              "本工具按单键比对会失真，已从统计中排除：%s" % ("", len(multi_key), ", ".join(tables)))
     return items
 
 
@@ -227,7 +235,8 @@ def check_file(path, mysql, limit, quiet=False):
     for t, c, k, v in items:
         by_table.setdefault(t, []).append((c, k, v))
 
-    total = {"一致": 0, "不同": 0, "为空": 0, "行不存在": 0, "无法校验": 0}
+    total = {"一致": 0, "不同(线上非中文→需导入)": 0, "不同(线上已中文→人工看)": 0, "为空": 0,
+             "行不存在": 0, "无法校验": 0}
     details = []
     skipped = {}
     for table, rows in by_table.items():
@@ -266,12 +275,14 @@ def check_file(path, mysql, limit, quiet=False):
                     elif got[0] == want:
                         total["一致"] += 1
                     else:
-                        total["不同"] += 1
-                        details.append((table, col, k, "线上文本与脚本不一致", got[2]))
+                        live_has_cjk = bool(re.search(r"[\u4e00-\u9fff]", got[2] or ""))
+                        key = "不同(线上已中文→人工看)" if live_has_cjk else "不同(线上非中文→需导入)"
+                        total[key] += 1
+                        details.append((table, col, k, key, got[2]))
 
     if not quiet:
         print("\n=== 比对结果 ===")
-        for k in ("一致", "不同", "为空", "行不存在", "无法校验"):
+        for k in ("一致", "不同(线上非中文→需导入)", "不同(线上已中文→人工看)", "为空", "行不存在", "无法校验"):
             if total[k]:
                 print("   %-6s %d" % (k, total[k]))
         for t, err in skipped.items():
@@ -304,23 +315,25 @@ def main():
     import glob as _glob
     files = sorted(_glob.glob(os.path.join(args.dir, "*.sql")))
     print("核对 %d 个文件（只读；MD5 精确比对）\n" % len(files))
-    print("%-34s %6s %6s %6s %6s %6s" % ("文件", "一致", "不同", "为空", "无此键", "跳过"))
-    print("-" * 84)
-    grand = {"一致": 0, "不同": 0, "为空": 0, "行不存在": 0, "无法校验": 0}
+    print("%-32s %7s %8s %8s %6s %6s %6s" % ("文件", "一致", "需导入", "已中文", "为空", "无此键", "跳过"))
+    print("-" * 92)
+    grand = {"一致": 0, "不同(线上非中文→需导入)": 0, "不同(线上已中文→人工看)": 0, "为空": 0, "行不存在": 0, "无法校验": 0}
     worst = []
     for p in files:
         total, details, skipped = check_file(p, args.mysql, 0, quiet=True)
         for k in grand:
             grand[k] += total[k]
         flag = ""
-        if total["不同"] or total["为空"] or total["行不存在"]:
+        if total["不同(线上非中文→需导入)"] or total["为空"] or total["行不存在"]:
             flag = "  ← 有未落库"
             worst.append((os.path.basename(p), details))
-        print("%-34s %6d %6d %6d %6d %6d%s" % (os.path.basename(p), total["一致"], total["不同"],
-                                               total["为空"], total["行不存在"], total["无法校验"], flag))
-    print("-" * 84)
-    print("%-34s %6d %6d %6d %6d %6d" % ("合计", grand["一致"], grand["不同"], grand["为空"],
-                                          grand["行不存在"], grand["无法校验"]))
+        print("%-32s %7d %8d %8d %6d %6d %6d%s" % (os.path.basename(p), total["一致"],
+                                                   total["不同(线上非中文→需导入)"], total["不同(线上已中文→人工看)"],
+                                                   total["为空"], total["行不存在"], total["无法校验"], flag))
+    print("-" * 92)
+    print("%-32s %7d %8d %8d %6d %6d %6d" % ("合计", grand["一致"], grand["不同(线上非中文→需导入)"],
+                                              grand["不同(线上已中文→人工看)"], grand["为空"],
+                                              grand["行不存在"], grand["无法校验"]))
     for name, details in worst[:5]:
         print("\n=== %s 的前几条未落库 ===" % name)
         for d in details[:5]:
