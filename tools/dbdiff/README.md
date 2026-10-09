@@ -401,3 +401,26 @@ python3 tools/dbdiff/verify_wip_locales.py --dir sql/wip_updates --mysql "$M"
    已统一把注释中的引号换成 `’` `“` `”`，值里的半角双引号也换成全角（中文正文本来就该用全角）。
    改完 `check_update_file.py` 29/29 通过，且逐条确认值语义未变。
    **例外**：`locales_page_text.sql` 的值里含 HTML（`<a href="…">`），必须保留半角引号，勿套用此规则。
+
+## 十四、仓库里有什么 / 一次性产物放哪
+
+`tools/dbdiff/` 只放**常用工具**，一次性产物不入库：
+
+| 文件 | 用途 |
+|---|---|
+| `dbdiff.py` | 仓库 base+增量 与线上库的对比（找缺失/多余行） |
+| `verify_wip_locales.py` | 汉化落库核对 + 审阅表导出（MD5 逐条，只读） |
+| `sync_wip_from_db.py` | 以线上为准回写 `sql/wip_updates/*.sql`（支持 INSERT 与 UPDATE 两种写法） |
+| `gen_locale_patch.py` | 按审阅表生成定向覆盖补丁 |
+| `check_update_file.py` | 迁移文件体检（引号/分号状态机，内核更新器同款规则） |
+| `gen_group_chance_from_log.py` / `gen_group_chance_fix.sql` | 战利品组概率修正（从内核日志生成） |
+| `prune_imported_cruft.sql` / `verify_refs.sql` | 导入残留清理 / 引用校验 |
+| `mysql_local.sh` / `db_status.sh` | 本机连库通道与自检 |
+| `review/*.md|.tsv` | **决策留档**：人名重译、副名统一、交任务文本审阅表 |
+| `review/official_zhcn_extra.sql` | 官方简体对齐里 wip 文件未覆盖的那部分（重建用） |
+
+* `sql/wip_updates/` 是**导入集**：`locales_*.sql` 为常态文件；`locales_name_fixes.sql` 集中放
+  所有「带原值条件的修正」（生物/物件/物品名、副名、任务译名），可直接重复导入而不覆盖人工修订。
+* 一次性补丁（对官方简体对齐、交任务文本重译、人名重译的正/反 SQL）与一次性分析脚本
+  **不进仓库**：它们在 git 历史里可查，同时归档在本机
+  `~/.copilot/session-state/<session>/files/dbdiff_archive/`（README 里有清单）。

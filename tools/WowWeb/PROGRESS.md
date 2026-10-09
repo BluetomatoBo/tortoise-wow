@@ -263,3 +263,15 @@ Catapult 投石车）。清单：`tools/dbdiff/review/subname_unify_review.md`�
 
 生效：`.reload locales_creature` / `locales_item` / `locales_gameobject` / `locales_quest` /
 `locales_page_text` / `locales_points_of_interest` / `mangos_string`
+
+## 收尾整理（2026-10-09 第六轮）
+
+* **整合**：`locales_subname_unify.sql` 并入 `sql/wip_updates/locales_name_fixes.sql`（第八批）——
+  所有「带原值条件的修正」现在集中在一个文件，可直接重复导入；该批改为**官方文本优先**
+  （官方 zhCN 有该副名时以官方为准，否则取库内多数派），幂等自测 0 行。
+* **清理**：一次性产物移出仓库（它们已在 git 历史里）——官方简体对齐的正/反 SQL、
+  交任务文本重译补丁、人名重译补丁、副名回滚脚本、过期审阅表；删掉 `__pycache__`。
+  `tools/dbdiff/` 只留常用工具 + `review/` 里的决策留档 + `official_zhcn_extra.sql`（重建用）。
+* **归档**：一次性补丁/脚本/译稿/审阅数据存到本机
+  `~/.copilot/session-state/81995a26-…/files/dbdiff_archive/`（含 README 清单）。
+* 复核：`verify`/MD5 逐条比对仍是 **0 差异**；`locales_name_fixes.sql` 幂等导入 0 行。
