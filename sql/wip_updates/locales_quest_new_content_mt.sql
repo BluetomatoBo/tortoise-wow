@@ -350,7 +350,7 @@ INSERT INTO `locales_quest` (`entry`, `Details_loc4`)
                       WHERE x.`Details_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `Details_loc4` = IF(`Details_loc4` REGEXP '[一-龥]', `Details_loc4`, VALUES(`Details_loc4`));
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`)
-  SELECT 42079, '这卷轴看上去完好无损，但上面有一道封印，你解不开。你的思绪把你引向姆乌尔夫尼格索恩——一位和你一样来自月蹄村的信徒。也许是凭你的直觉，也许是天界兄妹的示意，你的蹄子把你带向他，你知道他或许能解开这道封印。' FROM DUAL
+  SELECT 42079, '这卷轴看上去完好无损，但上面有一道封印，你解不开。你的思绪把你引向姆乌尔夫·夜角——一位和你一样来自月蹄村的信徒。也许是凭你的直觉，也许是天界兄妹的示意，你的蹄子把你带向他，你知道他或许能解开这道封印。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `Details_loc4` FROM `locales_quest` WHERE `entry` = 42079) x
                       WHERE x.`Details_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `Details_loc4` = IF(`Details_loc4` REGEXP '[一-龥]', `Details_loc4`, VALUES(`Details_loc4`));
@@ -652,7 +652,7 @@ INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`)
                       WHERE x.`Objectives_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `Objectives_loc4` = IF(`Objectives_loc4` REGEXP '[一-龥]', `Objectives_loc4`, VALUES(`Objectives_loc4`));
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`)
-  SELECT 42079, '把烧了一半的日志带到月语海岸月蹄村的姆乌尔夫尼格索恩那里。' FROM DUAL
+  SELECT 42079, '把烧了一半的日志带到月语海岸月蹄村的姆乌尔夫·夜角那里。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `Objectives_loc4` FROM `locales_quest` WHERE `entry` = 42079) x
                       WHERE x.`Objectives_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `Objectives_loc4` = IF(`Objectives_loc4` REGEXP '[一-龥]', `Objectives_loc4`, VALUES(`Objectives_loc4`));
