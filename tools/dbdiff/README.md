@@ -216,3 +216,81 @@ UPDATE creature_loot_template SET ChanceOrQuestChance=ChanceOrQuestChance*0.5 WH
 并做了「原文 → 解析 → 重新生成 → 逐字段比对」的往返验证。
 
 **教训**：任何「导出/回写」的脚本都必须做一次往返验证，光看语句能执行是不够的。
+
+## 十、本次服务端数据清理：结果、遗留与工具（2026-10-08 ~ 09）
+
+### 结果
+
+| | 起始 | 现在 |
+|---|---|---|
+| 启动 ERROR 行数 | 1423 | 351 |
+| 内核 DBErrorFix（`DBErrorFixFile`）待修清单 | 2296 条 | **0** |
+| 未定性的报错类别 | 110 类 | **0** |
+
+### 修掉的「真问题」（原本被噪声淹没）
+
+* **131 组掉落概率合计 > 100%** —— 组内按比例竞争但实际概率被压缩，用内核自己的算法缩放回 100；
+* **872 条 `creature_template` 数值**（`base_attack_time` / `ranged_attack_time` / `equipment_id`）与运行时不一致
+  —— 内核加载时本就在内存里改成这些值（`ObjectMgr.cpp:1339/1345/1423`），写回库让两者一致；
+* **1292 条无用掉落表条目 + 77+32 条 `npc_trainer` 非法行 + 159+9 条冗余 `spell_affect` + 16 个闲置商人模板**
+  —— 内核加载时本来就会跳过，按内核同款条件清理（`prune_imported_cruft.sql`）；
+* **Snowball Wars I/II 本来无法完成的任务** —— 目标写成不存在的 50319/50329/… ，实际应为 60000-60007（Turtle 改过编号）；
+* **7 个「伪训练师」** —— 它们身上那 12 行是猎人训练师表被截断复制过来的残留；术士召唤恶魔是**靠任务奖励**学的
+  （全库没有任何训练师教召唤），已还原成"发恶魔任务"的本来角色；
+* **物品 41914「Shadowlord's Research」缺失的书页正文** —— 从 Turtle 官方 wiki 挖到原文，并补中文译文；
+* **代码侧 7 处日志措辞/聚合**（`spell_proc_event` 把世界库说成 spell.dbc、`battleground_template` 打印清零后的 id、
+  `creature_movement` 每个路径点各报一遍等）；
+* **`area_template` / `taxi_nodes` 名字被写坏**（见第九节的 `\'` 转义坑）—— 用修正后的解析器重建这两张表。
+
+### 剩余 351 行（全部有结论，不需要再动）
+
+| 剩余 | 行数 | 结论 |
+|---|---|---|
+| `spellcategory_N` | 185 | **不是错**：Turtle 自定义的冷却分组 id |
+| `pet_spell_list_id` 101 / `spell_list_id` 12 | 113 | 内容缺口：仓库、1.12 两个库、客户端 DBC 都没有对应数据 |
+| `spell_affect misses ...` | 38 | 同上 |
+| 拾取 / 剥皮悬空 loot id | 4 | 内容缺口；清字段会丢掉「本该有掉落」的标记，保留 |
+| 5 个未落地脚本（`npc_aneka_konko` 等） | 5 | 上游注册了但内容从未落库的死脚本 |
+| 奥山信标 `BattleGroundEvent ... Ryson's Beacon` ×2 | 2 | **上游误报**：信标由脚本动态召唤（`battleground_alterac.cpp`），事件只当状态开关用；`battleground_events` 全库只有一处读取（日志用），不影响玩法 |
+| `at_moonwhisper_missing_caravans` | 1 | **上游误报**：该 AreaTrigger 脚本已注册，检查只查 creature 脚本注册表 |
+| `spell_threat 25918 ... redundant` | 1 | 运行时技能链的重复填充提示（`prev` 与 `req` 两条边都指向它），数据本身干净 |
+| `Visibility.Distance.BG` | 1 | 配置项：`mangosd.conf` 里改成 ≤ 533.33 减去 `Visibility.Distance.Grey.Unit`（默认约 532.3） |
+| Anticheat 配置路径 | 1 | 与数据库无关（日志里路径是 `/data_NT/...`，疑为配置笔误） |
+
+### 本次的迁移（`sql/database_updates/world/20261008*`）
+
+143000 / 152000 / 153000 / 154500 / 160000 / 161000 / 162000 / 163000 / 164000 / 165000 /
+170000 / 171000 / 172000 / 174000 / 180000 / 190000 / 200000 / 201000 / 203000 / 204000 /
+205000 / 210000 / 211000 —— 全部**可重复执行**（跑两遍第二遍零变化），并逐份通过
+`check_update_file.py`（更新器兼容性）。
+
+> 编号 173000 曾被一条错误判断占用（想把 `spell_threat` 里「0/0/0」的行当空数据删掉），
+> 已 revert —— `multiplier = 0` 的语义是「这个技能**不产生威胁**」，是真实机制。
+
+### 数据侧的 5 个坑（按建议顺序阅读）
+
+1. **内核自动更新器不剥注释**（`AutoUpdater.cpp`）：注释里的单数英文单引号会让整份更新被拒
+   （`mid-string query at the end of SQL`）；最后一个 `;` 之后的纯注释会被当语句执行。
+   写迁移后**必跑** `check_update_file.py`；
+2. **`\'` 转义**：任何「导出 → 回写」都要做往返验证（见第九节）；
+3. **多行 `INSERT` 撞主键会整条失败**，而更新器不看返回值 → 几千行静默丢失
+   （本次 `reference_loot_template`/`skill_line_ability`/`npc_trainer` 的缺口就是这么来的）；
+   用 `dbdiff.py --all-tables` 能查出这类缺口；
+4. **掉落表 `item` 列的双重含义**：`mincountOrRef >= 0` 是物品 id，`< 0` 是引用组 id
+   （`verify_refs.sql` 里已按此区分）；
+5. **组概率缩放要按内核算法**：阈值 `> 101`（不是 100.01）、分母只累加正值（`RawTotalChance`）、
+   只缩放正值行（`gen_group_chance_from_log.py` 已对齐）。
+
+### 复核命令
+
+```bash
+# 启动日志分类（期望约 351 行且构成如上一节表格）
+LOG=$(ls -t /data_2T/ts_wow/logs/server_*.log | head -1)
+grep ERROR $LOG | sed 's/^[0-9-]* [0-9:.]*ERROR://; s/[0-9]\+/N/g' | sort | uniq -c | sort -rn
+
+# 内核待修清单（期望 0）
+wc -l < /data_2T/ts_wow/logs/dbfix.log
+
+# 悬空引用体检（期望绝大多数为 0）
+mysql -h127.0.0.1 -uroot -p tw_world < tools/dbdiff/verify_refs.sql
+```
