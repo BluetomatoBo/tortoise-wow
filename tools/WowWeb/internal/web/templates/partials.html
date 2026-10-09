@@ -74,6 +74,63 @@
   {{if gt .MaxCount 1}} <span class="muted">×{{.MaxCount}}</span>{{else if gt .MinCount 1}} <span class="muted">×{{.MinCount}}</span>{{end}}
 {{end}}
 
+{{/* "droplist" renders one direction of a relation list: who can produce an
+     item, and under what condition. The item page asks the other way round from
+     the creature page - "where does this come from" instead of "what does this
+     drop" - so the rows are ContentDrop, and a condition hangs off the row the
+     same way. Groups are not drawn here: the list is about one item, and the
+     group it sits in is the source's business, which the creature page shows. */}}
+{{define "droplist"}}
+  {{$page := .page}}
+  {{range .drops}}
+    <tr{{if .Condition}} class="lootcond"{{end}}>
+      <th>{{template "droplink" dict "page" $page "kind" .Kind "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
+      <td class="right">{{template "dropchance" .}}</td>
+    </tr>
+    {{with $page.CondText .Condition}}
+      <tr class="lootcond"><td colspan="2"><span class="cond">{{$page.T "db.condition"}}: {{.}}</span></td></tr>
+    {{end}}
+  {{end}}
+{{end}}
+
+{{/* "lootlist" renders a loot table as its groups.
+
+     A row with groupid > 0 is one of a set that yields at most one item: the
+     core subtracts the chances inside the group from a single roll and stops at
+     the first row that covers it (LootMgr.cpp, LootGroup::Roll). Listing such
+     rows flat makes a 5% share of a group look like a 5% drop, which is the
+     question a GM opens the page with.
+
+     Rows with groupid = 0 are rolled on their own and stay in one list. A group
+     whose rows all came from the same reference entry also prints its total,
+     which is the number the core itself warns about when it passes 100.
+
+     It takes a map built with dict: "page" is the PageData, "items" the rows. */}}
+{{define "lootlist"}}
+  {{$page := .page}}
+  {{range $page.GroupLoot .items}}
+    {{if .Group}}
+      <tr class="lootgroup">
+        <th colspan="2">
+          <span class="pill pill-strong">{{$page.GroupLabel .Group}}</span>
+          <span class="muted">{{$page.T "db.lootGroupHint"}}</span>
+          {{if gt .Chance 0.0}}<span class="muted">· {{$page.GroupTotal .Chance}}</span>{{end}}
+          {{if gt .Equal 0}}<span class="muted">· {{$page.GroupEqualHint .Equal}}</span>{{end}}
+        </th>
+      </tr>
+    {{end}}
+    {{range .Items}}
+      <tr{{if .Condition}} class="lootcond"{{end}}>
+        <th>{{template "droplink" dict "page" $page "kind" "item" "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly "icon" ($page.ItemIcon .DisplayID)}}</th>
+        <td class="right">{{template "dropchance" .}}</td>
+      </tr>
+      {{with $page.CondText .Condition}}
+        <tr class="lootcond"><td colspan="2"><span class="cond">{{$page.T "db.condition"}}: {{.}}</span></td></tr>
+      {{end}}
+    {{end}}
+  {{end}}
+{{end}}
+
 {{/* "zonemap" draws one map with its dots. It takes a web.MapView.
 
      The dots are percentages of the artwork, so they live in a box that is

@@ -24,15 +24,15 @@ func namePage(t *testing.T, lang i18n.Lang) PageData {
 // the client's DBCs carry every locale in one record, so the site can label an id
 // without a translation step.
 func TestDBCNamesLoad(t *testing.T) {
-	areas, factions, maps, sorts, subclasses, sets := DBCNameCounts()
-	t.Logf("AREA %d、FACTION %d、MAP %d、QSORT %d、SUBCLASS %d、ITEMSET %d",
-		areas, factions, maps, sorts, subclasses, sets)
+	areas, factions, maps, sorts, subclasses, sets, skills := DBCNameCounts()
+	t.Logf("AREA %d、FACTION %d、MAP %d、QSORT %d、SUBCLASS %d、ITEMSET %d、SKILL %d",
+		areas, factions, maps, sorts, subclasses, sets, skills)
 	for _, c := range []struct {
 		name string
 		got  int
 	}{
 		{"AREA", areas}, {"FACTION", factions}, {"MAP", maps},
-		{"QSORT", sorts}, {"SUBCLASS", subclasses}, {"ITEMSET", sets},
+		{"QSORT", sorts}, {"SUBCLASS", subclasses}, {"ITEMSET", sets}, {"SKILL", skills},
 	} {
 		if c.got < 10 {
 			t.Errorf("%s has only %d rows; the generator did not run or the file is truncated", c.name, c.got)
@@ -138,6 +138,25 @@ func TestPagesShowNames(t *testing.T) {
 		t.Errorf("the creature page does not name its faction:\n%s", first(npc, 800))
 	}
 
+	// A loot group and a condition have to reach the page: the header says the
+	// group yields at most one item, and the condition says why a row may not
+	// drop at all. Both are things a GM opens the loot table to find out.
+	grouped := render("db_npc", dbCreatureView{PageData: page,
+		Creature: store.ContentCreature{Entry: 1, Name: "海盗", Faction: 72},
+		Relations: &store.CreatureRelations{
+			Drops: []store.ContentLootItem{
+				{Entry: 80120, Name: "齿轮", Chance: 60, Group: 4, GroupChance: 100},
+				{Entry: 80121, Name: "弹簧", Chance: 0, Group: 4, GroupChance: 100, GroupEqual: 1,
+					Condition: &store.LootCondition{Kind: store.CondQuestDone,
+						Args: []store.CondArg{{Value: "80104", Name: "另一只白鸡"}}}},
+			},
+		}})
+	for _, want := range []string{"掉落组", "每组只掉其中 1 件", "组内总概率 100.00%", "条件", "另一只白鸡", "#80104"} {
+		if !strings.Contains(grouped, want) {
+			t.Errorf("the creature page does not show %q:\n%s", want, first(grouped, 1500))
+		}
+	}
+
 	item := render("db_item", dbItemView{PageData: page, Item: store.ContentItem{
 		Entry: 1, Name: "剑", Class: 2, SubClass: 7, SetID: 1}})
 	if !strings.Contains(item, "剑") {
@@ -172,8 +191,8 @@ func TestDBCNameCountsMatchTheFile(t *testing.T) {
 		}
 	}
 
-	areas, factions, maps, sorts, subclasses, sets := DBCNameCounts()
-	if sum := areas + factions + maps + sorts + subclasses + sets; sum != nameLines {
+	areas, factions, maps, sorts, subclasses, sets, skills := DBCNameCounts()
+	if sum := areas + factions + maps + sorts + subclasses + sets + skills; sum != nameLines {
 		t.Errorf("parsed %d name rows from %d name lines of dbcnames.txt", sum, nameLines)
 	}
 

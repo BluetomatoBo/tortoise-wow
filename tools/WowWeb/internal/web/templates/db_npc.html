@@ -74,12 +74,7 @@
 <section class="card">
   <h2>{{$.T "db.drops"}}</h2>
   <table class="kv">
-    {{range .Drops}}
-      <tr>
-        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly "icon" ($.ItemIcon .DisplayID)}}</th>
-        <td class="right">{{template "dropchance" .}}</td>
-      </tr>
-    {{end}}
+    {{template "lootlist" dict "page" $ "items" .Drops}}
   </table>
 </section>
 {{end}}
@@ -88,12 +83,7 @@
 <section class="card">
   <h2>{{$.T "db.skins"}}</h2>
   <table class="kv">
-    {{range .Skins}}
-      <tr>
-        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly "icon" ($.ItemIcon .DisplayID)}}</th>
-        <td class="right">{{template "dropchance" .}}</td>
-      </tr>
-    {{end}}
+    {{template "lootlist" dict "page" $ "items" .Skins}}
   </table>
 </section>
 {{end}}
@@ -102,12 +92,7 @@
 <section class="card">
   <h2>{{$.T "db.pickpockets"}}</h2>
   <table class="kv">
-    {{range .Pickpockets}}
-      <tr>
-        <th>{{template "droplink" dict "page" $ "kind" "item" "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly "icon" ($.ItemIcon .DisplayID)}}</th>
-        <td class="right">{{template "dropchance" .}}</td>
-      </tr>
-    {{end}}
+    {{template "lootlist" dict "page" $ "items" .Pickpockets}}
   </table>
 </section>
 {{end}}

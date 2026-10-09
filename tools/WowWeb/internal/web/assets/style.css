@@ -103,6 +103,18 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 1.1rem 0; }
 .table td.right, .table th.right { text-align: right; }
 
 .kv { width: 100%; border-collapse: collapse; font-size: .93rem; }
+
+/* A loot table is a list of rows that are not all the same kind of row: a group
+   header says "one of these drops", and a condition line belongs to the row
+   above it rather than being an entry of its own. Both are styled to read as
+   part of the row above instead of as a new entry. */
+.kv tr.lootgroup th { padding-top: .7rem; border-top: 1px solid var(--border); }
+.kv tr.lootgroup:first-child th { padding-top: .3rem; border-top: 0; }
+.kv tr.lootcond td { padding: 0 0 .2rem; }
+.kv td .cond {
+  display: inline-block; font-size: .84rem; color: var(--warn);
+  border-left: 2px solid var(--warn); padding-left: .5rem;
+}
 .kv th { text-align: left; color: var(--muted); font-weight: 500; padding: .3rem .8rem .3rem 0; vertical-align: top; white-space: nowrap; }
 .kv td { padding: .3rem 0; }
 

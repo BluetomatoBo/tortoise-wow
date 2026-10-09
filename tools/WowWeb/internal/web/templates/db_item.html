@@ -153,12 +153,7 @@
 <section class="card">
   <h2>{{$.T "db.droppedBy"}}</h2>
   <table class="kv">
-    {{range .DroppedBy}}
-      <tr>
-        <th>{{template "droplink" dict "page" $ "kind" .Kind "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
-        <td class="right">{{template "dropchance" .}}</td>
-      </tr>
-    {{end}}
+    {{template "droplist" dict "page" $ "drops" .DroppedBy}}
   </table>
 </section>
 {{end}}
@@ -167,12 +162,7 @@
 <section class="card">
   <h2>{{$.T "db.foundIn"}}</h2>
   <table class="kv">
-    {{range .FoundIn}}
-      <tr>
-        <th>{{template "droplink" dict "page" $ "kind" .Kind "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
-        <td class="right">{{template "dropchance" .}}</td>
-      </tr>
-    {{end}}
+    {{template "droplist" dict "page" $ "drops" .FoundIn}}
   </table>
 </section>
 {{end}}
@@ -181,12 +171,7 @@
 <section class="card">
   <h2>{{$.T "db.containedIn"}}</h2>
   <table class="kv">
-    {{range .ContainedIn}}
-      <tr>
-        <th>{{template "droplink" dict "page" $ "kind" .Kind "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
-        <td class="right">{{template "dropchance" .}}</td>
-      </tr>
-    {{end}}
+    {{template "droplist" dict "page" $ "drops" .ContainedIn}}
   </table>
 </section>
 {{end}}
@@ -195,12 +180,7 @@
 <section class="card">
   <h2>{{$.T "db.skinnedFrom"}}</h2>
   <table class="kv">
-    {{range .SkinnedFrom}}
-      <tr>
-        <th>{{template "droplink" dict "page" $ "kind" .Kind "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
-        <td class="right">{{template "dropchance" .}}</td>
-      </tr>
-    {{end}}
+    {{template "droplist" dict "page" $ "drops" .SkinnedFrom}}
   </table>
 </section>
 {{end}}
@@ -209,12 +189,7 @@
 <section class="card">
   <h2>{{$.T "db.pickpocketedFrom"}}</h2>
   <table class="kv">
-    {{range .PickpocketedFrom}}
-      <tr>
-        <th>{{template "droplink" dict "page" $ "kind" .Kind "entry" .Entry "name" .Name "via" .Via "quest" .QuestOnly}}</th>
-        <td class="right">{{template "dropchance" .}}</td>
-      </tr>
-    {{end}}
+    {{template "droplist" dict "page" $ "drops" .PickpocketedFrom}}
   </table>
 </section>
 {{end}}

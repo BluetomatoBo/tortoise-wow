@@ -365,6 +365,12 @@ func TestTemplatesParse(t *testing.T) {
 			Drops: []store.ContentLootItem{
 				{Entry: 80119, Name: "Mechanical Drumstick", Chance: 12.5, MinCount: 1, MaxCount: 2},
 				{Entry: 50071, Name: "Sturdy Lockbox", Chance: 0.5, MinCount: 1, MaxCount: 1, Via: 30016, QuestOnly: true},
+				// A grouped row with a condition: the page has to print the group
+				// header and the condition line, not just the item.
+				{Entry: 80120, Name: "Cogwheel", Chance: 60, MinCount: 1, MaxCount: 1,
+					Group: 4, GroupChance: 100, GroupEqual: 1,
+					Condition: &store.LootCondition{Kind: store.CondQuestDone,
+						Args: []store.CondArg{{Value: "80104", Name: "The Other White Mech"}}}},
 			},
 			Skins:       []store.ContentLootItem{{Entry: 2318, Name: "Light Leather", Chance: 100, MinCount: 1, MaxCount: 1}},
 			Pickpockets: []store.ContentLootItem{{Entry: 117, Name: "Tough Jerky", Chance: 25, MinCount: 1, MaxCount: 1}},

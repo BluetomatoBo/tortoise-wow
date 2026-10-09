@@ -31,9 +31,12 @@ import (
 // path is not entered again, because these tables are data and data can contain
 // a cycle.
 //
-// What the walks deliberately do not interpret is groupid and condition_id. The
-// page reports the chance the row stores - the number a GM compares against -
-// not the probability a particular character sees at the mob.
+// What the walks report is the chance the row stores - the number a GM compares
+// against - not the probability a particular character sees at the mob. The two
+// columns that explain why a row may not drop at all are carried alongside it:
+// groupid says the row is one of a set that yields at most one item, and
+// condition_id names a condition the player has to meet. Both are resolved by
+// the page; the raw values are kept here because they are what the GM edits.
 
 // relationLimit caps every relation list. An item can drop from hundreds of
 // creatures; the page shows the first rows by entry and says which lists were
@@ -65,6 +68,12 @@ type ContentDrop struct {
 	MaxCount  uint32
 	QuestOnly bool   // the stored chance was negative: it only drops for a quest
 	Via       uint32 // non-zero: the item sits inside this reference_loot_template entry
+	// Group and Condition work as they do on ContentLootItem.
+	Group     uint8
+	Condition *LootCondition
+
+	// condID is the raw condition_id, replaced by Condition once loaded.
+	condID uint32
 }
 
 // ContentLootItem is one item something can drop.
@@ -78,6 +87,27 @@ type ContentLootItem struct {
 	MaxCount  uint32
 	QuestOnly bool
 	Via       uint32 // non-zero: reached through this reference_loot_template entry
+	// Group is the loot group the row belongs to. A group above zero yields at
+	// most one of its rows: the chances inside it are weights, and the core
+	// subtracts them from one roll in row order (LootMgr.cpp, LootGroup::Roll).
+	// Zero means the row is rolled on its own.
+	Group uint8
+	// GroupChance is the group's total chance for the simple case where every
+	// row in it is explicitly chanced: the sum the core compares against 100 to
+	// warn about an over-weighted group. Zero when the group is empty or holds
+	// equal-chance rows, where the sum does not describe the outcome.
+	GroupChance float64
+	// GroupEqual is the number of rows in the group stored with chance 0, which
+	// the core treats as "one of these at random".
+	GroupEqual int
+	// Condition is the condition the player has to meet for the row to be
+	// rolled at all. Nil when the row is unconditional.
+	Condition *LootCondition
+
+	// condID is the raw condition_id, kept until the conditions are loaded and
+	// then replaced by Condition. Unexported: the number is an editing detail,
+	// the page shows the resolved condition.
+	condID uint32
 }
 
 // ContentQuestRef is a quest in a relation list ("gives this quest", "rewards
@@ -224,7 +254,8 @@ func lootSourceQuery(loc ContentLocale, table string, item uint32, refs []uint32
 	//
 	// t.item is selected as well: on a reference row it holds the entry being
 	// pointed at, which is what the chance has to be resolved against.
-	q := "SELECT " + owner + ".entry, " + name + ", t.ChanceOrQuestChance, t.mincountOrRef, t.maxcount, t.item" +
+	q := "SELECT " + owner + ".entry, " + name + ", t.ChanceOrQuestChance, t.mincountOrRef, t.maxcount, t.item," +
+		" t.groupid, t.condition_id" +
 		" FROM " + table + " t" +
 		ownerJoin(from, own.key, "t") + localeJoin +
 		" WHERE " + where + extra + " ORDER BY " + owner + ".entry, t.item LIMIT ?"
@@ -235,8 +266,8 @@ func lootSourceQuery(loc ContentLocale, table string, item uint32, refs []uint32
 // the leading column of every loot table's primary key, so this is an index read
 // even on creature_loot_template.
 func lootItemsQuery(table string, owner uint32) (string, []any) {
-	return "SELECT item, ChanceOrQuestChance, mincountOrRef, maxcount FROM " + table +
-		" WHERE entry = ? ORDER BY item LIMIT ?", []any{owner, relationLimit}
+	return "SELECT item, ChanceOrQuestChance, mincountOrRef, maxcount, groupid, condition_id FROM " + table +
+		" WHERE entry = ? ORDER BY groupid, item LIMIT ?", []any{owner, relationLimit}
 }
 
 // referenceParentsQuery lists the reference entries that name any of ids.
@@ -255,8 +286,8 @@ func referenceParentsQuery(ids []uint32) (string, []any) {
 
 // referenceItemsQuery lists one reference entry's rows.
 func referenceItemsQuery(entry uint32) (string, []any) {
-	return "SELECT item, ChanceOrQuestChance, mincountOrRef, maxcount FROM reference_loot_template" +
-		" WHERE entry = ?", []any{entry}
+	return "SELECT item, ChanceOrQuestChance, mincountOrRef, maxcount, groupid, condition_id" +
+		" FROM reference_loot_template WHERE entry = ? ORDER BY groupid, item", []any{entry}
 }
 
 // vendorSellersQuery lists the creatures selling the item.
@@ -345,6 +376,8 @@ type referenceRow struct {
 	chance        float64
 	mincountOrRef int32
 	maxcount      uint32
+	group         uint8
+	cond          uint32
 }
 
 // referenceRows reads one reference entry.
@@ -359,7 +392,7 @@ func (s *Store) referenceRows(ctx context.Context, entry uint32) ([]referenceRow
 	var out []referenceRow
 	for rows.Next() {
 		var r referenceRow
-		if err := rows.Scan(&r.item, &r.chance, &r.mincountOrRef, &r.maxcount); err != nil {
+		if err := rows.Scan(&r.item, &r.chance, &r.mincountOrRef, &r.maxcount, &r.group, &r.cond); err != nil {
 			return nil, fmt.Errorf("scan reference loot %d: %w", entry, err)
 		}
 		out = append(out, r)
@@ -486,7 +519,7 @@ func (s *Store) refChainHits(ctx context.Context, item uint32, roots []uint32) (
 // collectReferenceItems appends every item a reference entry can yield, scaling
 // each stored chance by the hops that led here. factor is a percentage: 100 when
 // the reference was picked outright, less when it was reached through another.
-func (s *Store) collectReferenceItems(ctx context.Context, ref uint32, factor float64, depth int, seen map[uint32]bool, out *[]ContentLootItem) error {
+func (s *Store) collectReferenceItems(ctx context.Context, ref uint32, factor float64, depth int, seen map[uint32]bool, out *[]ContentLootItem, group uint8, cond uint32) error {
 	if depth > refMaxDepth || seen[ref] {
 		return nil
 	}
@@ -509,11 +542,117 @@ func (s *Store) collectReferenceItems(ctx context.Context, ref uint32, factor fl
 				MaxCount:  r.maxcount,
 				QuestOnly: r.chance < 0,
 				Via:       ref,
+				Group:     r.group,
+				condID:    r.cond,
 			})
 			continue
 		}
-		if err := s.collectReferenceItems(ctx, r.item, chance, depth+1, seen, out); err != nil {
+		if err := s.collectReferenceItems(ctx, r.item, chance, depth+1, seen, out, r.group, r.cond); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+// summarizeGroups fills in the group totals the page prints on a group header.
+//
+// The number is the one the core itself computes (LootGroup::RawTotalChance):
+// the sum of the rows stored with a chance above zero. Rows stored with chance
+// zero are the group's "one of these at random" part, and the sum does not
+// describe them, so they are counted instead. A group whose rows all come from
+// different reference entries is not one group in the core either - each
+// reference is rolled on its own - but the ids are the same number and the page
+// says so rather than inventing a total.
+func summarizeGroups(items []ContentLootItem) {
+	type acc struct {
+		sum   float64
+		equal int
+		vias  map[uint32]bool
+	}
+	groups := map[uint8]*acc{}
+	for _, it := range items {
+		if it.Group == 0 {
+			continue
+		}
+		a := groups[it.Group]
+		if a == nil {
+			a = &acc{vias: map[uint32]bool{}}
+			groups[it.Group] = a
+		}
+		a.vias[it.Via] = true
+		if it.Chance == 0 {
+			a.equal++
+			continue
+		}
+		a.sum += it.Chance
+	}
+	for i := range items {
+		if items[i].Group == 0 {
+			continue
+		}
+		a := groups[items[i].Group]
+		if a == nil {
+			continue
+		}
+		items[i].GroupEqual = a.equal
+		// One reference entry means one group in the core; several mean the
+		// total says nothing, so it is left at zero and the page prints no
+		// number.
+		if len(a.vias) == 1 {
+			items[i].GroupChance = a.sum
+		}
+	}
+}
+
+// attachConditions loads the conditions the rows name and hangs each one on its
+// row. One query per table, not one per row: a boss can carry a hundred rows.
+func (s *Store) attachConditions(ctx context.Context, loc ContentLocale, items []ContentLootItem) error {
+	var ids []uint32
+	for _, it := range items {
+		if it.condID != 0 {
+			ids = append(ids, it.condID)
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	conds, err := s.LootConditions(ctx, loc, dedup(ids))
+	if err != nil {
+		return err
+	}
+	for i := range items {
+		if items[i].condID == 0 {
+			continue
+		}
+		if c, ok := conds[items[i].condID]; ok {
+			items[i].Condition = c
+		}
+	}
+	return nil
+}
+
+// attachDropConditions is attachConditions for the item page's direction, where
+// the rows are ContentDrop.
+func (s *Store) attachDropConditions(ctx context.Context, loc ContentLocale, drops []ContentDrop) error {
+	var ids []uint32
+	for _, d := range drops {
+		if d.condID != 0 {
+			ids = append(ids, d.condID)
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	conds, err := s.LootConditions(ctx, loc, dedup(ids))
+	if err != nil {
+		return err
+	}
+	for i := range drops {
+		if drops[i].condID == 0 {
+			continue
+		}
+		if c, ok := conds[drops[i].condID]; ok {
+			drops[i].Condition = c
 		}
 	}
 	return nil
@@ -525,7 +664,7 @@ func (s *Store) collectReferenceItems(ctx context.Context, ref uint32, factor fl
 
 // scanLootItems reads one loot table's rows for one owner and expands whatever
 // references it points at, so the caller gets items either way.
-func (s *Store) scanLootItems(ctx context.Context, table string, owner uint32) ([]ContentLootItem, error) {
+func (s *Store) scanLootItems(ctx context.Context, loc ContentLocale, table string, owner uint32) ([]ContentLootItem, error) {
 	q, args := lootItemsQuery(table, owner)
 	rows, err := s.World.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -535,16 +674,22 @@ func (s *Store) scanLootItems(ctx context.Context, table string, owner uint32) (
 
 	var out []ContentLootItem
 	var refs []uint32
+	var refGroups []uint8
+	var refConds []uint32
 	for rows.Next() {
 		var item uint32
 		var chance float64
 		var mincountOrRef int32
 		var maxcount uint32
-		if err := rows.Scan(&item, &chance, &mincountOrRef, &maxcount); err != nil {
+		var group uint8
+		var cond uint32
+		if err := rows.Scan(&item, &chance, &mincountOrRef, &maxcount, &group, &cond); err != nil {
 			return nil, fmt.Errorf("scan %s: %w", table, err)
 		}
 		if mincountOrRef < 0 {
 			refs = append(refs, item)
+			refGroups = append(refGroups, group)
+			refConds = append(refConds, cond)
 			continue
 		}
 		out = append(out, ContentLootItem{
@@ -553,6 +698,8 @@ func (s *Store) scanLootItems(ctx context.Context, table string, owner uint32) (
 			MinCount:  uint32(mincountOrRef),
 			MaxCount:  maxcount,
 			QuestOnly: chance < 0,
+			Group:     group,
+			condID:    cond,
 		})
 	}
 	if err := rows.Err(); err != nil {
@@ -562,10 +709,14 @@ func (s *Store) scanLootItems(ctx context.Context, table string, owner uint32) (
 	// References are expanded after the direct rows so the page lists what the
 	// owner drops itself first and the referenced tables below it.
 	seen := map[uint32]bool{}
-	for _, ref := range refs {
-		if err := s.collectReferenceItems(ctx, ref, 100, 0, seen, &out); err != nil {
+	for i, ref := range refs {
+		if err := s.collectReferenceItems(ctx, ref, 100, 0, seen, &out, refGroups[i], refConds[i]); err != nil {
 			return nil, err
 		}
+	}
+	summarizeGroups(out)
+	if err := s.attachConditions(ctx, loc, out); err != nil {
+		return nil, err
 	}
 	return out, nil
 }
@@ -650,7 +801,7 @@ func (s *Store) ItemDisenchant(ctx context.Context, loc ContentLocale, disenchan
 	if disenchantID == 0 {
 		return nil, nil
 	}
-	items, err := s.scanLootItems(ctx, "disenchant_loot_template", disenchantID)
+	items, err := s.scanLootItems(ctx, loc, "disenchant_loot_template", disenchantID)
 	if err != nil {
 		return nil, err
 	}
@@ -951,11 +1102,14 @@ func (s *Store) loadLootSources(ctx context.Context, loc ContentLocale, table st
 		var chance float64
 		var mincountOrRef int32
 		var maxcount uint32
-		if err := rows.Scan(&d.Entry, &d.Name, &chance, &mincountOrRef, &maxcount, &d.Via); err != nil {
+		var group uint8
+		var cond uint32
+		if err := rows.Scan(&d.Entry, &d.Name, &chance, &mincountOrRef, &maxcount, &d.Via, &group, &cond); err != nil {
 			return nil, fmt.Errorf("scan %s: %w", table, err)
 		}
 		d.Chance = math.Abs(chance)
 		d.QuestOnly = chance < 0
+		d.Group, d.condID = group, cond
 		if mincountOrRef > 0 {
 			d.MinCount, d.MaxCount = uint32(mincountOrRef), maxcount
 		} else {
@@ -969,7 +1123,7 @@ func (s *Store) loadLootSources(ctx context.Context, loc ContentLocale, table st
 		return nil, err
 	}
 	if len(roots) == 0 {
-		return out, nil
+		return out, s.attachDropConditions(ctx, loc, out)
 	}
 
 	hits, err := s.refChainHits(ctx, item, roots)
@@ -990,7 +1144,7 @@ func (s *Store) loadLootSources(ctx context.Context, loc ContentLocale, table st
 		out[i].Chance = out[i].Chance * hit.chance / 100
 		out[i].MinCount, out[i].MaxCount = hit.min, hit.max
 	}
-	return out, nil
+	return out, s.attachDropConditions(ctx, loc, out)
 }
 
 // CreatureRelations gathers what one creature starts, ends, drops and sells.
@@ -1040,7 +1194,7 @@ func (s *Store) CreatureRelations(ctx context.Context, loc ContentLocale, creatu
 		if g.id == 0 {
 			continue
 		}
-		list, err := s.scanLootItems(ctx, g.table, g.id)
+		list, err := s.scanLootItems(ctx, loc, g.table, g.id)
 		if err != nil {
 			return nil, err
 		}

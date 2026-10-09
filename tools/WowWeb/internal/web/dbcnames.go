@@ -58,6 +58,7 @@ var (
 	questSortNames = map[uint32]dbcName{}
 	subclassNames  = map[subclassKey]dbcName{}
 	itemSetNames   = map[uint32]dbcName{}
+	skillNames     = map[uint32]dbcName{}
 	setItems       = map[uint32][]uint32{}
 	setBonuses     = map[uint32][]SetBonus{}
 )
@@ -138,6 +139,8 @@ func init() {
 			questSortNames[uint32(id)] = name
 		case "ITEMSET":
 			itemSetNames[uint32(id)] = name
+		case "SKILL":
+			skillNames[uint32(id)] = name
 		}
 	}
 }
@@ -177,6 +180,11 @@ func (p PageData) SubClassName(class, subclass uint8) string {
 	return subclassNames[subclassKey{class, subclass}].pick(p.Lang())
 }
 
+// SkillName is the SkillLine name for a skill id, or "".
+func (p PageData) SkillName(id uint32) string {
+	return skillNames[id].pick(p.Lang())
+}
+
 // ItemSetName is the name of an item set, or "".
 func (p PageData) ItemSetName(id uint32) string {
 	return itemSetNames[id].pick(p.Lang())
@@ -214,9 +222,9 @@ func (p PageData) SetBonuses(setID uint32) []SetBonus {
 
 // DBCNameCounts reports how many rows each table holds, for the tests and for
 // anyone wondering how much of the client's data is covered.
-func DBCNameCounts() (areas, factions, maps, sorts, subclasses, sets int) {
+func DBCNameCounts() (areas, factions, maps, sorts, subclasses, sets, skills int) {
 	return len(areaNames), len(factionNames), len(mapNames),
-		len(questSortNames), len(subclassNames), len(itemSetNames)
+		len(questSortNames), len(subclassNames), len(itemSetNames), len(skillNames)
 }
 
 // SetDataCounts reports how many sets have members and bonuses loaded.

@@ -1738,6 +1738,48 @@ template (no page shell), so the bow and the page can never disagree.
 > HTML into a page — and what it inserts is a same-origin fragment the server
 > rendered and escaped. Nothing in the script builds markup out of strings.
 
+## Loot groups and conditions
+
+A loot row carries two columns that decide whether it can drop at all, and until now
+the `/db` pages printed neither: they showed the stored chance and left a GM to guess
+why a 100% row never appeared.
+
+* **`groupid`** — a row with a group above zero is one of a set that yields **at most
+  one item**. The core rolls a single random number and subtracts the group's chances
+  in row order, stopping at the first row that covers the roll (`LootMgr.cpp`,
+  `LootGroup::Roll`); rows stored with chance 0 are the fallback it picks from at
+  random when nothing else covered it. Printing the rows flat makes a 5% share of a
+  group look like a 5% drop, so the page draws a header per group: the groupid, what
+  "one of these" means, the group's total stored chance, and how many rows are
+  equal-chance. The total is the sum the core itself computes
+  (`LootGroup::RawTotalChance`), and it is only printed when every row in the group
+  came through **one** reference entry — two references sharing a groupid by accident
+  is real in this realm's data, and their sum would be a number the core never
+  arrives at.
+* **`condition_id`** — points into the `conditions` table, which holds a small tree:
+  types `-1`/`-2`/`-3` are AND/OR/NOT and their four value columns name other
+  conditions, everything else is a leaf. The page walks the tree (with a depth cap and
+  a visited set, because the table is data) and prints it as a sentence:
+  "需已完成任务「木喉熊怪的盟友（#6131）」 或 需已完成任务「木喉熊怪的盟友（#8460）」".
+  Operands that name something keep both the name and the id — the id is what a GM
+  edits, and two quests in this realm share a title, so the ids are the only way to
+  tell those two conditions apart.
+* The conditions the loot tables actually use are the ones implemented: team, skill,
+  item, aura, area, quest taken/rewarded, game event, the Argent Dawn commission, the
+  Lunatic challenge, a source entry and a db guid, plus the three logical nodes. A type
+  outside that list still prints its raw type and operands rather than nothing.
+* Names come from wherever they live: the store reads the database (quest titles, item
+  and spell names, the `game_event` description), and the web layer reads the client's
+  tables for the ones that are in DBCs (**area**, **skill**) — `SkillLine.dbc` was added
+  to `gen_dbc_names.py` for this, so `conditions.type = 7` reads "技能「锻造」达到 1"
+  rather than "需要技能 164".
+* **The reverse flag** (`conditions.flags & 1`) flips the row's result, and the page
+  spells that out. One combination is common enough to be worth naming: the database
+  writes "Horde only" as *not (Horde only)* **plus** the reverse flag, which the page
+  simplifies to "仅限部落" instead of printing a double negation.
+* The item page gets the same treatment in the direction it asks the question: each
+  source of an item says what condition has to hold for it to drop.
+
 ## Sets and disenchanting
 
 Two more blocks on the item page, both fed from the client or from one small table:
