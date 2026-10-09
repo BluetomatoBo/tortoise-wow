@@ -233,3 +233,33 @@ Catapult 投石车）。清单：`tools/dbdiff/review/subname_unify_review.md`�
 * 改动写在新建的 `sql/wip_updates/locales_subname_unify.sql`（带 entry 限定与原值条件、可重复导入，
   幂等自测 0 行）；回滚：`tools/dbdiff/review/subname_unify_rollback.sql`。
 * 生效：`.reload locales_creature`（+ `locales_item` / `locales_gameobject` 各一处）。
+
+## 1.12.1 原生内容对齐官方简体（2026-10-09 第五轮，已落库）
+
+起因：`16063` 的简体字段里装的是**繁体版文本**（札里克爵士），官方简体应是「瑟里耶克爵士」。
+以 `mangoszero/database · Translations/Chinese`（1.12.1 官方 zhCN）为准，全库比对了
+**62,896 条**官方条目（含 `locales_gossip_menu_option` 的 entry+id 双主键），逐条判定：
+
+| 判定 | 条数 | 处理 |
+|---|---|---|
+| 一致 | 43,572 | — |
+| 繁体泄漏 / 截断 / 大小写错误 / 用词不符 | **10,656** | 改为官方简体 |
+| 官方有、库里为空 | **1,995** | 补（1,889 行原本**没有记录**，用 INSERT） |
+| 仅引号风格不同（此前的全角引号整理） | 107 | 一并归到官方（以官方为准） |
+| 不适用 | 6,566 | 官方有 `locales_npc_text`/`db_script_string`，本库没有这两张表 |
+
+典型修复：`16063` 札里克爵士→**瑟里耶克爵士**、`641` 哥布林木匠→**地精木匠**、
+`2442` 乳牛→**奶牛**、`731` 虎王邦加拉西→**虎王邦加拉什**、`202` 恐怖骸骨→**腐烂恐魔**、
+`248` 斯通菲尔德老奶奶→**米莱德·斯通菲尔德**；另有大量任务文本是**被截断**的
+（末尾少一个 `$B`）或用了小写 `$b$b`（客户端不换行）→ 一并修正。
+
+收尾复核：一致 **56,156 / 56,330**（99.7%）。剩余 174 条是 `ObjectiveText1..4`——
+库里存的是**带运行时计数的动态标签**（如「关闭燃油控制阀(2)」），**有意保留**。
+
+产物：`tools/dbdiff/review/official_zhcn_align_full.sql`（10,656 改）、`official_zhcn_fill.sql`
+（1,995 补）、`official_zhcn_extra.sql`（wip 文件未覆盖的 8,405 条，供重建用）、
+以及两份 `*_rollback.sql`。多数改动已由 `sync_wip_from_db.py` 直接落进
+`sql/wip_updates/locales_*.sql`（1,367 行），所以重导仓库文件即可保持官方文本。
+
+生效：`.reload locales_creature` / `locales_item` / `locales_gameobject` / `locales_quest` /
+`locales_page_text` / `locales_points_of_interest` / `mangos_string`

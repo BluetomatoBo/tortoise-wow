@@ -1614,46 +1614,46 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
 -- ======== 第二节：改写后重译（167 条） ========
 -- ---- OfferRewardText_loc4（67 条）----
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 100, '多谢你，也多谢萨满们。' FROM DUAL
+  SELECT 100, '谢谢你，萨满。$B$B堕落已经褪去，然而生命依然衰弱，我们需要萨满的力量来保护所有的生灵。$B$B' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 755, '鹰风酋长派你来的？大地母亲祭仪可不是件小事……' FROM DUAL
+  SELECT 755, '是鹰风酋长派你来的?大地之母祭仪可不是件小事……' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 773, '你在渴望通过大地母亲祭仪的过程中，展现出了十足的勤勉，$N。$B$B我们这些先祖之魂，代表着那些为建立并守护伟大雷霆崖而英勇献身的强大牛头人。我在此将守护的重任交付于你。$B$B你已通过了智慧祭仪，年轻的$C。带着骄傲走进雷霆崖吧。' FROM DUAL
+  SELECT 773, '你在通过大地之母祭仪的过程中已经显示了你的勤奋和努力，$N。$B$B我们是先祖之魂，我们代表了那些为保卫雷霆崖而付出生命的勇敢的牛头人。现在，我把保卫这里的神圣职责交给你。$B$B你已经通过了智慧祭仪，年轻的$C。你可以骄傲地走进雷霆崖了。' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 1789, '快点，$N，你若失败，等着救命的就不止一条人命。$B$B如果你没能帮上穆瑞顿和纳姆，就回来找我，我会再给你一个生命符记供旅途使用。$B$B别把我的援手当成单纯的施舍——你必须像其他任何一位$C那样证明自己的价值，接连的失败日后都可能记在你头上。' FROM DUAL
+  SELECT 1789, '快点，$N，你的成功与否关系着不止一条人命。$B$B如果因为某些原因让你无法帮助杰生和亨兹，就赶快回来找我，我会再给你一个生命符记。$B$B别以为我的帮助仅仅是简单的恩惠，你必须证明自己具备和其它圣骑士一样的价值,在今后的日子里，你还会不断遇到挫折。' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 5638, '很高兴你来了，$N。我们有很多事要谈，但更重要的是你在圣光之道上的修行。$B$B所有圣光的仆从都要学习一些课程。如果你准备好了，我们现在就来谈其中的一些。' FROM DUAL
+  SELECT 5638, '你以圣光之名做出的贡献已经成为了冒险者们的榜样。请你接受这个，作为我们对你的感谢。$B$B' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 5647, '你有一名伟大$C的潜质，$N。继续保持！$B$B$N你已经证明自己可以上阵了。也许该教你点更多的东西了。' FROM DUAL
+  SELECT 5647, '你已经具备了成为一个伟大牧师的条件，$N。继续加油!$B$B既然你已经做好了作战的准备，那麽也许我们应该再教你一些东西了。$B$B' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 5659, '啊，好极了，又来了一个。时间对我或许无关紧要，可对你而言却至关重要。你要学的东西很多，我想教给你的也不少。你只需证明自己的价值。做到了，你就会得到丰厚的回报。' FROM DUAL
+  SELECT 5659, '啊，好极了，又来了一个。时间对我来说不成问题，但是对你而言就至关重要了。你要学习的东西还很多，而我想传授给你的也很多。你必须证明自己的价值，以此来赢得丰厚的回报。' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 7462, '你打开箱子，看见……' FROM DUAL
+  SELECT 7462, '你打开了箱子，发现了……' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 8101, '$R，这枚坠饰的框架里嵌着的石粒来自南海的卡亚罗山。卡亚罗山是一片极不稳定的区域——常有暴烈、往往还带着魔法力量的火山喷发。$B$B随着你与赞达拉巨魔的羁绊加深，这块石粒的力量也会增长。驾驭它的力量去击倒我们的敌人吧。要像那座山一样：迅疾、暴烈、致命……' FROM DUAL
+  SELECT 8101, '$C，这块坠饰上镶嵌的卡亚罗之石来自南海的卡亚罗山脉。卡亚罗山脉地带分布着许多活火山，那里的地质地形不断发生剧烈的变动。$B$B随着你与赞达拉食人妖的关系日益密切，卡亚罗之石的力量也会增强。利用这块石头的力量打败我们的敌人吧。就像卡亚罗山脉那样:迅速、致命、富有爆炸力……' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 8110, '看到这些海藻了吗，老兄？它产自南海。我们只要加一点魔精和一点魔法，它就会具备最适合主人的属性。$B$B你是个$C，所以这很容易，老兄。只要把它挂在脖子上，想想大自然、松鼠，或者你们这类人喜欢的东西就行了。' FROM DUAL
+  SELECT 8110, '看到这些海藻了吗?它们产自南海。我们往其中添加了一点魔精和魔法，它就成为一件非常有用的饰品。$B$B你是个德鲁伊，这对你来说相当容易。把它戴在你的脖子上，想像一下大自然、松鼠或是所有你们会喜欢的东西。' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 8383, '你继续为联盟带来荣耀，$N。只要我们不松懈，部落很快就会被击垮。' FROM DUAL
+  SELECT 8383, '你为联盟不断带来荣耀，$N。如果我们继续努力的话，部落迟早会被我们击垮的。' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 8409, '啊，成功了！你展现了真正的万鬼节精神——应该说，是被遗忘者的精神！$B$B<黑暗召唤者雅恩卡搓着手大笑。>$B$B南海镇现在只能喝劣酒，或者干脆没酒喝，我为此乐不可支！至于你，收下这些礼物吧。我相信你会用得上！' FROM DUAL
+  SELECT 8409, '啊，你成功了!我要说的是，你展现了万鬼节的精神―被遗忘者的精神!$B$B<黑暗召唤者雅恩卡搓着手大笑着。>$B$B现在南海镇没有美味的麦芽酒喝了，我为此要庆祝一番!至于你，收下这些礼物。你会发现其中必定有有用的东西!' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 8678, '你的灵魂燃烧着生机，年轻的$C。我接受你的敬意，并回赠你这枚信物……' FROM DUAL
+  SELECT 8678, '你的精神充满了生气，年轻的$C。我接受你的效忠并回敬你这个奖励……$B$B' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 8742, '流沙节杖重归完整，$N。$B$B使用节杖的人必须是你。为你的族人开启下一个时代的人，也必须是你。$B$B你必须等部落与联盟的军队抵达希利苏斯，才能敲响甲虫之锣。' FROM DUAL
+  SELECT 8742, '一千年过去了，正如命中注定的那样，一位勇士站在了我的面前。这位勇士将会带领他的人民走向新的纪元。$B$B上古之神在颤抖，$N。是的，它在你坚定的信念面前恐惧地颤抖着。打破克苏恩的预言吧。$B$B它知道你会到来的，勇士―它还知道卡林多的力量与你同在。当你做好准备之后，请通知我，我将把流沙权杖赐予你。' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
   SELECT 8745, '你好，勇士。我是乔纳森，神圣之锣的看守者，也是青铜龙军团的永恒观察者。$B$B永恒之王亲自授予我权柄，让我从他永恒的宝库中挑选一件物品给你。愿它能在你对抗克苏恩的战斗中助你一臂之力。' FROM DUAL
@@ -1668,10 +1668,10 @@ INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
   SELECT 8851, '那么，就这么定了；这是你的补给，$C。如果你想再换一次，我也可以批准。只要你说一声，我就办到。$B$B继续好好干，$N。要打赢这场仗，我们得凑齐所有能凑到的物资。只要人人都尽一份力，胜利就是我们的囊中之物！' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 8993, '太好了！太好了！我会把它加到其他礼物那一堆里去。$B$B没想到会有这么多！你一定是真心爱戴你的领袖。$B$B现在，让我再往总数里加上一个……' FROM DUAL
+  SELECT 8993, '太好了!太好了!我会把这个跟其他礼物堆放在一起。$B$B我没想到会有这么多!你一定很爱你的领导者。$B$B现在，让我在清单上再加一笔……$B$B' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 9238, '这是你的订单，$N。如约送达！' FROM DUAL
+  SELECT 9238, '这是你要求的东西，$N。依约抵达!$B$B' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
   SELECT 9257, '这伟大的成就绝对不能轻描淡写地过去，$N。你完成了大多数人认为不可能的事。唉，这是命中注定啊。法杖已经作出了自己的选择。' FROM DUAL
@@ -1817,22 +1817,22 @@ INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
 
 -- ---- RequestItemsText_loc4（100 条）----
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
-  SELECT 8107, '在赞达拉巨魔当中，荣誉要靠自己去赢得，$N。荣誉带来回报——友谊、同盟……$B$B把坠饰交给我，让我强化它的力量。' FROM DUAL
+  SELECT 8107, '荣誉是在赞达拉巨魔中获得的，$N。荣誉伴随着奖励-友谊，同盟... $B$B给我护身符，以便我增强其威力。' FROM DUAL
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = VALUES(`RequestItemsText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
-  SELECT 8108, '我随时可以为你效劳，$C。我会再次强化你的坠饰。我只要求你继续消灭哈卡和他的爪牙。$B$B把坠饰给我。' FROM DUAL
+  SELECT 8108, '我为你准备好了，$C。我会再次增强你的护身符。我只要求你继续摧毁哈卡和他的仆从。给我护身符。' FROM DUAL
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = VALUES(`RequestItemsText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
-  SELECT 8142, '令人印象深刻，$N。你有杀戮的天赋，我多年没在别人身上感受到这种天赋了。连莫托尔都知道你为赞达拉做的事。是时候进一步强化你的坠饰了。把它给我。' FROM DUAL
+  SELECT 8142, '真令人印象深刻,$N。你有一种杀人的天赋，我已经很多年没有在别人身上感觉到了。$B$B就连莫索尔都知道你为赞达拉所做的一切。是时候进一步强化你的护身符了,把它给我。' FROM DUAL
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = VALUES(`RequestItemsText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
-  SELECT 8143, '我能感觉到，你已经让无数哈卡莱丧命，$N。你身上带着他们魔精的臭味。$B$B我猜那枚暗影坠饰在杀戮中出了力？把它交给我，让我强化它的力量。' FROM DUAL
+  SELECT 8143, '我感觉你造成了无数哈卡里人的死亡，$N。你身上带着他们的魔咒。我就当作影子护身符在捕杀中有帮助吧?把它给我，让我增强它的力量。' FROM DUAL
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = VALUES(`RequestItemsText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
-  SELECT 8146, '即便在这里，我也能听见你的箭雨荡平敌人的声响。他们的惨叫回荡着满是痛苦。$B$B你已经在赞达拉的巨魔当中闯出了名号，$N。我们感激你所做的一切。$B$B把你的坠饰交给我，让我再织入一道。' FROM DUAL
+  SELECT 8146, '即使在这里，我也能听到你们的排枪击溃我们的敌人的声音。他们的哭喊声在痛苦中回响。$B$B你已经在赞达拉的巨魔中名声大噪了，$N。我们感激您所做的一切。把你的护身符递给我，这样我可以再加一条纹路。' FROM DUAL
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = VALUES(`RequestItemsText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
-  SELECT 8147, '啊，$N，能再次闻到你的气味真好。$B$B<法希尔咧嘴一笑。>$B$B请原谅我的幽默感，它有时实在粗俗。$B$B我能感觉到，你让我们的敌人痛苦万分。哈卡的军队正愤怒地呼喊着你的名字。这真是太好了。$B$B你又为你的坠饰赢得了一道编织。把它交给我。' FROM DUAL
+  SELECT 8147, '哈，$N，又闻到你的味道真好。$B$B<Falthir笑了>。请原谅我的幽默感。好像有时不太妙。$B$B我知道你给我们的敌人造成了巨大的痛苦。哈卡的军队在愤怒中呼喊着你的名字。这很厉害。$B$B 你在护身符上又多了一个铭文。把它给我。' FROM DUAL
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = VALUES(`RequestItemsText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 8742, '一千年过去了，正如命中注定，终于有人站在了我面前——一位将带领他的人民走向新时代的勇士。$B$B上古之神在颤抖，$N。是的，它畏惧你的信念。打破克苏恩的预言吧。$B$B它知道你会来，勇士——而与你同来的，还有卡利姆多的力量。你只需在准备好时告诉我，我便将流沙节杖赐予你。' FROM DUAL
