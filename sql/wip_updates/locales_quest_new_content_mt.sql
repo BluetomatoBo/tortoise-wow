@@ -1276,7 +1276,7 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
-  SELECT 8147, '哈，$N，又闻到你的味道真好。$B$B<Falthir笑了>。请原谅我的幽默感。好像有时不太妙。$B$B我知道你给我们的敌人造成了巨大的痛苦。哈卡的军队在愤怒中呼喊着你的名字。这很厉害。$B$B 你在护身符上又多了一个铭文。把它给我。' FROM DUAL
+  SELECT 8147, '哈，$N，又闻到你的味道真好。$B$B<法希尔笑了>。请原谅我的幽默感。好像有时不太妙。$B$B我知道你给我们的敌人造成了巨大的痛苦。哈卡的军队在愤怒中呼喊着你的名字。这很厉害。$B$B 你在护身符上又多了一个铭文。把它给我。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 8147) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
@@ -1456,7 +1456,7 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
-  SELECT 40514, 'Bala dash.' FROM DUAL
+  SELECT 40514, '巴拉达什。' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 40514) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
@@ -4001,7 +4001,7 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
-  SELECT 41794, 'Thrall hall，小家伙。什么风把你吹到碎风哨站来了？' FROM DUAL
+  SELECT 41794, 'Throm\'ka，小家伙。什么风把你吹到碎风哨站来了？' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41794) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
@@ -4196,7 +4196,7 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
-  SELECT 41834, 'Loktar ogar.' FROM DUAL
+  SELECT 41834, 'Lok\'tar ogar！' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `RequestItemsText_loc4` FROM `locales_quest` WHERE `entry` = 41834) x
                       WHERE x.`RequestItemsText_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = IF(`RequestItemsText_loc4` REGEXP '[一-龥]', `RequestItemsText_loc4`, VALUES(`RequestItemsText_loc4`));

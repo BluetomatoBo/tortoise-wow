@@ -280,3 +280,44 @@ Catapult 投石车）。清单：`tools/dbdiff/review/subname_unify_review.md`�
 * **归档**：一次性补丁/脚本/译稿/审阅数据存到本机
   `~/.copilot/session-state/81995a26-…/files/dbdiff_archive/`（含 README 清单）。
 * 复核：`verify`/MD5 逐条比对仍是 **0 差异**；`locales_name_fixes.sql` 幂等导入 0 行。
+
+## 任务文本补译与清理（2026-10-09 第七轮）
+
+起因：玩家在 `/db/quests/7936` 看到任务详情/目标仍是英文。查出根因是**中文槽里放的不是中文**，
+共四类，全部处理：
+
+| 类别 | 条数 | 处理 |
+|---|---|---|
+| 英文原文（1.12.1 库的英文栏本来就是空的，官方也无中文） | 38 | 人工翻译（术语取库内既有译名） |
+| 英文占位符/垃圾（`The details…missing`、`Missing details`、`TODO`、字面量 `"NULL"`） | 113 | 清空（英文端本就为空，清空后与英文端一致） |
+| 未替换变量（`<Name>` `<Class>` `(NAME)`） | 6 | 换成 `$N` / `$C` / 实际 NPC 名 |
+| 中英混排 / 专名未译 / 误译 | 45+12 | 逐条修正 |
+
+**来源核对**（按你的要求先查 1.12.1）：把 mangos-zero 的 `World/Setup/FullDB/quest_template.sql`
+（官方英文）与 `Translations/Chinese`（官方中文）都拉下来比对 —— 这些任务的 `Details`/`Objectives`
+在官方库里**本身就是空的**（英文空、中文也没有），官方中文只译了它自己有的列（标题/交还/需求文本，
+我们这边早已是中文）。所以这批属后加内容，按人工翻译处理。
+
+典型修复：
+* `7936` 详情 → 「靠过来，靠过来！如果你有暗月马戏团的奖券想要兑换……」；目标 → 「用50张暗月马戏团奖券兑换去年的羊肉。」
+* 专名：`Smokywood Pastures` → 烟林牧场、`Darkshire` → 夜色镇、`Watcher Callahan` → 守夜人考拉哈恩、
+  `Red Scepter Shard` → 红色节杖碎片、`Twilight Marauder Morna` → 暮光掠夺者莫娜、`Mistwing` → 雾翼、
+  `Zin-Azshari` → 辛艾萨莉、`Erennius` → 埃伦纽斯、`Cenerron` → 赛纳隆、`Blackwald` → 布莱克沃尔德。
+* 同名异译收敛：`阿纳克洛斯` → **安纳克罗斯**、`战利品海湾` → **藏宝海湾**（Booty Bay）、
+  `棘轮` → **棘齿城**（Ratchet）、`滑道`/`溜走` → **脚滑**（NPC `Slip`）、`沃利的俏皮话` → **沃利·怀斯克拉克**、
+  `Bala dash` → **巴拉达什**（库内既有译法）。
+* 有意保留：斜杠命令（`/wave` `/soothe` `/cheer` `/dance`，玩家要照着输入）、虚构语言短语
+  （`Ishnu-alah` `Throm'ka` `Lok-regar no'gal` `Ande'thoras-ethil` `Bwonsamdi`，与 `Zug-zug` 同类）、
+  与物品名一致的罗马数字（任务简报 `VIII`）、官方中文同样带 `DND FLAG` 的标题（9378）。
+
+落地：新文件 `sql/wip_updates/locales_quest_missing_text.sql`（202+ 条，带原值条件、**幂等**，
+重复导入 0 行受影响）；变更已按线上回写进其它 wip 文件，MD5 逐条比对仍 **0 差异**。
+生效：`.reload locales_quest`。
+
+**尚未处理（同类但量更大，等你决定）**：其它表里也有中英混排——
+`locales_item.description` 16 行（含 `spellid_2`、`iCoke`、`Derek` 这类开发标记）、
+`locales_item.name` 65 行（如 `Commendation - 艾尔文森林`、`Bonecaster腰带`、`黑色LSlowD02胸板`）、
+`locales_gameobject.name` 32 行（如 `传送器DRBB`、`闸门(Boss房间)`、`水Trough小`）、
+`locales_broadcast_text` 55 行（如 `Pat Nagle和Michael Backus`、`Huzzah！`、`PWNED~`）、
+`script_texts` 14 行、`locales_spell.name` 34 行（如 `回春术 (Food)`、`隐形术 Totem`）。
+这些多为**开发/内部名字**（部分玩家看不到），要不要一起清，按你的意见再动。

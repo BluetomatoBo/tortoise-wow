@@ -1832,7 +1832,7 @@ INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 8146, '即使在这里，我也能听到你们的排枪击溃我们的敌人的声音。他们的哭喊声在痛苦中回响。$B$B你已经在赞达拉的巨魔中名声大噪了，$N。我们感激您所做的一切。把你的护身符递给我，这样我可以再加一条纹路。' FROM DUAL
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = VALUES(`RequestItemsText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
-  SELECT 8147, '哈，$N，又闻到你的味道真好。$B$B<Falthir笑了>。请原谅我的幽默感。好像有时不太妙。$B$B我知道你给我们的敌人造成了巨大的痛苦。哈卡的军队在愤怒中呼喊着你的名字。这很厉害。$B$B 你在护身符上又多了一个铭文。把它给我。' FROM DUAL
+  SELECT 8147, '哈，$N，又闻到你的味道真好。$B$B<法希尔笑了>。请原谅我的幽默感。好像有时不太妙。$B$B我知道你给我们的敌人造成了巨大的痛苦。哈卡的军队在愤怒中呼喊着你的名字。这很厉害。$B$B 你在护身符上又多了一个铭文。把它给我。' FROM DUAL
   ON DUPLICATE KEY UPDATE `RequestItemsText_loc4` = VALUES(`RequestItemsText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `RequestItemsText_loc4`)
   SELECT 8742, '一千年过去了，正如命中注定，终于有人站在了我面前——一位将带领他的人民走向新时代的勇士。$B$B上古之神在颤抖，$N。是的，它畏惧你的信念。打破克苏恩的预言吧。$B$B它知道你会来，勇士——而与你同来的，还有卡利姆多的力量。你只需在准备好时告诉我，我便将流沙节杖赐予你。' FROM DUAL
