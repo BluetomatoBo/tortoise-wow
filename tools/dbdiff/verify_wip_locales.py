@@ -236,7 +236,8 @@ def parse(path):
     if multi_key:
         tables = sorted(set(t for t, _ in multi_key))
         print("   注意：%s 里 %d 条 UPDATE 的 WHERE 有多个条件（复合主键，如 entry+half+word），"
-              "本工具按单键比对会失真，已从统计中排除：%s" % ("", len(multi_key), ", ".join(tables)))
+              "本工具按单键比对会失真，已从统计中排除：%s"
+              % (os.path.basename(path), len(multi_key), ", ".join(tables)))
     return items
 
 
@@ -359,7 +360,8 @@ def check_file(path, mysql, limit, quiet=False, show_diffs=0, entry_filter=None)
         if details:
             print("\n=== 明细（最多 %d 条）===" % limit)
             for d in details[:limit]:
-                print("   %s.%s %s=%s → %s%s" % (d[0], d[1], d[2], d[3], ("；线上开头：%r" % d[4]) if d[4] else ""))
+                tail = "；线上开头：%r" % d[4] if d[4] else ""
+                print("   %s.%s #%s → %s%s" % (d[0], d[1], d[2], d[3], tail))
             if len(details) > limit:
                 print("   ... 还有 %d 条" % (len(details) - limit))
         elif not skipped:
