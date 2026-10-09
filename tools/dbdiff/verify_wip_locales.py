@@ -345,7 +345,9 @@ def check_file(path, mysql, limit, quiet=False, show_diffs=0, entry_filter=None,
                     elif got[0] == want:
                         total["一致"] += 1
                     else:
-                        live_has_cjk = bool(re.search(r"[\u4e00-\u9fff]", got[2] or ""))
+                        # 中文判定放宽到「汉字或 CJK 标点/全角字符」：像 `$N？`、`$N。` 这种
+                        # 只有全角标点的值，也是正常中文文本，不该被判成「非中文（需导入）」。
+                        live_has_cjk = bool(re.search(r"[\u2e80-\u9fff\u3000-\u303f\uff00-\uffef]", got[2] or ""))
                         key = "不同(线上已中文→人工看)" if live_has_cjk else "不同(线上非中文→需导入)"
                         total[key] += 1
                         details.append((table, col, k, key, got[2]))
