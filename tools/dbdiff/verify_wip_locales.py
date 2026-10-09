@@ -286,33 +286,71 @@ def show_diff(mysql, table, col, key, keyval, want, live_snippet, limit=2, shown
     shown.add(keyval)
 
 
-# 各 locales 表对应的「英文原名」来源（判译文好坏时最关键的一列）
+# 各 locales 表 + 列 → 「英文原名」来源 (源表, 源列)。判译文好坏时最关键的一列。
+# 键是 locales 表名，值是 {locales 列名: (源表, 源列)}；列名以 _loc4 结尾时按去掉后缀的名字匹配。
 EN_SOURCE = {
-    "locales_creature":              ("creature_template",   "name"),
-    "locales_gameobject":            ("gameobject_template", "name"),
-    "locales_item":                  ("item_template",       "name"),
-    "locales_spell":                 ("spell_template",      "name"),
-    "locales_points_of_interest":    ("points_of_interest",  "name"),
-    "locales_taxi_node":             ("taxi_nodes",          "name"),
-    "locales_area":                  ("area_template",       "name"),
-    "locales_faction":               ("faction",             "name"),
-    "locales_broadcast_text":        ("broadcast_text",      "male_text"),
-    "locales_page_text":             ("page_text",           "text"),
-    "locales_gossip_menu_option":    ("gossip_menu_option",  "option_text"),
+    "locales_creature":            {"name": ("creature_template", "name"),
+                                    "subname": ("creature_template", "subname")},
+    "locales_gameobject":          {"name": ("gameobject_template", "name")},
+    "locales_item":                {"name": ("item_template", "name"),
+                                    "description": ("item_template", "description")},
+    "locales_spell":               {"name": ("spell_template", "name"),
+                                    "nameSubtext": ("spell_template", "nameSubtext"),
+                                    "description": ("spell_template", "description"),
+                                    "auraDescription": ("spell_template", "auraDescription")},
+    "locales_quest":               {"Title": ("quest_template", "Title"),
+                                    "Details": ("quest_template", "Details"),
+                                    "Objectives": ("quest_template", "Objectives"),
+                                    "OfferRewardText": ("quest_template", "OfferRewardText"),
+                                    "RequestItemsText": ("quest_template", "RequestItemsText"),
+                                    "EndText": ("quest_template", "EndText"),
+                                    "CompletedText": ("quest_template", "CompletedText"),
+                                    "ObjectiveText1": ("quest_template", "ObjectiveText1"),
+                                    "ObjectiveText2": ("quest_template", "ObjectiveText2"),
+                                    "ObjectiveText3": ("quest_template", "ObjectiveText3"),
+                                    "ObjectiveText4": ("quest_template", "ObjectiveText4")},
+    "locales_broadcast_text":      {"male_text": ("broadcast_text", "male_text"),
+                                    "female_text": ("broadcast_text", "female_text")},
+    "locales_page_text":           {"text": ("page_text", "text")},
+    "locales_npc_text":            {"text0_0": ("npc_text", "text0_0")},
+    "locales_gossip_menu_option":  {"option_text": ("gossip_menu_option", "option_text")},
+    "locales_points_of_interest":  {"name": (None, None)},      # POI 的名字来自客户端 DBC，库内没有
+    "locales_area":                {"name": ("area_template", "name")},
+    "locales_faction":             {"name": ("faction", "name")},
+    "locales_taxi_node":           {"name": ("taxi_nodes", "name")},
 }
 
+# repo_value 里出现这些标记，说明它是从网页/DB 页面整块抓下来的，
+# 混进了「完成 / 奖励 / 完成任务后可获得」等界面残留 —— 与目标字段无关，无法用于比对。
+CONTAMINATION_MARKS = ("完成任务后可获得", "你将获得：", "奖励 完成")
 
-def fetch_en_names(mysql, table, keycol, keys):
+
+def source_of(table, column):
+    """locales 表 + 列 → (源表, 源列)；查不到返回 (None, None)"""
+    per = EN_SOURCE.get(table) or {}
+    col = re.sub(r"_loc[0-9]+$", "", column)
+    if col in per:
+        return per[col]
+    for k, v in per.items():
+        if k.lower() == col.lower():
+            return v
+    return (None, None)
+
+
+def looks_contaminated(value):
+    return any(mark in value for mark in CONTAMINATION_MARKS)
+
+
+def fetch_en_names(mysql, table, column, keys):
     """取英文原名（用于判断译文质量）；没有映射的表返回空 dict。"""
-    src = EN_SOURCE.get(table)
-    if not src or not keys:
+    src_table, src_col = source_of(table, column)
+    if not src_table or not keys:
         return {}
-    src_table, src_col = src
     out = {}
     for i in range(0, len(keys), 200):
         chunk = keys[i:i + 200]
-        sel = ("SELECT `%s`, IFNULL(LEFT(`%s`, 80), '') FROM `%s` WHERE `%s` IN (%s)"
-               % (keycol, src_col, src_table, keycol, ",".join("'%s'" % k for k in chunk)))
+        sel = ("SELECT `entry`, IFNULL(LEFT(`%s`, 120), '') FROM `%s` WHERE `entry` IN (%s)"
+               % (src_col, src_table, ",".join("'%s'" % k for k in chunk)))
         rows, err = mysql_run(mysql, sel, fatal=False)
         if rows is None:
             return out
@@ -389,7 +427,8 @@ def check_file(path, mysql, limit, quiet=False, show_diffs=0, entry_filter=None,
                         total[key] += 1
                         details.append((table, col, k, key, got[2]))
                         if review and review_rows is not None and key.startswith("不同(线上已中文"):
-                            review_rows.append((os.path.basename(path), table, col, k, v, got[2]))
+                            review_rows.append((os.path.basename(path), table, col, k, v, got[2],
+                                                "repo含页面残留(不可比对)" if looks_contaminated(v) else ""))
                         if diff_budget[0] > 0 and k not in shown:
                             show_diff(mysql, table, col, keycol, k, v, got[2], shown=shown)
                             diff_budget[0] -= 1
@@ -466,22 +505,30 @@ def main():
                                               grand["不同(线上已中文→人工看)"], grand["为空"],
                                               grand["行不存在"], grand["无法校验"]))
     if args.review_out and review_rows:
-        # 补上「英文原名」一列（按 (表, 主键列) 取；拿不到就留空）
+        # 补上「英文原名」一列：按 (表, 列) 映射到源表取同名/对应列（locales_quest → quest_template 等）
         en_cache = {}
-        by_tbl = {}
-        for f_, t_, c_, k_, repo_v_, live_v_ in review_rows:
-            by_tbl.setdefault(t_, set()).add(k_)
-        for t_, keys in by_tbl.items():
-            en_cache[t_] = fetch_en_names(args.mysql, t_, "entry", sorted(keys))
+        by_tbl_col = {}
+        for f_, t_, c_, k_, repo_v_, live_v_, note_ in review_rows:
+            by_tbl_col.setdefault((t_, c_), set()).add(k_)
+        for (t_, c_), keys in by_tbl_col.items():
+            en_cache[(t_, c_)] = fetch_en_names(args.mysql, t_, c_, sorted(keys))
+        n_cont = 0
         with open(args.review_out, "w", encoding="utf-8") as fh:
-            fh.write("file\ttable\tcolumn\tentry\tenglish\trepo_value\tlive_value\tdecision\n")
-            for f_, t_, c_, k_, repo_v_, live_v_ in review_rows:
+            fh.write("file\ttable\tcolumn\tentry\tenglish\trepo_value\tlive_value\tdecision\tnote\n")
+            for f_, t_, c_, k_, repo_v_, live_v_, note_ in review_rows:
+                decision = ""
+                if note_:
+                    n_cont += 1
+                    decision = "live"      # 仓库侧是页面残留，不存在「用仓库版」的可能 → 预填 live
                 fh.write("\t".join([f_, t_, c_, k_,
-                                     en_cache.get(t_, {}).get(k_, ""),
+                                     en_cache.get((t_, c_), {}).get(k_, ""),
                                      repo_v_.replace("\t", " ").replace("\n", " "),
                                      live_v_.replace("\t", " ").replace("\n", " "),
-                                     ""]) + "\n")
-        print("\n已导出审阅表：%s（%d 行）" % (args.review_out, len(review_rows)))
+                                     decision, note_]) + "\n")
+        miss = sum(1 for r in review_rows if not en_cache.get((r[1], r[2]), {}).get(r[3]))
+        print("\n已导出审阅表：%s（%d 行；其中 %d 行 repo 是页面残留、已预填 live）" % (args.review_out, len(review_rows), n_cont))
+        if miss:
+            print("   提示：仍有 %d 行取不到英文原文（该列没有映射，如 POI 名来自客户端 DBC）—— 这些只能靠语义判断" % miss)
         print("填好 decision 列（repo / live / skip）后交给 gen_locale_patch.py 生成定向补丁")
 
     for name, details in worst[:5]:

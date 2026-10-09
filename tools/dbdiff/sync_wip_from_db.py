@@ -109,11 +109,17 @@ def main():
     ap.add_argument("--dir", required=True)
     ap.add_argument("--mysql", required=True)
     ap.add_argument("--apply", action="store_true", help="覆盖原文件（会先备份 .bak）")
+    ap.add_argument("--include", help="只处理文件名匹配该 glob 的文件（可多次用逗号分隔，如 'locales_quest*.sql'）")
     args = ap.parse_args()
+
+    import fnmatch as _fn
+    includes = [x.strip() for x in args.include.split(",")] if args.include else None
 
     total_changed = 0
     for name in sorted(os.listdir(args.dir)):
         if not name.endswith(".sql"):
+            continue
+        if includes and not any(_fn.fnmatch(name, pat) for pat in includes):
             continue
         path = os.path.join(args.dir, name)
         items = vwl.parse(path)
