@@ -211,3 +211,25 @@ Almaudrak 5 处、Zalazane 3 处、Emberstrife/Bovar'kez 各 1 处）。择要�
 * 文本里 5 处引用一并替换；改动全部记入 `sql/wip_updates/locales_name_fixes.sql` 第六批（带原值条件）。
   回滚：`tools/dbdiff/review/name_style_patch_rollback.sql`（反向替换，一条命令复原）。
 * 生效：`.reload locales_creature` / `locales_quest`。
+
+### 职业/头衔副名统一（2026-10-09 第四轮，已落库）
+
+第三轮剩下的一类——**同一英文副名两种以上中文写法**（工头·小队长、女侍者·女服务生、酒保·调酒师、
+投石车·弹射器…）——已统一。做法：把 `creature_template.subname` 的英文与 `locales_creature.subname_loc4`
+对齐，按英文副名分组统计各写法的出现次数，**取多数派**（多数派基本就是原版官方译法，少数派是自定义
+内容的机翻），逐条限定 entry 落库，共 **76 组 / 142 行**（外加物品 `41022` Coal 煤炭、物件 `1000098`
+Catapult 投石车）。清单：`tools/dbdiff/review/subname_unify_review.md`。
+
+* 典型：`Trade Supplies` 贸易供应商/商品供应商 → **商人**；`Survival Trainer` 生存专家 → **生存训练师**；
+  `Reagent Vendor` 材料商 → **施法材料商**；`Mail Armor Merchant` 链甲商人/锁甲商人 → **锁甲商**；
+  `Fletcher` 造剪师（错字） → **造箭师**；`Expert Blacksmith` 初级铁匠/锻造训练师 → **中级铁匠**；
+  `Cobbler` 皮匠 → **鞋匠**；`Baker` 烘焙师 → **面包师**；`Herbalist` 草药师 → **采药人**。
+* 两处人工覆盖：`King of Stormwind` → **暴风城国王**（多数派「暴风城的国王」啰嗦）；`The Earthen Ring` →
+  **大地之环**（原版作「陶土议会」，但库内正文与 62798/62802 都用大地之环）。
+* 顺带扫出错字：`80954` Stormwind Quartermaster「风暴**成**军需官」→ 暴风城军需官（其余「风暴城」
+  经核为自定义地点「风暴城堡」，正确，未动）。
+* 有意保留（合理多写法）：`Riding Trainer`（按坐骑区分）、`House of Nobles`（阵营 vs 建筑）、
+  `Visual`（内部占位）、`Bonfire/Fire/Stove/Cauldron/Banner`（不同物件）。
+* 改动写在新建的 `sql/wip_updates/locales_subname_unify.sql`（带 entry 限定与原值条件、可重复导入，
+  幂等自测 0 行）；回滚：`tools/dbdiff/review/subname_unify_rollback.sql`。
+* 生效：`.reload locales_creature`（+ `locales_item` / `locales_gameobject` 各一处）。

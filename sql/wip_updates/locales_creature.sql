@@ -2525,7 +2525,7 @@ INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (12778, '外域�
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (12788, '外域护甲军需官') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (12792, '护甲军需官') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Armor Quartermaster
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (12793, '杂货军需官') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Officer Accessories Quartermaster
-INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (12794, '餐饮供应商') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Food and Drink
+INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (12794, '食物和饮料') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Food and Drink
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (12796, '战争坐骑军需官') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- War Mount Quartermaster
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (12918, '污林之王') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (13761, '阳光林地山谷军官') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Sunnyglade Valley Battlemaster
@@ -2604,7 +2604,7 @@ INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (50542, '竞技�
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (50543, '竞技场战斗登记') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Arena Battle Registration
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (51295, '著名的时尚达人') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Famous Fashionista
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (51688, '法师学徒') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
-INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (51689, '链甲商人') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
+INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (51689, '锁甲商') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (52079, '看护者') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Caretaker
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (52145, '古老熏火龙') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Ancient Incendosaur
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (57642, '第一堕落帝王') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- The First Emperor
@@ -2706,7 +2706,7 @@ INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62027, '厄运�
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62029, '修理') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Repair
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62031, '武器大师') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Master of Arms
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62032, '武器之训练师') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Trainer of Arms
-INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62033, '餐饮供应商') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Food and Drink
+INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62033, '食物和饮料') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Food and Drink
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62034, '研究员') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Researcher
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62037, '龙喉氏族酋长') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Chieftain of the Dragonmaw Clan
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62058, '锻造罗尔芬之学徒') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Apprentice of Rolfen
@@ -2724,7 +2724,7 @@ INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62091, '商人'
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62092, '食物和饮料') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Food & Drinks
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62093, '鱼商') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Fish Vendor
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62094, '商人') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Trade Supplies
-INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62095, '材料商') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Reagent Vendor
+INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62095, '施法材料商') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Reagent Vendor
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62096, '杂货商') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- General Goods
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62097, '武器锻造师') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Weaponsmith
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62098, '兽栏管理员') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Stable Master
@@ -2746,7 +2746,7 @@ INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62150, '草药�
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62151, '烤货物') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Baked Goods
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62152, '武器商') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Weapon Merchant
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62154, '清洁者') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Cleaner
-INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62158, '餐饮供应商') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Food and Drink
+INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62158, '食物和饮料') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Food and Drink
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62159, '招待员') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Barmaid
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62161, '兽栏管理员') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Stable Master
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62165, '北风之统治者') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Ruler of Northwind
@@ -2766,7 +2766,7 @@ INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62286, '采药�
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62287, '炼金术供应商') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Alchemy Supplies
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62288, '阿提斯特非凡') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Artist Extraordinaire
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62289, '护甲铁匠') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Armor Smith
-INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62290, '附魔训练师') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Expert Enchanter
+INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62290, '中级附魔师') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Expert Enchanter
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62295, '书籍商人') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Book Merchant
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62307, '造箭师') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Fletcher
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62387, '护甲商') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Armorer
@@ -2863,7 +2863,7 @@ INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62853, '商人'
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62854, '旅店老板') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Innkeeper
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62857, '皮革军械库') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Leather Armory
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62858, '异域生物') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Exotic Creatures
-INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62859, '钓鱼训练师') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Fisherman
+INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62859, '渔夫') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Fisherman
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62860, '水果商') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Fruit Vendor
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62861, '村厨师') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Village Cook
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (62862, '珠宝加工补给品') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Jewelcrafting Supplies
@@ -2971,7 +2971,7 @@ INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (91020, '军需�
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (91021, '军需官') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Quartermaster
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (91024, '剑圣') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Blademaster
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (91025, '剑圣') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Blademaster
-INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (92023, '悲恸守卫') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Sorrowguard
+INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (92023, '悲痛守卫') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- Sorrowguard
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (92937, '马尔贡之子') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (131313, '造型师非凡') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (131314, '造型师非凡') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- The Stylist Extraordinaire
