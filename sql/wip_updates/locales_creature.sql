@@ -1176,7 +1176,7 @@ INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (61984, '褪色的�
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (61985, '萨塔达尔') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (61988, '消散的鬼魂') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Dissipating Spectre
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (61989, '维内萨斯') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Venethas
-INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (61990, '大小老鼠') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Big Whiskers
+INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (61990, '大胡须') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Big Whiskers
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (61991, '阿基巴德伯爵守夜') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Archibald Earlwake
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (61992, '哈罗德寒泉') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Harold Coldsworth
 INSERT INTO `locales_creature` (`entry`, `name_loc4`) VALUES (61994, '深渊神谕者') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Abyssal Oracle

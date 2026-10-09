@@ -1437,12 +1437,12 @@ INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41725, '黑铁部件
 -- 41730 | The Power of Uthokk
 --   旧: 乌索克之力量
 --   新: 乌瑟克之力
-INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41730, '乌瑟克之力') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);
+INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41730, '乌索克之力') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);
 
 -- 41731 | The Ritual of Uthokk
 --   旧: 乌索克之仪式
 --   新: 乌瑟克的仪式
-INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41731, '乌瑟克的仪式') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);
+INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41731, '乌索克的仪式') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);
 
 -- 41738 | Yortheggs Ritual
 --   旧: 约尔塞格的仪式

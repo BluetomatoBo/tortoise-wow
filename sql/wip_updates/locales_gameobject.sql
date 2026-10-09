@@ -552,7 +552,7 @@ INSERT INTO `locales_gameobject` (`entry`, `name_loc4`) VALUES (2020160, '龙宝
 INSERT INTO `locales_gameobject` (`entry`, `name_loc4`) VALUES (2020161, '烈焰法拉克') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Flame of Farrak
 INSERT INTO `locales_gameobject` (`entry`, `name_loc4`) VALUES (2020162, '不显眼的文件') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Inconspicuous Documents
 INSERT INTO `locales_gameobject` (`entry`, `name_loc4`) VALUES (2020163, '黑石古物宝库') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Blackrock Coffer
-INSERT INTO `locales_gameobject` (`entry`, `name_loc4`) VALUES (2020164, '德伊斯卡普') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Deathcap
+INSERT INTO `locales_gameobject` (`entry`, `name_loc4`) VALUES (2020164, '死帽菇') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Deathcap
 INSERT INTO `locales_gameobject` (`entry`, `name_loc4`) VALUES (2020165, '寡妇弗里尔') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Widow’s Frill
 INSERT INTO `locales_gameobject` (`entry`, `name_loc4`) VALUES (2020166, '扎波瑞科尔迪盒') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Zappo’s Recording Box
 INSERT INTO `locales_gameobject` (`entry`, `name_loc4`) VALUES (2020167, '隐藏的储物箱') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Hidden Locker

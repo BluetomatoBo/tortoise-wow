@@ -39,7 +39,7 @@ INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41302, '谈成的休
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41306, '如今全是食人魔') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Its All Ogre Now
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41307, '他们在吃它！') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Theyre Eating It!
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41308, '腥腻的勾当') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Fishy Practices
-INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41311, '博瓦凯兹') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Bovarkez
+INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41311, '博瓦克兹') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Bovarkez
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41323, '裂隙行者的手杖') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- The Riftwalkers Cane
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41326, '避难所的命运') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Fate Of The Harborage
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41327, '显形的异象') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Manifested Oddities

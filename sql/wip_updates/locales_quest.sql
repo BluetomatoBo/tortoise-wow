@@ -645,12 +645,12 @@ INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (7944, '到贫�
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (7945, '到莫高雷的灰月洞穴去寻找你的财宝吧。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8072, '从祖尔格拉布把以下权力珍宝带给盲眼法希尔：1条原始哈卡莱束带。你还必须在赞达拉部族中达到尊敬或更高的声望。$B$B盲眼法希尔在荆棘谷的尤亚姆巴岛上。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8251, '为大法师克希雷姆收集10份闪光尘埃。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
-INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8286, '前往塔纳利斯的时光之穴寻找诺兹多姆的子嗣，阿纳克洛斯。$B$B完成任务后回到希利苏斯塞纳里奥要塞的流沙守望者巴里斯托尔斯那儿。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
-INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8305, '希利苏斯时光之穴的阿纳克洛斯想要你前往位于希利苏斯南部沙漠的甲虫之台。$B$B当你学习完毕后再回到他那儿去。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
+INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8286, '前往塔纳利斯的时光之穴寻找诺兹多姆的子嗣，安纳克罗斯。$B$B完成任务后回到希利苏斯塞纳里奥要塞的流沙守望者巴里斯托尔斯那儿。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
+INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8305, '希利苏斯时光之穴的安纳克罗斯想要你前往位于希利苏斯南部沙漠的甲虫之台。$B$B当你学习完毕后再回到他那儿去。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8306, '希利苏斯塞纳里奥要塞的指挥官玛尔利斯想要你找到他心爱的纳塔莉亚。你收集到的信息表明纳塔莉亚·玛尔利斯可能在南面的雷戈虫巢。$B$B在你赶往虫巢之前，记得去铜须营地拜访一下那儿的矮人，他们或许会给你提些建议。$B$B$N，记住指挥官的话：做你应该做的……') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8465, '穿过木喉要塞去冬泉谷。和萨尔法谈谈，他就在木喉要塞另一头的出口处。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8470, '把死木仪祭图腾带到木喉要塞然后看看是否有熊人可以使用它。木喉要塞的熊人只有当你的声望达到中立或者更高的时候才会和你说话。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
-INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8519, '了解所以可以的过去的事情，然后和塔纳利斯时光之穴的阿纳克洛斯谈谈。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
+INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8519, '了解所以可以的过去的事情，然后和塔纳利斯时光之穴的安纳克罗斯谈谈。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8524, '把20条彩鳍鱼交给丹莫罗飞机场的美食家斯里克。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8553, '与斯普罗格谈一谈。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8572, '把5枚后勤徽章、10枚战术徽章和10枚作战徽章交给塞纳里奥要塞的瓦古斯。你必须在塞纳里奥议会中达到友善声望才能完成这个任务。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);  -- 
@@ -2242,8 +2242,8 @@ INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41725, '黑铁部件
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41727, '入迷的魔法') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Entranced Magic
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41728, '自然疗法') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Natural Remedies
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41729, '黑暗精华') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Dark Essence
-INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41730, '乌瑟克之力') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- The Power of Uth’okk
-INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41731, '乌瑟克的仪式') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- The Ritual of Uth’okk
+INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41730, '乌索克之力') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- The Power of Uth’okk
+INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41731, '乌索克的仪式') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- The Ritual of Uth’okk
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41732, '损坏的圣物机关') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Damaged Relic Mechanism
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41734, '损坏的圣物机关') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Damaged Relic Mechanism
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41735, '石皮口粮') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);  -- Stonehide Rations

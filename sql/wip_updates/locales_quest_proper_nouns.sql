@@ -192,7 +192,7 @@ INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (80723, '所以这�
 -- ---- Objectives_loc4（105 条）----
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (6961, '和冬天爷爷谈谈；他在奥格瑞玛烟林牧场商人区旁边。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (7782, '回到暴风城的英雄谷跟艾法希比元帅谈谈。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
-INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8730, '干掉奈法利安并拿到红色节杖碎片。把红色节杖碎片带给塔纳利斯时光之穴门口的阿纳克洛斯。你必须在一个半小时之内完成这个任务。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
+INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8730, '干掉奈法利安并拿到红色节杖碎片。把红色节杖碎片带给塔纳利斯时光之穴门口的安纳克罗斯。你必须在一个半小时之内完成这个任务。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (8740, '干掉暮光掠夺者莫娜和5个暮光掠夺者。当任务完成之后向唤风者梅恩·长角报告。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (39001, '探索古博拉采掘场的洞穴。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (39991, '杀死瓦罗卡尔中尉和与他一起巡逻的两名激流堡骑兵。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);

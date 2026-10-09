@@ -88,3 +88,63 @@ UPDATE `locales_item` SET `name_loc4` = '沙漠探寻者的长裤'
 
 UPDATE `locales_item` SET `name_loc4` = '巨龙杀手'
  WHERE `entry` = 33876 AND `name_loc4` = '灭龙';                   -- Dragonbane（同词物品 61335 在库内是「巨龙杀手护肩」）
+
+-- 第四批：本体与文本里的译名统一 / 明显机翻名（2026-10-09）
+--  61990  Big Whiskers  大小老鼠 → 大胡须   （Whiskers 被当成“老鼠”；任务 41343/41344 正文本来就叫「大胡须」）
+UPDATE `locales_creature` SET `name_loc4` = '大胡须'
+ WHERE `entry` = 61990 AND `name_loc4` = '大小老鼠';
+
+--  Uthokk 在物品里作「乌索克之坠饰」（41797/41798），任务标题却写「乌瑟克」→ 统一
+UPDATE `locales_quest` SET `Title_loc4` = REPLACE(`Title_loc4`, '乌瑟克', '乌索克')
+ WHERE `entry` IN (41730, 41731) AND `Title_loc4` LIKE '%乌瑟克%';
+UPDATE `locales_quest` SET `Details_loc4` = REPLACE(`Details_loc4`, '乌瑟克', '乌索克')
+ WHERE `entry` IN (41730, 41731) AND `Details_loc4` LIKE '%乌瑟克%';
+
+-- 第五批：同一专名的两种写法收敛（2026-10-09，全库逐条核对后择一）
+-- 判定口径：优先「多数处出现 / 官方译名 / 更贴合英文原名」，并在正文里一并替换（见迁移）
+UPDATE `locales_creature` SET `name_loc4` = '安纳克罗斯'
+ WHERE `entry` = 50550 AND `name_loc4` = '阿纳克洛斯';  -- Anachronos 官方译名（另一条 15410 也一并改为「安纳克罗斯巨龙形态」）
+UPDATE `locales_creature` SET `name_loc4` = '安特诺米'
+ WHERE `entry` = 65125 AND `name_loc4` = '安蒂诺米';  -- Antnormi：生物 81265 与任务文本均为「安特诺米」
+UPDATE `locales_creature` SET `name_loc4` = '埃洛迪娅'
+ WHERE `entry` = 80999 AND `name_loc4` = '艾劳迪亚';  -- Elodia：与 80911 统一
+UPDATE `locales_creature` SET `name_loc4` = '埃博斯塔夫'
+ WHERE `entry` = 10321 AND `name_loc4` = '艾博斯塔夫';  -- Emberstrife：以任务 6570 的译名统一
+UPDATE `locales_creature` SET `name_loc4` = '戈马'
+ WHERE `entry` = 5606 AND `name_loc4` = '高玛';  -- Goma：两条同英文统一
+UPDATE `locales_creature` SET `name_loc4` = '伊奴夸克'
+ WHERE `entry` = 81046 AND `name_loc4` = '伊楠夸克';  -- Inunquaq：与 60611 统一
+UPDATE `locales_creature` SET `name_loc4` = '卡古隆'
+ WHERE `entry` = 61056 AND `name_loc4` = '科格罗';  -- Kagoro：与 4972 统一
+UPDATE `locales_creature` SET `name_loc4` = '克罗格鲁尔'
+ WHERE `entry` = 8977 AND `name_loc4` = '克罗格卢尔';  -- Krom Grul：任务 3822 三处均为「克罗格鲁尔」
+UPDATE `locales_creature` SET `name_loc4` = '坦格莫斯'
+ WHERE `entry` = 92204 AND `name_loc4` = '苔藓';  -- Tanglemoss：任务 40200 用「坦格莫斯」，原名是意译错位
+UPDATE `locales_creature` SET `name_loc4` = '泽艾克'
+ WHERE `entry` = 80910 AND `name_loc4` = '赞克';  -- Xecc：与 80998 统一
+UPDATE `locales_creature` SET `name_loc4` = '扎拉赞恩'
+ WHERE `entry` = 3205 AND `name_loc4` = '札拉赞恩';  -- Zalazane 官方译名（任务 826 已是）
+UPDATE `locales_creature` SET `name_loc4` = '憎恶'
+ WHERE `entry` = 8545 AND `name_loc4` = '缝合傀儡';  -- Abomination：与 60655 统一为官方译名
+UPDATE `locales_creature` SET `name_loc4` = '地狱犬'
+ WHERE `entry` = 6010 AND `name_loc4` = '地狱巨犬';  -- Felhound：与 2000017 统一为官方译名
+UPDATE `locales_creature` SET `name_loc4` = '食尸鬼'
+ WHERE `entry` = 846 AND `name_loc4` = '腐烂的食尸鬼';  -- Ghoul：与 60654 统一为官方译名
+UPDATE `locales_creature` SET `name_loc4` = '烈焰震击者'
+ WHERE `entry` = 20100 AND `name_loc4` = '火焰震荡者';  -- Flameshocker：与 16383 统一
+UPDATE `locales_creature` SET `name_loc4` = '阿拉萨拉斯公民'
+ WHERE `entry` = 80235 AND `name_loc4` = '阿拉萨拉斯平民';  -- Alah Thalas Citizen：与 60436-60439 统一
+UPDATE `locales_creature` SET `name_loc4` = '安纳克罗斯巨龙形态'
+ WHERE `entry` = 15410 AND `name_loc4` = '阿纳克洛斯巨龙形态';  -- Anachronos Dragon Form
+UPDATE `locales_item` SET `name_loc4` = '阿洛雷尔'
+ WHERE `entry` = 60918 AND `name_loc4` = '艾洛尔';  -- Alor el：以物件名统一（更贴合原文）
+UPDATE `locales_item` SET `name_loc4` = '蛇根草'
+ WHERE `entry` = 61744 AND `name_loc4` = '蛇根';  -- Serpentroot：与任务 41045 统一
+UPDATE `locales_gameobject` SET `name_loc4` = '青石'
+ WHERE `entry` = 2010798 AND `name_loc4` = '蔚蓝之石';  -- The Azurestone：任务 40338 正文用「青石」
+UPDATE `locales_gameobject` SET `name_loc4` = '死帽菇'
+ WHERE `entry` = 2020164 AND `name_loc4` = '德伊斯卡普';  -- Deathcap：与物品 41693 统一
+UPDATE `locales_gameobject` SET `name_loc4` = '蛇根草'
+ WHERE `entry` = 2020046 AND `name_loc4` = '蛇的根源';  -- Serpentroot：原名是字面误解
+UPDATE `locales_gameobject` SET `name_loc4` = '海加尔根'
+ WHERE `entry` = 2020023 AND `name_loc4` = '海加尔鲁特';  -- Hyjalroot：任务 40870/40871 用「海加尔根」
