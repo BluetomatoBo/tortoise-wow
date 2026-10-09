@@ -169,7 +169,8 @@ def parse(path):
         m = HEAD_INSERT_SELECT.search(st)
         if m:
             value, _ = read_string_literal(st, m.end("text") - 1)
-            items.append((m.group("table"), m.group("col"), m.group("keyval").strip().strip("'"), value))
+            items.append((m.group("table"), m.group("col"), m.group("keyval").strip().strip("'"), value,
+                          m.group("key")))
             continue
         # ---- INSERT ... VALUES ----
         m = HEAD_INSERT_VALUES.search(st)
@@ -187,7 +188,7 @@ def parse(path):
                 for idx in range(1, len(cols)):
                     v = value_of(fields[idx])
                     if v is not None:
-                        items.append((m.group("table"), cols[idx], keyval, v))
+                        items.append((m.group("table"), cols[idx], keyval, v, cols[0]))
             continue
         # ---- UPDATE ... SET ... WHERE key = N ----
         m = HEAD_UPDATE.search(st)
@@ -206,7 +207,7 @@ def parse(path):
                     value, _ = read_string_literal(sets, sm.end("val") - 1)
                 except ValueError:
                     continue
-                items.append((m.group("table"), sm.group("col"), keyval, value))
+                items.append((m.group("table"), sm.group("col"), keyval, value, km.group("key")))
             continue
     if multi_key:
         tables = sorted(set(t for t, _ in multi_key))
@@ -226,20 +227,56 @@ def mysql_run(cmd, sql, fatal=True):
     return [l.split("\t") for l in out.decode("utf-8", "replace").split("\n") if l.strip()], None
 
 
-def check_file(path, mysql, limit, quiet=False):
+def fetch_full(mysql, table, col, key, keyval):
+    """取线上完整文本（换行/制表符转成可见标记，保持单行）"""
+    sel = ("SELECT REPLACE(REPLACE(REPLACE(`%s`,'\\r',''),'\\n','⏎'),'\\t','⇥') FROM `%s` WHERE `%s` = '%s' LIMIT 1"
+           % (col, table, key, keyval))
+    rows, err = mysql_run(mysql, sel, fatal=False)
+    if rows is None or not rows:
+        return None
+    return rows[0][0] if rows[0] else ""
+
+
+def first_diff(a, b):
+    """返回 (位置, 脚本侧字符, 线上侧字符, Unicode 码位)"""
+    n = min(len(a), len(b))
+    for i in range(n):
+        if a[i] != b[i]:
+            return (i, a[i], b[i], "U+%04X / U+%04X" % (ord(a[i]), ord(b[i])))
+    if len(a) == len(b):
+        return None
+    return (n, a[n:n + 1] or "（结束）", b[n:n + 1] or "（结束）", "长度不同")
+
+
+def show_diff(mysql, table, col, key, keyval, want, live_snippet, limit=2, shown=None):
+    full = fetch_full(mysql, table, col, key, keyval)
+    print("   %s.%s entry=%s" % (table, col, keyval))
+    print("      脚本：%r（%d 字）" % (want[:60], len(want)))
+    print("      线上：%r（%d 字）" % ((full or "")[:60], len(full or "")))
+    d = first_diff(want, full or "")
+    if d:
+        print("      首个差异：第 %d 个字符，脚本 %r / 线上 %r（%s）" % (d[0] + 1, d[1], d[2], d[3]))
+    else:
+        print("      （内容相同，差异在长度之外或不可见字符）")
+    shown.add(keyval)
+
+
+def check_file(path, mysql, limit, quiet=False, show_diffs=0, entry_filter=None):
     """返回 (统计 dict, 明细 list, 跳过的表 dict)"""
     items = parse(path)
     if not quiet:
         print("脚本 %s：解析出 %d 条 (表, 列, 主键, 文本)" % (path.split("/")[-1], len(items)))
     by_table = {}
-    for t, c, k, v in items:
-        by_table.setdefault(t, []).append((c, k, v))
+    for t, c, k, v, kc in items:
+        by_table.setdefault((t, kc), []).append((c, k, v))
 
     total = {"一致": 0, "不同(线上非中文→需导入)": 0, "不同(线上已中文→人工看)": 0, "为空": 0,
              "行不存在": 0, "无法校验": 0}
+    shown = set()
+    diff_budget = [show_diffs]
     details = []
     skipped = {}
-    for table, rows in by_table.items():
+    for (table, keycol), rows in by_table.items():
         for col in sorted(set(r[0] for r in rows)):
             # 同一 (列, 主键) 在文件里出现多次时以最后一条为准（与脚本执行顺序一致）
             want_map = {}
@@ -252,7 +289,7 @@ def check_file(path, mysql, limit, quiet=False):
                 inlist = ",".join("'%s'" % k for k in chunk)
                 sel = ("SELECT `%s`, IFNULL(MD5(`%s`),'NULL'), IFNULL(CHAR_LENGTH(`%s`),0), "
                        "LEFT(REPLACE(REPLACE(`%s`,'\\n',' '),'\\r',' '),70) FROM `%s` WHERE `%s` IN (%s)"
-                       % ("entry", col, col, col, table, "entry", inlist))
+                       % (keycol, col, col, col, table, keycol, inlist))
                 rows_live, err = mysql_run(mysql, sel, fatal=False)
                 if rows_live is None:
                     skipped[table] = err
@@ -263,6 +300,8 @@ def check_file(path, mysql, limit, quiet=False):
                     if len(r) >= 4:
                         live[r[0]] = (r[1], int(r[2]), r[3])
                 for k in chunk:
+                    if entry_filter and k not in entry_filter:
+                        continue
                     v = want_map[k]
                     want = hashlib.md5(v.encode("utf-8")).hexdigest()
                     got = live.get(k)
@@ -272,6 +311,9 @@ def check_file(path, mysql, limit, quiet=False):
                     elif got[0] == "NULL" or got[1] == 0:
                         total["为空"] += 1
                         details.append((table, col, k, "线上为空", ""))
+                        if diff_budget[0] > 0 and k not in shown:
+                            print("   %s.%s %s=%s → 线上为空；脚本 %r（%d 字）" % (table, col, keycol, k, v[:50], len(v)))
+                            shown.add(k); diff_budget[0] -= 1
                     elif got[0] == want:
                         total["一致"] += 1
                     else:
@@ -279,6 +321,9 @@ def check_file(path, mysql, limit, quiet=False):
                         key = "不同(线上已中文→人工看)" if live_has_cjk else "不同(线上非中文→需导入)"
                         total[key] += 1
                         details.append((table, col, k, key, got[2]))
+                        if diff_budget[0] > 0 and k not in shown:
+                            show_diff(mysql, table, col, keycol, k, v, got[2])
+                            diff_budget[0] -= 1
 
     if not quiet:
         print("\n=== 比对结果 ===")
@@ -290,7 +335,7 @@ def check_file(path, mysql, limit, quiet=False):
         if details:
             print("\n=== 明细（最多 %d 条）===" % limit)
             for d in details[:limit]:
-                print("   %s.%s entry=%s → %s%s" % (d[0], d[1], d[2], d[3], ("；线上开头：%r" % d[4]) if d[4] else ""))
+                print("   %s.%s %s=%s → %s%s" % (d[0], d[1], d[2], d[3], ("；线上开头：%r" % d[4]) if d[4] else ""))
             if len(details) > limit:
                 print("   ... 还有 %d 条" % (len(details) - limit))
         elif not skipped:
@@ -304,12 +349,15 @@ def main():
     ap.add_argument("--dir", help="目录：核对目录下所有 .sql（推荐，一次看全部）")
     ap.add_argument("--mysql", required=True, help='例如 "mysql -h127.0.0.1 -uroot -p tw_world"')
     ap.add_argument("--limit", type=int, default=15, help="明细最多打印多少条（默认 15）")
+    ap.add_argument("--show-diff", type=int, default=0, help="对前 N 条差异拉线上全文并给出首个差异位置")
+    ap.add_argument("--entry", help="只看某个 entry（多个用逗号分隔）")
     args = ap.parse_args()
     if not args.file and not args.dir:
         ap.error("给 --file 或 --dir")
 
+    entry_filter = set(x.strip() for x in args.entry.split(",")) if args.entry else None
     if args.file:
-        check_file(args.file, args.mysql, args.limit)
+        check_file(args.file, args.mysql, args.limit, show_diffs=args.show_diff, entry_filter=entry_filter)
         return
 
     import glob as _glob
@@ -320,7 +368,8 @@ def main():
     grand = {"一致": 0, "不同(线上非中文→需导入)": 0, "不同(线上已中文→人工看)": 0, "为空": 0, "行不存在": 0, "无法校验": 0}
     worst = []
     for p in files:
-        total, details, skipped = check_file(p, args.mysql, 0, quiet=True)
+        total, details, skipped = check_file(p, args.mysql, 0, quiet=True,
+                                             show_diffs=args.show_diff, entry_filter=entry_filter)
         for k in grand:
             grand[k] += total[k]
         flag = ""
