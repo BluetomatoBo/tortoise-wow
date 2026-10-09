@@ -286,7 +286,7 @@ def show_diff(mysql, table, col, key, keyval, want, live_snippet, limit=2, shown
     shown.add(keyval)
 
 
-def check_file(path, mysql, limit, quiet=False, show_diffs=0, entry_filter=None):
+def check_file(path, mysql, limit, quiet=False, show_diffs=0, entry_filter=None, only_missing=False):
     """返回 (统计 dict, 明细 list, 跳过的表 dict)"""
     items = parse(path)
     if not quiet:
@@ -334,6 +334,9 @@ def check_file(path, mysql, limit, quiet=False, show_diffs=0, entry_filter=None)
                         total["行不存在"] += 1
                         details.append((table, col, k, "行不存在（locales 表里没有这个 entry）", ""))
                     elif got[0] == "NULL" or got[1] == 0:
+                        if not v.strip():
+                            total["一致"] += 1          # 脚本要的就是空（占位空值），线上也空 → 无需处理
+                            continue
                         total["为空"] += 1
                         details.append((table, col, k, "线上为空", ""))
                         if diff_budget[0] > 0 and k not in shown:
@@ -357,6 +360,13 @@ def check_file(path, mysql, limit, quiet=False, show_diffs=0, entry_filter=None)
                 print("   %-6s %d" % (k, total[k]))
         for t, err in skipped.items():
             print("   跳过表 %s：%s" % (t, err))
+        if details and only_missing:
+            todo = [d for d in details if d[3] != "不同(线上已中文→人工看)"]
+            print("\n=== 需要处理的 %d 条 ===" % len(todo))
+            for d in todo:
+                tail = "；线上开头：%r" % d[4] if d[4] else ""
+                print("   %s.%s #%s → %s%s" % (d[0], d[1], d[2], d[3], tail))
+            return total, details, skipped
         if details:
             print("\n=== 明细（最多 %d 条）===" % limit)
             for d in details[:limit]:
@@ -377,13 +387,15 @@ def main():
     ap.add_argument("--limit", type=int, default=15, help="明细最多打印多少条（默认 15）")
     ap.add_argument("--show-diff", type=int, default=0, help="对前 N 条差异拉线上全文并给出首个差异位置")
     ap.add_argument("--entry", help="只看某个 entry（多个用逗号分隔）")
+    ap.add_argument("--only-missing", action="store_true", help="只列出真正要处理的行（为空/行不存在/线上非中文）")
     args = ap.parse_args()
     if not args.file and not args.dir:
         ap.error("给 --file 或 --dir")
 
     entry_filter = set(x.strip() for x in args.entry.split(",")) if args.entry else None
     if args.file:
-        check_file(args.file, args.mysql, args.limit, show_diffs=args.show_diff, entry_filter=entry_filter)
+        check_file(args.file, args.mysql, args.limit, show_diffs=args.show_diff,
+                   entry_filter=entry_filter, only_missing=args.only_missing)
         return
 
     import glob as _glob
