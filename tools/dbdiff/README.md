@@ -326,3 +326,31 @@ python3 tools/dbdiff/sync_wip_from_db.py --dir sql/wip_updates \
   —— 用库里同词根的其它条目反查即可（本次就是靠 9641 Lifeblood Amulet = 活力护符 判定的）；
 * 物品名避免「对…的…」这类口语结构，短结构更贴近官方风格；
 * 明显机翻残留要覆盖：`的土堆日记`（Muddy Journal）、`隐藏生物烧焦的储物柜`（Hidden Locker）。
+
+## 十二、本机直连数据库（`~/.my.cnf` + `mysql_local.sh`）
+
+不用在命令行里写账号密码，也不用把 `/opt/homebrew/opt/mysql-client/bin/mysql` 加进 PATH：
+
+* **配置文件**：`~/.my.cnf`（权限 600、在仓库之外、不会被提交）
+  ```ini
+  [client]
+  host = 172.18.1.6
+  port = 3306
+  user = <账号>
+  password = <密码>
+  default-character-set = utf8mb4
+  ```
+  本机任何 mysql 客户端都会自动读取它；注意被授权的主机名（MySQL 看到的客户端 IP）。
+
+* **包装脚本**：`tools/dbdiff/mysql_local.sh [库名] [其它参数]`
+  自动找 mysql 客户端（PATH 优先，其次 Homebrew 的 mysql-client），并显式读 `~/.my.cnf`。
+  所有工具的 `--mysql` 参数都可以直接用它：
+  ```bash
+  M="$(pwd)/tools/dbdiff/mysql_local.sh tw_world"
+  python3 tools/dbdiff/dbdiff.py --counts --mysql "$M" --sql-root sql
+  python3 tools/dbdiff/verify_wip_locales.py --dir sql/wip_updates --mysql "$M"
+  tools/dbdiff/mysql_local.sh tw_world -e "SELECT COUNT(*) FROM creature"
+  ```
+
+* **自检**：`tools/dbdiff/db_status.sh [库名]` —— 打印服务器版本 / 当前账号 / 库列表 /
+  几张关键表的行数 / 最近应用的迁移（用来确认账号可用、数据现状一眼可见）。
