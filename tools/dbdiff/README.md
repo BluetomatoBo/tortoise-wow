@@ -294,3 +294,35 @@ wc -l < /data_2T/ts_wow/logs/dbfix.log
 # 悬空引用体检（期望绝大多数为 0）
 mysql -h127.0.0.1 -uroot -p tw_world < tools/dbdiff/verify_refs.sql
 ```
+
+## 十一、汉化核对与「逐条定谁更好」的工作流（2026-10-09）
+
+线上库与 `sql/wip_updates/` 里的汉化文件会**各自演进**：库上有后来的人工修订（如
+`追踪者奥尔索尔` → `黑暗者纳科格`），文件里则保留着当时生成的版本。两边不能盲目互刷，
+所以按「先审阅、再定向覆盖」走：
+
+```bash
+# 1) 核对 + 导出审阅表（只读）。TSV 列：file table column entry english repo_value live_value decision
+python3 tools/dbdiff/verify_wip_locales.py --dir sql/wip_updates \
+    --mysql "mysql -h127.0.0.1 -uroot -p tw_world" --review-out /tmp/locale_review.tsv
+
+# 2) 用编辑器逐行在最后一列填决定：repo（采用仓库译文）/ live（采用线上译文，仅记录）/ skip
+#    「english」列是从 creature_template/item_template/... 取来的英文原名 —— 判断谁更准时最关键的参照；
+#    若两边都不理想，直接把 repo_value 改成你要的文本，并填 repo。
+
+# 3) 生成并导入定向补丁（只覆盖 decision=repo 的行，带幂等守卫）
+python3 tools/dbdiff/gen_locale_patch.py --review /tmp/locale_review.tsv --out /tmp/locale_patch.sql
+mysql -h127.0.0.1 -uroot -p tw_world < /tmp/locale_patch.sql
+#    生效：mangosd 控制台 `.reload locales_quest`（或对应表）
+
+# 4) 反向（让仓库跟上线上，避免整份重导把好译文冲掉）
+python3 tools/dbdiff/sync_wip_from_db.py --dir sql/wip_updates \
+    --mysql "mysql -h127.0.0.1 -uroot -p tw_world" --apply    # 默认只生成 .synced，--apply 才覆盖（备份 .bak）
+```
+
+判译文的经验法则（本次实操总结）：
+* 专名要带间隔号（`基尔罗格·死眼`、`诺拉·汽望`），机翻常常拼成一个词；
+* 官方既有译法优先：`Draenethyst` = 德莱尼水晶、`Lifeblood` = 活力、`Orb of …` = …宝珠
+  —— 用库里同词根的其它条目反查即可（本次就是靠 9641 Lifeblood Amulet = 活力护符 判定的）；
+* 物品名避免「对…的…」这类口语结构，短结构更贴近官方风格；
+* 明显机翻残留要覆盖：`的土堆日记`（Muddy Journal）、`隐藏生物烧焦的储物柜`（Hidden Locker）。

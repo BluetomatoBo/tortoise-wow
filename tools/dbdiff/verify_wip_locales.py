@@ -286,7 +286,44 @@ def show_diff(mysql, table, col, key, keyval, want, live_snippet, limit=2, shown
     shown.add(keyval)
 
 
-def check_file(path, mysql, limit, quiet=False, show_diffs=0, entry_filter=None, only_missing=False):
+# 各 locales 表对应的「英文原名」来源（判译文好坏时最关键的一列）
+EN_SOURCE = {
+    "locales_creature":              ("creature_template",   "name"),
+    "locales_gameobject":            ("gameobject_template", "name"),
+    "locales_item":                  ("item_template",       "name"),
+    "locales_spell":                 ("spell_template",      "name"),
+    "locales_points_of_interest":    ("points_of_interest",  "name"),
+    "locales_taxi_node":             ("taxi_nodes",          "name"),
+    "locales_area":                  ("area_template",       "name"),
+    "locales_faction":               ("faction",             "name"),
+    "locales_broadcast_text":        ("broadcast_text",      "male_text"),
+    "locales_page_text":             ("page_text",           "text"),
+    "locales_gossip_menu_option":    ("gossip_menu_option",  "option_text"),
+}
+
+
+def fetch_en_names(mysql, table, keycol, keys):
+    """取英文原名（用于判断译文质量）；没有映射的表返回空 dict。"""
+    src = EN_SOURCE.get(table)
+    if not src or not keys:
+        return {}
+    src_table, src_col = src
+    out = {}
+    for i in range(0, len(keys), 200):
+        chunk = keys[i:i + 200]
+        sel = ("SELECT `%s`, IFNULL(LEFT(`%s`, 80), '') FROM `%s` WHERE `%s` IN (%s)"
+               % (keycol, src_col, src_table, keycol, ",".join("'%s'" % k for k in chunk)))
+        rows, err = mysql_run(mysql, sel, fatal=False)
+        if rows is None:
+            return out
+        for r in rows:
+            if len(r) >= 2:
+                out[r[0]] = r[1].replace("\t", " ").replace("\n", " ")
+    return out
+
+
+def check_file(path, mysql, limit, quiet=False, show_diffs=0, entry_filter=None, only_missing=False,
+               review=False, review_rows=None):
     """返回 (统计 dict, 明细 list, 跳过的表 dict)"""
     items = parse(path)
     if not quiet:
@@ -351,6 +388,8 @@ def check_file(path, mysql, limit, quiet=False, show_diffs=0, entry_filter=None,
                         key = "不同(线上已中文→人工看)" if live_has_cjk else "不同(线上非中文→需导入)"
                         total[key] += 1
                         details.append((table, col, k, key, got[2]))
+                        if review and review_rows is not None and key.startswith("不同(线上已中文"):
+                            review_rows.append((os.path.basename(path), table, col, k, v, got[2]))
                         if diff_budget[0] > 0 and k not in shown:
                             show_diff(mysql, table, col, keycol, k, v, got[2], shown=shown)
                             diff_budget[0] -= 1
@@ -390,6 +429,7 @@ def main():
     ap.add_argument("--show-diff", type=int, default=0, help="对前 N 条差异拉线上全文并给出首个差异位置")
     ap.add_argument("--entry", help="只看某个 entry（多个用逗号分隔）")
     ap.add_argument("--only-missing", action="store_true", help="只列出真正要处理的行（为空/行不存在/线上非中文）")
+    ap.add_argument("--review-out", help="把「线上已中文但与本文件不同」的行导出成 TSV（含英文原名与空的 decision 列）")
     args = ap.parse_args()
     if not args.file and not args.dir:
         ap.error("给 --file 或 --dir")
@@ -407,9 +447,11 @@ def main():
     print("-" * 92)
     grand = {"一致": 0, "不同(线上非中文→需导入)": 0, "不同(线上已中文→人工看)": 0, "为空": 0, "行不存在": 0, "无法校验": 0}
     worst = []
+    review_rows = [] if args.review_out else None
     for p in files:
-        total, details, skipped = check_file(p, args.mysql, 0, quiet=True,
-                                             show_diffs=args.show_diff, entry_filter=entry_filter)
+        total, details, skipped = check_file(p, args.mysql, 0, quiet=True, show_diffs=args.show_diff,
+                                             entry_filter=entry_filter, review=bool(args.review_out),
+                                             review_rows=review_rows)
         for k in grand:
             grand[k] += total[k]
         flag = ""
@@ -423,6 +465,25 @@ def main():
     print("%-32s %7d %8d %8d %6d %6d %6d" % ("合计", grand["一致"], grand["不同(线上非中文→需导入)"],
                                               grand["不同(线上已中文→人工看)"], grand["为空"],
                                               grand["行不存在"], grand["无法校验"]))
+    if args.review_out and review_rows:
+        # 补上「英文原名」一列（按 (表, 主键列) 取；拿不到就留空）
+        en_cache = {}
+        by_tbl = {}
+        for f_, t_, c_, k_, repo_v_, live_v_ in review_rows:
+            by_tbl.setdefault(t_, set()).add(k_)
+        for t_, keys in by_tbl.items():
+            en_cache[t_] = fetch_en_names(args.mysql, t_, "entry", sorted(keys))
+        with open(args.review_out, "w", encoding="utf-8") as fh:
+            fh.write("file\ttable\tcolumn\tentry\tenglish\trepo_value\tlive_value\tdecision\n")
+            for f_, t_, c_, k_, repo_v_, live_v_ in review_rows:
+                fh.write("\t".join([f_, t_, c_, k_,
+                                     en_cache.get(t_, {}).get(k_, ""),
+                                     repo_v_.replace("\t", " ").replace("\n", " "),
+                                     live_v_.replace("\t", " ").replace("\n", " "),
+                                     ""]) + "\n")
+        print("\n已导出审阅表：%s（%d 行）" % (args.review_out, len(review_rows)))
+        print("填好 decision 列（repo / live / skip）后交给 gen_locale_patch.py 生成定向补丁")
+
     for name, details in worst[:5]:
         print("\n=== %s 的前几条未落库 ===" % name)
         for d in details[:5]:
