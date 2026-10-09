@@ -842,8 +842,8 @@ UPDATE `mangos_string` SET `content_loc4` = '你的性别被 %s 改为 %s。' WH
 UPDATE `mangos_string` SET `content_loc4` = '（%u/%u +永久 %u +临时 %u）' WHERE `entry` = 1122;
 UPDATE `mangos_string` SET `content_loc4` = '%d - |cffffffff|Htaxinode:%u|h[%s %s]|h|r（地图：%u X：%f Y：%f Z：%f）' WHERE `entry` = 1128;
 UPDATE `mangos_string` SET `content_loc4` = '%d - %s %s（地图：%u X：%f Y：%f Z：%f）' WHERE `entry` = 1129;
-UPDATE `mangos_string` SET `content_loc4` = '事件已开始 %u "%s"' WHERE `entry` = 1130;
-UPDATE `mangos_string` SET `content_loc4` = '事件已停止 %u "%s"' WHERE `entry` = 1131;
+UPDATE `mangos_string` SET `content_loc4` = '事件已开始 %u “%s”' WHERE `entry` = 1130;
+UPDATE `mangos_string` SET `content_loc4` = '事件已停止 %u “%s”' WHERE `entry` = 1131;
 UPDATE `mangos_string` SET `content_loc4` = '   跟随玩家 %s（lowguid %u）' WHERE `entry` = 1132;
 UPDATE `mangos_string` SET `content_loc4` = '   跟随生物 %s（lowguid %u）' WHERE `entry` = 1133;
 UPDATE `mangos_string` SET `content_loc4` = '   跟随 <空>' WHERE `entry` = 1134;

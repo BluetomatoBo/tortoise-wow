@@ -354,3 +354,50 @@ python3 tools/dbdiff/sync_wip_from_db.py --dir sql/wip_updates \
 
 * **自检**：`tools/dbdiff/db_status.sh [库名]` —— 打印服务器版本 / 当前账号 / 库列表 /
   几张关键表的行数 / 最近应用的迁移（用来确认账号可用、数据现状一眼可见）。
+
+## 十三、汉化「逐条审译 → 定向覆盖 → 回写仓库」标准流程（2026-10-09）
+
+两边都会演进（仓库文件是译制批次，线上库有后来的人工修订），所以**不能整份重导**，走这条路：
+
+```bash
+M="$(pwd)/tools/dbdiff/mysql_local.sh tw_world"
+
+# 1) 导出冲突行（只列「文件与线上不同」的行，含英文原名、线上值、decision 空列）
+python3 tools/dbdiff/verify_wip_locales.py --dir sql/wip_updates --mysql "$M" \
+        --review-out /tmp/review.tsv
+
+# 2) 逐条填 decision：live（保留线上）/ repo（用文件译文，可先把 repo_value 改成第三版）/ skip
+#    再用「按 MD5 精确找差异」的小脚本复核：只有 md5(文件值) != MD5(列) 的行才是真差异
+python3 tools/dbdiff/gen_locale_patch.py --review /tmp/review.tsv --out /tmp/patch.sql
+python3 tools/dbdiff/check_update_file.py /tmp/patch.sql      # 先过引号/分号体检
+tools/dbdiff/mysql_local.sh tw_world < /tmp/patch.sql          # 落库（语句都带幂等守卫）
+
+# 3) 回写仓库：让文件 = 线上，之后重导就是幂等的
+python3 tools/dbdiff/sync_wip_from_db.py --dir sql/wip_updates --mysql "$M" \
+        --include "locales_quest*.sql,locales_creature.sql,locales_item.sql" --apply
+
+# 4) 收口核对：应报 0 差异
+python3 tools/dbdiff/verify_wip_locales.py --dir sql/wip_updates --mysql "$M"
+```
+
+**判定「谁更好」的经验法则**（本轮 677 条总结）
+
+* 线上若是「人工修订版」（修掉英文残留、清空格、补标点），**用线上**；仓库文件往往是机翻批次。
+* 线上若带**标点转换污染**（`雷克斯洛特—加龙省—加龙省`、`K。E。F。`）→ 用文件里的干净文本。
+* **专有名词以库内既有译法为准**：同一个人/物在库里已有官方译名时，新物品名要跟它一致
+  （`Kum'isha` 库内任务文本用「库米沙」、`Gulmire` 库内 NPC 是「古尔米瑞」、`Zandara` 是「赞妲拉」…）。
+* 库内正文引用过某物品名时（如任务 41311 正文写「带着坦拉尔之握回去」），**以正文为准**改物品名。
+* 类型能当判据：`item_template.class=12` 是钥匙/任务物品（不是护甲，`腰带` 这类译法多半是脑补）；
+  `inventory_type=7` 是腿部 → `Pants` 官方译「长裤」而非「短裤」。
+* 英文里成对出现的词（`Dragonbane` 已是 `巨龙杀手护肩`）→ 新条目跟同一译法。
+
+**本轮新发现的两个坑（都写进工具了）**
+
+1. `mysql --batch` 输出会把 `\n` / `\t` / `\\` 转义。**回写文件前必须先解密再按 MySQL 规则转义**
+   （`sync_wip_from_db.py` 原来漏了这一步）：否则 `\r\n` 会被写成真换行外加一个字面 `\n`，
+   看似只是排版变化，重导后值就变了。
+2. 内核更新器**只数引号、不剥注释**，所以注释里的 `'` / `"` 也会破坏状态机；值里的半角 `"`
+   同理（`"` 在更新器眼里是字符串定界符，MySQL 默认不是）。`sql/wip_updates/` 里 29 份文件
+   已统一把注释中的引号换成 `’` `“` `”`，值里的半角双引号也换成全角（中文正文本来就该用全角）。
+   改完 `check_update_file.py` 29/29 通过，且逐条确认值语义未变。
+   **例外**：`locales_page_text.sql` 的值里含 HTML（`<a href="…">`），必须保留半角引号，勿套用此规则。

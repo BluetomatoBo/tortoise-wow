@@ -1,7 +1,7 @@
 -- 对话框菜单行（gossip_menu）
 --
 -- 四处独立的问题，共同点是「客户端被要求查询一个不存在的 npc_text ID」，
--- 于是服务端回 QueryHandler.cpp 里写死的英文 "Greetings $N"。
+-- 于是服务端回 QueryHandler.cpp 里写死的英文 “Greetings $N”。
 --（发送链路与判定条件见 creature_template.sql 的注释。）
 --
 -- 只有 loc4/内容列以外的东西在这里改；全部幂等。
@@ -13,7 +13,7 @@ SET NAMES utf8mb4;
 --    配合 creature_template.gossip_menu_id = 8900001 使用。
 --    本行**故意不建任何 gossip_menu_option**：
 --    Player::PrepareGossipMenu 里当子菜单没有选项且属于「默认菜单」时，
---    会回退到 menu_id = 0 的通用选项（"I want to browse your goods." 等 16 条），
+--    会回退到 menu_id = 0 的通用选项（“I want to browse your goods.” 等 16 条），
 --    再由 npc_flags 过滤。这与改动前 gossip_menu_id = 0 的行为完全一致，
 --    所以只改变了问候文本，不改变玩家能点的选项。
 -- ---------------------------------------------------------------------------

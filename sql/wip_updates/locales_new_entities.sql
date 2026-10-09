@@ -41,7 +41,7 @@ INSERT INTO `locales_creature` (`entry`, `name_loc4`)
                       WHERE x.`name_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `name_loc4` = IF(`name_loc4` REGEXP '[一-龥]', `name_loc4`, VALUES(`name_loc4`));
 INSERT INTO `locales_creature` (`entry`, `name_loc4`)
-  SELECT 73101, '工匠' FROM DUAL
+  SELECT 73101, '巧匠' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `name_loc4` FROM `locales_creature` WHERE `entry` = 73101) x
                       WHERE x.`name_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `name_loc4` = IF(`name_loc4` REGEXP '[一-龥]', `name_loc4`, VALUES(`name_loc4`));
@@ -60,22 +60,22 @@ INSERT INTO `locales_gameobject` (`entry`, `name_loc4`)
 
 -- ---- locales_item（10 条）----
 INSERT INTO `locales_item` (`entry`, `name_loc4`)
-  SELECT 41301, '阿蕾西亚的艾露恩之誓' FROM DUAL
+  SELECT 41301, '阿勒西的艾露恩之誓' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `name_loc4` FROM `locales_item` WHERE `entry` = 41301) x
                       WHERE x.`name_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `name_loc4` = IF(`name_loc4` REGEXP '[一-龥]', `name_loc4`, VALUES(`name_loc4`));
 INSERT INTO `locales_item` (`entry`, `name_loc4`)
-  SELECT 41354, '古尔迈尔的水晶' FROM DUAL
+  SELECT 41354, '古尔米瑞水晶' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `name_loc4` FROM `locales_item` WHERE `entry` = 41354) x
                       WHERE x.`name_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `name_loc4` = IF(`name_loc4` REGEXP '[一-龥]', `name_loc4`, VALUES(`name_loc4`));
 INSERT INTO `locales_item` (`entry`, `name_loc4`)
-  SELECT 41359, '吉尔尼斯珠宝：图鉴' FROM DUAL
+  SELECT 41359, '吉尔尼斯珠宝：汇编' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `name_loc4` FROM `locales_item` WHERE `entry` = 41359) x
                       WHERE x.`name_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `name_loc4` = IF(`name_loc4` REGEXP '[一-龥]', `name_loc4`, VALUES(`name_loc4`));
 INSERT INTO `locales_item` (`entry`, `name_loc4`)
-  SELECT 41363, '库米莎的卷轴' FROM DUAL
+  SELECT 41363, '库米沙的卷轴' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `name_loc4` FROM `locales_item` WHERE `entry` = 41363) x
                       WHERE x.`name_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `name_loc4` = IF(`name_loc4` REGEXP '[一-龥]', `name_loc4`, VALUES(`name_loc4`));
@@ -90,12 +90,12 @@ INSERT INTO `locales_item` (`entry`, `name_loc4`)
                       WHERE x.`name_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `name_loc4` = IF(`name_loc4` REGEXP '[一-龥]', `name_loc4`, VALUES(`name_loc4`));
 INSERT INTO `locales_item` (`entry`, `name_loc4`)
-  SELECT 41410, '赞达拉的头颅' FROM DUAL
+  SELECT 41410, '赞妲拉的头颅' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `name_loc4` FROM `locales_item` WHERE `entry` = 41410) x
                       WHERE x.`name_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `name_loc4` = IF(`name_loc4` REGEXP '[一-龥]', `name_loc4`, VALUES(`name_loc4`));
 INSERT INTO `locales_item` (`entry`, `name_loc4`)
-  SELECT 41424, '沃根多之球' FROM DUAL
+  SELECT 41424, '沃根多之宝珠' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `name_loc4` FROM `locales_item` WHERE `entry` = 41424) x
                       WHERE x.`name_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `name_loc4` = IF(`name_loc4` REGEXP '[一-龥]', `name_loc4`, VALUES(`name_loc4`));
@@ -105,14 +105,14 @@ INSERT INTO `locales_item` (`entry`, `name_loc4`)
                       WHERE x.`name_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `name_loc4` = IF(`name_loc4` REGEXP '[一-龥]', `name_loc4`, VALUES(`name_loc4`));
 INSERT INTO `locales_item` (`entry`, `name_loc4`)
-  SELECT 56082, '完美的生命之血宝石' FROM DUAL
+  SELECT 56082, '完美的活力宝石' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `name_loc4` FROM `locales_item` WHERE `entry` = 56082) x
                       WHERE x.`name_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `name_loc4` = IF(`name_loc4` REGEXP '[一-龥]', `name_loc4`, VALUES(`name_loc4`));
 
 -- ---- 物品（奖励行里已经出现，玩家会在奖励列表里看到） ----
 INSERT INTO `locales_item` (`entry`, `name_loc4`)
-  SELECT 41917, '沙漠探寻者长裤' FROM DUAL
+  SELECT 41917, '沙漠探寻者的长裤' FROM DUAL
    WHERE NOT EXISTS (SELECT 1 FROM (SELECT `name_loc4` FROM `locales_item` WHERE `entry` = 41917) x
                       WHERE x.`name_loc4` REGEXP '[一-龥]')
   ON DUPLICATE KEY UPDATE `name_loc4` = IF(`name_loc4` REGEXP '[一-龥]', `name_loc4`, VALUES(`name_loc4`));

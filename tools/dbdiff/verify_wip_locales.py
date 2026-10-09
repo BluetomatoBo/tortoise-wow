@@ -360,6 +360,22 @@ def fetch_en_names(mysql, table, column, keys):
     return out
 
 
+def fetch_full_values(mysql, table, keycol, col, keys):
+    """批量取**完整**值（不截断）—— 审阅导出必须用全文，否则生成的补丁会把长文本截断。"""
+    out = {}
+    for i in range(0, len(keys), 100):
+        chunk = keys[i:i + 100]
+        sel = ("SELECT `%s`, IFNULL(`%s`, '') FROM `%s` WHERE `%s` IN (%s)"
+               % (keycol, col, table, keycol, ",".join("'%s'" % k for k in chunk)))
+        rows, err = mysql_run(mysql, sel, fatal=False)
+        if rows is None:
+            return out
+        for r in rows:
+            if len(r) >= 2:
+                out[r[0]] = r[1]
+    return out
+
+
 def check_file(path, mysql, limit, quiet=False, show_diffs=0, entry_filter=None, only_missing=False,
                review=False, review_rows=None):
     """返回 (统计 dict, 明细 list, 跳过的表 dict)"""
@@ -512,6 +528,18 @@ def main():
             by_tbl_col.setdefault((t_, c_), set()).add(k_)
         for (t_, c_), keys in by_tbl_col.items():
             en_cache[(t_, c_)] = fetch_en_names(args.mysql, t_, c_, sorted(keys))
+        # 用全文替换掉被 LEFT(...,70) 截断的 live 值（否则生成的补丁会写进截断文本）
+        fixed = []
+        by_tc = {}
+        for f_, t_, c_, k_, repo_v_, live_v_, note_ in review_rows:
+            by_tc.setdefault((t_, c_), []).append(k_)
+        full_cache = {}
+        for (t_, c_), keys in by_tc.items():
+            full_cache[(t_, c_)] = fetch_full_values(args.mysql, t_, "entry", c_, sorted(set(keys)))
+        for f_, t_, c_, k_, repo_v_, live_v_, note_ in review_rows:
+            full = full_cache.get((t_, c_), {}).get(k_)
+            fixed.append((f_, t_, c_, k_, repo_v_, full if full is not None else live_v_, note_))
+        review_rows = fixed
         n_cont = 0
         with open(args.review_out, "w", encoding="utf-8") as fh:
             fh.write("file\ttable\tcolumn\tentry\tenglish\trepo_value\tlive_value\tdecision\tnote\n")

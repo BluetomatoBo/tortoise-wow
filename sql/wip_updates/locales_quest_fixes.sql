@@ -2,13 +2,13 @@
 --
 -- 背景：早前那轮自动翻译对 40xxx–42xxx 段（乌龟服自定义内容）大量使用「按英文单词
 -- 逐个查词典再拼接」的做法，产生了大量不成句、甚至意思错误的标题，例如：
---   Lost In Ratchet        → 棘齿城之迷失       （"迷失棘齿城" 才是人话）
+--   Lost In Ratchet        → 棘齿城之迷失       （“迷失棘齿城” 才是人话）
 --   Mastering Goldsmithing → 控制金饰加工       （master = 精通，不是控制）
 --   The Collector          → 收货人             （collector = 收藏家，不是收货人）
 --   Drones In Westfall     → 西部荒野之雄蝎      （drone = 雄蜂，不是蝎）
 --   A Cause Of Concern     → 任务之导致         （完全不成句）
 --   Earlwake No More       → 伯爵守夜无更多的    （完全不成句）
--- 这类错误"读起来像话、其实是错的"，玩家一眼就能看到，所以整段重审重译，
+-- 这类错误“读起来像话、其实是错的”，玩家一眼就能看到，所以整段重审重译，
 -- 而不是逐条打补丁。
 --
 -- 范围：游戏中仍可接取、且此前已有中文的自定义任务标题，共 566 条。
@@ -22,11 +22,11 @@
 --     孤峰（Gowlfang）、加贝（Jabbey）、螺熔（Screwfuse）、源质（Elementium）。
 --   * 职业套装（T1/T2/T3 兑换任务）按库内官方物品名逐件对齐，槽位用词取自
 --     item_template：怒风头饰/护肩/胸甲/护腕/手套/腰带/腿甲/战靴、恶魔之心角饰、
---     灵风头冠、审判头冠、秩序之源肩铠、复仇骨帽……（原译用了"头颅/腰部/脚部"等身体部位）
+--     灵风头冠、审判头冠、秩序之源肩铠、复仇骨帽……（原译用了“头颅/腰部/脚部”等身体部位）
 --   * 双关与口语按中文语感处理：Tide-ying Up→收拾潮水、To Look A Gift Horse In The
 --     Mouth→馈赠莫挑剔、It Cant Rain All the Time→雨不会一直下、Lady Who?→哪位女士？
 --   * 不增删数字与符号；原文的省略号、感叹号一律保留。
---   * 80109 的 "Zug-zug" 是兽人语拟声问候，库内无既成译法，保留原拼写（下方值中的 ASCII
+--   * 80109 的 “Zug-zug” 是兽人语拟声问候，库内无既成译法，保留原拼写（下方值中的 ASCII
 --     仅此一处，是有意为之）。
 --
 -- 导入：mysql tw_world < locales_quest_fixes.sql
@@ -1892,7 +1892,7 @@ INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41934, '残留之物
 -- 41942 | The Plaguewood
 --   旧: 病木林
 --   新: 瘟疫林
-INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41942, '瘟疫林') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);
+INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (41942, '病木林') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);
 
 -- 41943 | Foul Waters
 --   旧: 邪恶的法袍
@@ -2299,7 +2299,7 @@ INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (50326, '格里兹罗
 --   新: 荷莉大概想跳舞
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (50328, '荷莉大概想跳舞') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);
 
--- 55028 | The "Hidden" Crew
+-- 55028 | The “Hidden” Crew
 --   旧: “消失”的船员
 --   新: “隐藏”的船员
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (55028, '“隐藏”的船员') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);
@@ -2310,7 +2310,7 @@ INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (55028, '“隐藏”
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (55043, '亮水号的航海日志') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);
 
 -- 80109 | Zug-zug Or Somethin
---   旧: Zug-zug或某某\'
+--   旧: Zug-zug或某某\’
 --   新: Zug-zug 之类的
 INSERT INTO `locales_quest` (`entry`, `Title_loc4`) VALUES (80109, 'Zug-zug 之类的') ON DUPLICATE KEY UPDATE `Title_loc4` = VALUES(`Title_loc4`);
 

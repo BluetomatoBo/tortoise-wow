@@ -4,7 +4,7 @@
 --   打开一个 NPC 对话框时客户端会发 CMSG_NPC_TEXT_QUERY 查询一个 npc_text ID。
 --   core 在 src/game/Handlers/QueryHandler.cpp 的 HandleNpcTextQueryOpcode()
 --   里把英文写死在 C++ 字面量中：
---       if (!pGossip) { ... data << "Greetings $N"; ... }
+--       if (!pGossip) { ... data << “Greetings $N”; ... }
 --   只要被查询的 ID 不在 npc_text 表里，玩家看到的就是这段英文，
 --   改 locales_* 列无论如何都不会生效。
 --

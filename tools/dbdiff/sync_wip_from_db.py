@@ -4,7 +4,7 @@
 sync_wip_from_db.py —— 以**线上库为准**回写 sql/wip_updates/ 里的汉化文件（防止整份重导把好译文覆盖回旧版）
 
 背景：wip_updates 里的批量汉化文件（locales_*.sql）是「当时生成」的版本，之后你在库上做过人工修订
-（例：`追踪者奥尔索尔` → `黑暗者纳科格`、`诺拉斯特伊姆西特` → `诺拉·汽望`）。
+（例：`诺拉斯特伊姆西特` → `诺拉·汽望`、`阿拉西娅对艾露恩的誓言` → `阿勒西的艾露恩之誓`）。
 若某天有人把这些文件**整份重导**，就会把线上的好译文覆盖掉。本工具按线上值把文件里的字符串
 字面量改写成线上值，使「仓库 = 线上」，之后重导就是幂等的。
 
@@ -37,7 +37,11 @@ CJK = re.compile(r"[\u2e80-\u9fff\u3000-\u303f\uff00-\uffef]")
 
 
 def escape_mysql(text):
-    return text.replace("\\", "\\\\").replace("'", "\\'")
+    """字面量转义：反斜杠、单引号，以及**控制字符**。
+    少转义换行/回车会把值写成真实换行，重导时语义就变了（CRLF → LF，甚至多出一个字面 \\n）。"""
+    return (text.replace("\\", "\\\\").replace("\0", "\\0")
+                .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+                .replace("'", "\\'"))
 
 
 def statement_spans(text):
@@ -144,7 +148,9 @@ def main():
                     print("   %s：查询失败，跳过（%s）" % (name, err)); live = None; break
                 for r in rows:
                     for idx, c in enumerate(cols):
-                        live[(table, keycol, c, r[0])] = r[idx + 1] if len(r) > idx + 1 else ""
+                        # mysql --batch 输出把 \n / \t / \\ 转义过，取回真值再落盘（否则会二次转义）
+                        raw = r[idx + 1] if len(r) > idx + 1 else ""
+                        live[(table, keycol, c, r[0])] = vwl.unescape(raw)
             if live is None:
                 break
         if live is None:

@@ -56,6 +56,6 @@ INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (169
 INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (2000, '铁炉堡珠宝商公会金库') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- Ironforge Jewelers Guild
 INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (2001, '幽暗城珠宝加工训练师') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- Undercity Jewelcrafting Trainer
 INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (2002, '剑客家族宝石') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- Fencer Family Jewels
-INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (2003, '阿拉萨拉斯珠宝加工训练师') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- Alah'Thalas Jewelcrafting Trainer
-INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (2004, '阿索拉珠宝饰时装屋') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- Asoran's Jewelry House
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (2003, '阿拉萨拉斯珠宝加工训练师') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- Alah’Thalas Jewelcrafting Trainer
+INSERT INTO `locales_points_of_interest` (`entry`, `icon_name_loc4`) VALUES (2004, '阿索拉珠宝饰时装屋') ON DUPLICATE KEY UPDATE `icon_name_loc4` = VALUES(`icon_name_loc4`);  -- Asoran’s Jewelry House
 

@@ -8,7 +8,7 @@
 -- 该表只有 word/entry/half，没有 locale 列，所以只能把音节本身换成中文。
 --
 -- 译法：按音节音译（音译而非另造），保留名字的对应关系；
--- 撇号（如 Grak'）是原文的音节分隔符，中文直接连写。
+-- 撇号（如 Grak’）是原文的音节分隔符，中文直接连写。
 -- 每组都按该恶魔的性格选字，并避免不同音节塌成同一个词。
 --
 -- 幂等，可重复执行。
@@ -168,8 +168,8 @@ UPDATE `pet_name_generation` SET `word` = '尊' WHERE `entry` = 417 AND `half` =
 UPDATE `pet_name_generation` SET `word` = '巴尔' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Bar';  -- 首 Bar
 UPDATE `pet_name_generation` SET `word` = '贝尔' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Bel';  -- 首 Bel
 UPDATE `pet_name_generation` SET `word` = '查尔' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Char';  -- 首 Char
-UPDATE `pet_name_generation` SET `word` = '格拉克' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Grak''';  -- 首 Grak'
-UPDATE `pet_name_generation` SET `word` = '格拉兹' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Graz''';  -- 首 Graz'
+UPDATE `pet_name_generation` SET `word` = '格拉克' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Grak''';  -- 首 Grak’
+UPDATE `pet_name_generation` SET `word` = '格拉兹' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Graz''';  -- 首 Graz’
 UPDATE `pet_name_generation` SET `word` = '格里姆' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Grim';  -- 首 Grim
 UPDATE `pet_name_generation` SET `word` = '哈斯' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Hath';  -- 首 Hath
 UPDATE `pet_name_generation` SET `word` = '赫尔' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Hel';  -- 首 Hel
@@ -177,8 +177,8 @@ UPDATE `pet_name_generation` SET `word` = '霍克' WHERE `entry` = 1860 AND `hal
 UPDATE `pet_name_generation` SET `word` = '胡克' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Huk';  -- 首 Huk
 UPDATE `pet_name_generation` SET `word` = '贾兹' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Jhaz';  -- 首 Jhaz
 UPDATE `pet_name_generation` SET `word` = '乔姆' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Jhom';  -- 首 Jhom
-UPDATE `pet_name_generation` SET `word` = '朱克' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Juk''';  -- 首 Juk'
-UPDATE `pet_name_generation` SET `word` = '卡尔' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Kal''';  -- 首 Kal'
+UPDATE `pet_name_generation` SET `word` = '朱克' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Juk''';  -- 首 Juk’
+UPDATE `pet_name_generation` SET `word` = '卡尔' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Kal''';  -- 首 Kal’
 UPDATE `pet_name_generation` SET `word` = '克拉' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Klath';  -- 首 Klath
 UPDATE `pet_name_generation` SET `word` = '孔' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Kon';  -- 首 Kon
 UPDATE `pet_name_generation` SET `word` = '克拉格' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Krag';  -- 首 Krag
@@ -193,9 +193,9 @@ UPDATE `pet_name_generation` SET `word` = '桑' WHERE `entry` = 1860 AND `half` 
 UPDATE `pet_name_generation` SET `word` = '索格' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Thog';  -- 首 Thog
 UPDATE `pet_name_generation` SET `word` = '索克' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Thok';  -- 首 Thok
 UPDATE `pet_name_generation` SET `word` = '苏尔' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Thul';  -- 首 Thul
-UPDATE `pet_name_generation` SET `word` = '扎格' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Zag''';  -- 首 Zag'
+UPDATE `pet_name_generation` SET `word` = '扎格' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Zag''';  -- 首 Zag’
 UPDATE `pet_name_generation` SET `word` = '赞格' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Zang';  -- 首 Zang
-UPDATE `pet_name_generation` SET `word` = '扎尔' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Zhar''';  -- 首 Zhar'
+UPDATE `pet_name_generation` SET `word` = '扎尔' WHERE `entry` = 1860 AND `half` = 0 AND `word` = 'Zhar''';  -- 首 Zhar’
 UPDATE `pet_name_generation` SET `word` = '卡斯' WHERE `entry` = 1860 AND `half` = 1 AND `word` = 'kath';  -- 尾 kath
 UPDATE `pet_name_generation` SET `word` = '多克' WHERE `entry` = 1860 AND `half` = 1 AND `word` = 'doc';  -- 尾 doc
 UPDATE `pet_name_generation` SET `word` = '多克' WHERE `entry` = 1860 AND `half` = 1 AND `word` = 'dok';  -- 尾 dok

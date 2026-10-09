@@ -17,7 +17,7 @@
 --   * 自定义专名库内没有中文的，按音译/意译拟定并保持全篇统一，例如：
 --     巴洛（Balor）、博瓦凯兹（Bovarkez）、多萨斯/约尔瑟格/达格诺斯等兽人地名、
 --     云蹄（Cloudhoof）、雨角（Rainhorn）、月蹄（Moonhoof）、蛾幕（Mothshroud）、
---     月语海岸（Moonwhisper Coast）、伊露纳兰（Elun'aran）、安舍（An'she）。
+--     月语海岸（Moonwhisper Coast）、伊露纳兰（Elun’aran）、安舍（An’she）。
 --   * 保留原文语气：双关（Its All Ogre Now）、台词体（Theyre Eating It!）、
 --     名句（I Am Become Death…）都按中文语感处理，不做逐字硬译。
 --   * 不添加英文里没有的数字或符号；破折号、省略号与原文一致。

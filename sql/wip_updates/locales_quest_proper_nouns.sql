@@ -2,14 +2,14 @@
 --
 -- 客户端的中文任务文本里还夹着一批英文专名——物品、生物、地点在游戏里都已经有官方中文名
 -- （locales_item / locales_creature / locales_gameobject / AreaTable.dbc），文本却没换过。
--- 例如 40177 的标题与目标里的 Gobcrank Flazwanger / Maul'ogg Refuge / Flaz Fusemix，
+-- 例如 40177 的标题与目标里的 Gobcrank Flazwanger / Maul’ogg Refuge / Flaz Fusemix，
 -- 游戏里分别是「弗朗兹旺格曲柄」「莫尔奥格避难所」「弗雷泽·缠线」。
 --
 -- 名字一律取客户端自己的名字表：游戏里显示的就是它（Creature::GetNameForLocaleIdx 读的正是
 -- locales_creature，物品与物件同理）。社区译文项目 pfQuest-turtle 的 zhCN 数据
 -- （https://github.com/shagu/pfQuest-turtle 的 db/zhCN）里有同一段任务的完整中文、且客户端
 -- 那段靠换名字清理不干净时，用它的那一段；其中的中文名再按游戏的名字表统一过一遍。
--- 只有「库里只有带头衔的全名」的情况（Maul'ogg ← Maul'ogg Enforcer）才人工取词干，
+-- 只有「库里只有带头衔的全名」的情况（Maul’ogg ← Maul’ogg Enforcer）才人工取词干，
 -- 免得把库里的头衔塞进原文没有的地方。
 --
 -- 315 条，覆盖 230 个任务。生效：mangosd 控制台执行 `.reload locales_quest`
@@ -31,7 +31,7 @@ INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (3861, '“咕咕�
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (4062, 'G。L。A。$B$B那些碎片上刻着这样的文字。在这些大写字母下面有一个军衔标志。你在燃烧平原所摧毁的机器的等级是四，我相信这是个比较低的军衔。$B$B把这块碎片样品交给东边一处营地里的鲁特维尔·沃拉图斯吧，他是个著名的元素学者，应该能对我们的研究有所帮助。') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (4132, '迄今为止你一直表现得很好，$N。现在你应该去完成你的最后一个任务了。$B$B黑铁矮人中的安格弗将军负责策划了对K。E。F。109师的攻击，并残杀我们的无数士兵——正义必须得到伸张！$B$B这无疑是一个极端艰难的任务，但是成功之后，你也会获得丰厚的奖励。') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (4982, '在夜里，当这个地方守备松懈的时候，我就会在城里偷偷地四处走动，记下我所看到的可能会对K。E。F。有战略价值的任何东西。$B$B然而昨晚事情变得非常糟糕，我被一张网绊到并触动了一个机关，我马上把我的侦察装置藏起来去找藏身之所了！不幸的是，我没法取回那套装置。他们已经把巡逻兵的数量增加了两三倍！所有的情报都丢失了。$B$B把我的东西拿回来，我就可以返回K。E。F。去了。') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
-INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (4983, '把这份报告交给雷克斯洛特—加龙省—加龙省。它可以让我恢复好名声，并且肯定会让K。E。F。在对付这些兽人时占据战略上的优势。$B$B跟你一起回去？我有太多的工作要做。快走吧，他们急需这些报告！') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
+INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (4983, '把这份报告交给雷克斯洛特。它可以让我恢复好名声，并且肯定会让K.E.F.在对付这些兽人时占据战略上的优势。$B$B跟你一起回去？我有太多的工作要做。快走吧，他们急需这些报告！') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (6961, '冬幕节快乐，我的朋友！你一定要去冬天爷爷打个招呼！如果你今年表现的不错的话，你会在冬幕节那天收到一份很棒的礼物。你一定要告诉冬天爷爷你今年想要什么！$B$B另外，记得多买些好东西来给那些今年表现得好的人。我们这里货物齐全。各种货物一应俱全——这是烟林牧场精心为您准备的货物！') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (7604, '签署下面这份契约者担保他们交给瑟银兄弟会（TBLtd。）的萨弗隆铁锭是真品，绝非伪造。签署这份契约还将使瑟银兄弟会不对因签署者个人试图铸造、寻找、创造、销售或食用萨弗拉斯而造成的一切不良后果负有任何责任。$B$B签署这份契约即表明你同意以上所有条款。$B$B签名：_________________') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (8730, '勇士，是你吗？我受命保管这个碎片已经一千年了，在我最黑暗的时候，应该有人站出来替我把它拿回来……但是一切都是任重道远的。$B$B<瓦拉斯塔兹轻轻地咳嗽着。>$B$B耐……耐法里奥斯现在掌握着节杖碎片。$B$B时间是最关键的。耐法里奥斯将要摧毁这个节杖。你必须赶快！') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
@@ -176,14 +176,14 @@ INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (55012, '就像你�
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (55028, '好吧，让我履行诺言，然后继续前进。我们本可以在更有利可图和有用的事情上花费更多时间。亮水的船员一直都在藏宝海湾里，我从他们第一次在那场烟花般的战斗之后的那个晚上就知道了。他们并没有很好地隐藏自己的身份或者是什么的，再加上我的联系人非常可靠，所以我们确认这一点。你会在藏宝海湾的下层找到他们，就在那个钓鱼老手维格希克待的地方。下次你再见到“船长”佩泽尔，告诉他我已经还他那个愚蠢的人情了。') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (55030, '看来佩泽尔和他的船员真的陷入了困境，但如果需要帮忙的话，这意味着你要去烦那些被称为血帆海盗的暴徒，但这方面，我是完全支持！我有很多线索，但我并不完全知道谁在领导着追捕亮水船员的行动。话虽如此，但我知道有人可能知道。藏宝海湾外有一名我认识很久的线人，因为与海盗有关系，我把他们赶出了城市，但我保住了他们的脑袋，他们欠我一个人情。如果他们知道人情世故的话，他应该能帮助你一手。找到那名背叛血帆的家伙，告诉他们里维加兹在询问。一旦你得到了那些信息，告诉亮水的船员，他们可以自行决定怎么处理。') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (70000, '法师区总是那么安静，不是$N吗？好吧，当然，如果你要忽略那个强烈要求拜访蓝色隐士的呼唤的话。你已经成长为一名非常有能力的法师，许多人低声谈论你的名字，有些人散布关于你的谣言。$B$B因此它到达了一个非常不可能的家伙，我会告诉你不要接近，但毕竟这是你的决定.$B$B坐在艾萨拉的塔顶上，有一位大法师听说了你的成长和名字，并希望亲自见到你。众所周知，克希雷姆会收收学徒，如果他们发现学徒足够值得他的教导，也许这与此有关。$B$BI 建议你小心，这个人非常危险。要到达他的塔楼，你必须找到他的学徒萨纳斯，众所周知，他是一个非常快乐和愉快的精灵。') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
-INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (70033, '"这是$N，你迄今为止最危险的任务，但我非常确信你会成功。$B$B你展现出了我很久没有见过的勇气，愿祖先指引你的脚步，保佑你平安归来。$B$B你有我的祝福和祖先的庇护。$B$B你站立的地方曾经站着一位伟大的战士，你也将走在他的脚步中，带着你心中的骄傲杀死他们！"') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
+INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (70033, '“这是$N，你迄今为止最危险的任务，但我非常确信你会成功。$B$B你展现出了我很久没有见过的勇气，愿祖先指引你的脚步，保佑你平安归来。$B$B你有我的祝福和祖先的庇护。$B$B你站立的地方曾经站着一位伟大的战士，你也将走在他的脚步中，带着你心中的骄傲杀死他们！”') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (70034, '诺沃克没有条件出去寻找传家宝，但我担心他可能会在完全痊愈之前尝试冒险。$B$B如果你能找到他留下的长矛的任何痕迹，诺沃克和我都会非常感激。$B$B东边的恶魔是你找到它的最佳选择，所以快点走吧！') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (70040, '我从未放弃过我的梦想，$N，我的使命即使在死亡中仍然存在，我活着是为了锻造和帮助我们骄傲的士兵保护自己，唉，你也会帮助我做到这一点。$B$B我们的人面临着银松森林的危险，最后的天灾，达拉然的魔法师和阿鲁高召唤到我们土地上的肮脏野兽。$B$B我想象着瑟伯切尔供应不足的样子，给他们带来这些物品。$B$B交付后，您预计将获得一套新盔甲，因此您也将准备好面对我们的敌人。') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (70053, '$N，蛇颈龙出问题了。他们离开了藏身之处，吃掉了湖里所有的鱼！$B$B一段时间以来，我们当地的捕鱼业务因此一直在下降。恐怕我们将不得不接受这样一个事实，即我们必须剔除它们的数量，以便我们能够保持一定的平衡。$B$B嘿，这些美丽的生物与我们世世代代共享湖泊，所以我们必须对它们采取如此极端的行动，这让我很痛苦。$B$B我只期望一个外来人去做我们不能做，也不愿意做的事情。') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (70056, '你给了我和暮色森林的人们一个很大的帮助，我希望你向我的指挥官报告。$B$B我非常确定她会喜欢听到你对抗迪菲亚的成功，而且她可能还会有另一个任务交给你$B$B把这张羊皮纸交给指挥官阿尔泰娅·埃伯洛克。她驻扎在市政厅前面，所以很难错过她。$B$B哦，还有，$N，谢谢。') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (70057, '我听说斯温在乌鸦岭墓地附近的一个棚屋里避难。我担心他充满了后悔和愤怒，无论是对他自己还是对那些从他那里夺走一切的人。$B$B考虑到我们在他失落的家园废墟中发现了他的这把铲子，我觉得应该把它还给他。$B$B请把这个还给斯温。要小心，他可能会因为看到它而松了一口气，也可能会痛苦地把它掰成两截。谁知道呢。$B$B再次感谢您所做的一切。') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (80100, '好的，伙计，听着！我知道这是你在风险投资公司的第一份工作，所以我会慢慢地跟你说。$B$B我们来这里是为了找到一笔有价值的宝藏，你明白吗？据说价值比安德麦里一半的珠宝还要多，老板迫不及待地想得到它。上次他派遣的工作人员什么消息都没有回来。$B$B这帮小偷以为他们可以从老板手中逃脱吗？你最好相信，他会追踪他们并把他们抓回来。老板说不要空手而归，所以我们开始工作吧。$B$B我们的飞行器在下来的时候损坏了一些零件，但幸运的是，上次的工作人员似乎把他们的机器人留在了这里。去四处跑一跑，从它们身上收集一些小玩意，好吗？') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
-INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (80103, '嗯，我想我们明白了为什么精灵会在这里。前方整个森林都着火了！而且肯定是地精做的。$B$B没有其他人会用那种能燃烧这么久的油！那是安德麦的货，孩子。侏儒不可能得到它。我不知道这个地方是怎么回事，但我不喜欢它。$B$B去那里带回一些油。也许你会找到一些关于我们到达这里之前发生的事情的线索。如果没有，至少我们自己的油供应又增加了！"') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
+INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (80103, '嗯，我想我们明白了为什么精灵会在这里。前方整个森林都着火了！而且肯定是地精做的。$B$B没有其他人会用那种能燃烧这么久的油！那是安德麦的货，孩子。侏儒不可能得到它。我不知道这个地方是怎么回事，但我不喜欢它。$B$B去那里带回一些油。也许你会找到一些关于我们到达这里之前发生的事情的线索。如果没有，至少我们自己的油供应又增加了！“') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (80107, '我现在不羡慕你，小伙子。听着，那些奇怪的秃鹫并不是树林里最糟糕的东西。其他一些伤痕累累的人四处张望，他们发现了一个坟墓，看起来是来自奥达曼的坟墓。$B$B他们试图靠近，但他们听到里面传来某种邪恶的声音。这些家伙以前参加过老板的一些“有说服力”的采访，他们从来没有听过这样的声音。说着，它在山上回荡着不自然的，仿佛是从不存在的树木上弹下来的。$B$B，我会和精灵战斗。我要和植物怪物战斗。我会和我们自己的爆破坦克作战！但我不是在惹一些古老的被诅咒的坟墓。我希望你去那里，找出那些门后面的东西，并处理它。为我做这件事，你和我就是一辈子的密友。你将来甚至可能会有晋升的机会。') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (80120, '嘿你！是的，我在和你说话，朋友！$B$B我整天都在捡我们船员的垃圾，我真的可以休息一下。$B$B我说，你清理一会儿怎么样？$B$B我会在树荫下打个盹。当我醒来时，我希望这个地方一尘不染。$B$B现在开始工作！') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Details_loc4`) VALUES (80353, '谁会想到让一个食人魔砍一些木头，最后他会忘记捡起来？$B$B笨蛋蛮子开始砍啊砍，但当他回来时，他没有带任何东西回来！$B$B我会自己去取，但我正忙着呃……什么。那么你为什么不这样做呢？$B$B这里的人们尊重劳动人民，你会得到与行动价值相称的报酬，小伙子。$B$B去捡几捆木材带回来。') ON DUPLICATE KEY UPDATE `Details_loc4` = VALUES(`Details_loc4`);
@@ -199,7 +199,7 @@ INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (39991, '杀死�
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (39995, '把偷来的武器计划带到十字路口的纳加尔·死眼。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (39996, '把一根长长的科卡尔骨头带到十字路口的纳加尔·死眼') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (39997, '与雷霆崖的比尔吉特·克兰斯顿交谈。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
-INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40020, '在祖尔拉萨兹废墟中找到酋长项链。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
+INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40020, '在祖尔拉萨兹废墟中找到尹多的项链。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40025, '收集5个活根草，10个坚固的石头，和3个野钢花，并把它们带给演讲者甘基。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40027, '前往迷雾山谷，寻找桑维的护身符。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40030, '找到并杀死诺博鲁的棍棒，并将诺博鲁的棍棒带到玛格图尔。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
@@ -225,7 +225,7 @@ INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40067, '找到�
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40072, '为艾伦托先生收集艾伦托保险箱。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40073, '在悲伤卫士要塞为珍妮特·霍洛沃斯收集20根铁棍。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40074, '从克拉莉斯·纳尔特里那里收集剑的交付。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
-INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40077, '为\'‘狡诈’邓肯收集10个悲伤苔藓蘑菇。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
+INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40077, '为‘狡诈’邓肯收集10个悲伤苔藓蘑菇。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40081, '从杂毛豺狼人身上为陡崖港的亡灵卫兵迈克收集7个破烂臂环。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40086, '将马洛的矿石装运箱运送到位于格伦郡的玛洛·奈格尔手上。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40087, '在碎点塔杀死6个提瑞斯利爪破坏者和6个提瑞斯利爪暗影法师然后回报给沃尔格林。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
@@ -253,7 +253,7 @@ INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40187, '当你�
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40189, '为吉利吉姆岛的布雷兹诺·布拉斯派普收集一个未破裂的龟壳。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40190, '为吉利吉姆岛上的布雷兹诺·布拉斯派普收集一根金条。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40191, '在卡尔科尔角找到并恢复塔罗卡的幽灵符咒。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
-INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40195, '为莫尔奥格避难所的诸波收集议长乌朱瓦和酋长伊玛祖\'UL的头骨。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
+INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40195, '为莫尔奥格避难所的诸波收集演讲者乌朱瓦和酋长伊玛祖尔的头骨。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40197, '为迪拉·永月与灰谷的老灰爪交谈。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40199, '为莫尔奥格避难所的克鲁克佐格首领杀死10只潜行丛林爬行者和10只林爪黑豹。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
 INSERT INTO `locales_quest` (`entry`, `Objectives_loc4`) VALUES (40200, '把苔藓的心脏带到莫尔奥格避难所的布莱塔格。') ON DUPLICATE KEY UPDATE `Objectives_loc4` = VALUES(`Objectives_loc4`);
