@@ -580,4 +580,19 @@ wowhead 到底能拿到哪些字段。
 * 表从 1,649 格涨到 **1,970 格 / 26 组**；新增测试 `TestZoneFixFollowsTheBoxMargins`
   钉住这轮 8 个具体坐标（死亡矿井门口、暴风城南门、幽暗城外、达纳苏斯城外、黑石山塔边、
   卡兹莫丹机场、黑石岛海面、吉尔尼斯半岛）。
-* 清单归档在会话 `files/zonefix/unresolved.md`（采纳 26 组 + 未采纳 96 组的名字与理由）。
+* 清单归档在会话 `files/zonefix/unresolved.md`。
+
+### 第十三轮再补：用户按页面抽查定下最后两组（2026-10-10 深夜）
+
+把三组「人看一眼能定」的清单（每组代表实体 + entry + 页面路径 + 坐标）交给用户抽查后：
+
+* **改判 2 组**（+310 格）：
+  - `easternplaguelands→thalassianhighlands`：萨拉斯哨兵/年迈的萨拉斯野猪/银色盟约新兵/亮鳞法力游龙
+    都站在东瘟疫框与地形网格都还叫「东瘟疫」的地面上 —— 但那是乌龟服新开的高等精灵区。
+  - `ashenvale→stonetalonmountains`：石爪山风险投资公司「黑沙」矿点的四个实体
+    （石油/机械师/采油工/伐木工），地形网格说是灰谷。
+* **保持现状 1 组**：`blastedlands→swampofsorrows` —— 用户按 wowhead 的区域标记核对，
+  奈瑟加德士兵/精英/矿工与恐槌食人魔在诅咒之地是对的。
+* 表 1,970 → **2,280 格**；新增测试 `TestZoneFixCoversCustomZonesTerrainDoesNotKnow`
+  钉住这 4 个坐标。端到端复核：`/db/npcs/61770` 与 `/db/npcs/61696` 画在萨拉斯高地、
+  `/db/npcs/61033`、`/db/npcs/61032` 画在石爪山脉、`/db/npcs/5999` 仍是诅咒之地。

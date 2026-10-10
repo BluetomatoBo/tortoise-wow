@@ -576,3 +576,37 @@ func TestZoneFixFollowsTheBoxMargins(t *testing.T) {
 		}
 	}
 }
+
+// TestZoneFixCoversCustomZonesTerrainDoesNotKnow pins the two zone pairs the
+// operator checked on the site: content of a custom zone standing on terrain the
+// vanilla tiles still describe as its neighbour.
+//
+// Eastern Plaguelands' box and the terrain grid both still call the ground north
+// of Tyr's Hand "Eastern Plaguelands", but what stands there is Thalassian
+// Highland content (Thalassian Sentinel, Silver Covenant Recruit, mana wyrms).
+// The same for the Blacksand operation (a Venture Co. mine) the terrain places in
+// Ashenvale while the content is Stonetalon's.
+func TestZoneFixCoversCustomZonesTerrainDoesNotKnow(t *testing.T) {
+	cases := []struct {
+		what  string
+		mapID uint16
+		x, y  float64
+		want  string
+	}{
+		{"萨拉斯高地的萨拉斯哨兵一带", 0, 2916.7, -3950.0, "thalassianhighlands"},
+		{"萨拉斯高地北部", 0, 2916.7, -3716.7, "thalassianhighlands"},
+		{"石爪山的黑沙矿点一带", 1, 2150.0, 2183.3, "stonetalonmountains"},
+		{"石爪山黑沙矿点（南）", 1, 2150.0, 2283.3, "stonetalonmountains"},
+	}
+	for _, tc := range cases {
+		box, ok := ZoneAt(tc.mapID, tc.x, tc.y)
+		if !ok {
+			t.Errorf("%s: no zone for (%.0f, %.0f) on map %d", tc.what, tc.x, tc.y, tc.mapID)
+			continue
+		}
+		if box.dir != tc.want {
+			t.Errorf("%s: (%.0f, %.0f) on map %d is %s, want %s",
+				tc.what, tc.x, tc.y, tc.mapID, box.dir, tc.want)
+		}
+	}
+}

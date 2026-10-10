@@ -122,6 +122,12 @@ VERIFIED = {
         "死亡矿井门口框里的地表迪菲亚工人（框内位置 0.24，与西部荒野框一致）",
     ("blackrockmountain", "burningsteppes"):
         "黑石山塔框边的采石场奴隶与黑石兽人（框内位置 0.13 vs 燃烧平原 0.28）",
+    ("easternplaguelands", "thalassianhighlands"):
+        "萨拉斯高地（乌龟服新开的高等精灵区）的内容：Thalassian Sentinel / Elder Thalassian Boar / "
+        "Silver Covenant Recruit / Brilliant Mana Wyrm；坐标越过东瘟疫框右边界（x>3800），用户抽查确认",
+    ("ashenvale", "stonetalonmountains"):
+        "石爪山风险投资公司黑沙矿点的内容：Blacksand Oil / Mechanic / Oilworker / Woodworker，"
+        "用户抽查确认",
 }
 
 # 判据给得出、但按内容核验**不对**的：保留现状，写在这里免得以后有人又加回来。
@@ -133,9 +139,8 @@ REJECTED = {
     ("ungorocrater", "thousandneedles"): "格子里是 A-Me 01 / U'cha —— 安戈洛环形山的",
     ("thousandneedles", "feralas"): "格子里是 Highperch Wyvern —— 千针石林的",
     ("silithus", "ahnqirajentrance"): "格子里是 Hive'Regal 的虫子 —— 希利苏斯的",
-    ("easternplaguelands", "thalassianhighlands"): "格子里混着东瘟疫的 Terrordale 鬼魂，萨拉斯高地边界不明，保守保留现状",
-    ("ashenvale", "stonetalonmountains"): "地形网格（客户端数据）说是灰谷，内容混两边，保留现状",
-    ("blastedlands", "swampofsorrows"): "格子里是奈瑟加德（诅咒之地）的兵，内容支持现状",
+    ("blastedlands", "swampofsorrows"): "奈瑟加德士兵/精英/矿工与恐槌食人魔都是诅咒之地的内容，"
+                                         "用户按 wowhead 的区域标记核对一致，保持现状",
     ("badlands", "dunmorogh"): "Dark Iron Spy，位置存疑，先不动",
     ("deadwindpass", "elwynn"): "格子里的 Watcher Callahan / Kzixx 不是艾尔文森林的",
     ("ironforge", "dunmorogh"): "格子里是铁炉堡的 NPC（Bubulo Acerbus / Fizzlebang Booms）",
