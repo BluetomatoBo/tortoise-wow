@@ -308,11 +308,31 @@ func (b zoneBox) extent() float64 {
 	return (b.xmax - b.xmin) * (b.ymax - b.ymin)
 }
 
+// dotMargin is how far a dot's centre is kept from the artwork's edge, in
+// percent. A dot is ten pixels across plus a two-pixel ring and sits centred on
+// its coordinate (see .map-dot), so a spawn that works out to 0.3% draws almost
+// entirely outside the picture: the Thalassian Sentinels on the highlands'
+// eastern edge, whose box edge is at x 4952 and who stand at x 4946, did exactly
+// that and read as dots floating past the map. Holding the centre two percent
+// inside costs a couple of pixels at the very edge of a zone and keeps every dot
+// on its map.
+const dotMargin = 2.0
+
+func clampPercent(v float64) float64 {
+	if v < dotMargin {
+		return dotMargin
+	}
+	if v > 100-dotMargin {
+		return 100 - dotMargin
+	}
+	return v
+}
+
 // marker puts a world point on this box, in percent.
 func (b zoneBox) marker(x, y float64) (float64, float64) {
 	px := 100 - (y-b.ymin)/(b.ymax-b.ymin)*100
 	py := 100 - (x-b.xmin)/(b.xmax-b.xmin)*100
-	return px, py
+	return clampPercent(px), clampPercent(py)
 }
 
 // nestedBox answers with the smallest box when it sits inside the others.

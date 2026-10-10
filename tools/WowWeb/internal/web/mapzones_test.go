@@ -687,3 +687,36 @@ func TestZoneAtNeverHandsBackABoxThatMissesThePoint(t *testing.T) {
 		}
 	}
 }
+
+// TestDotsStayOnTheArtwork covers the edge case the Thalassian Sentinels showed:
+// a spawn that works out to 0.3% of the way across its zone draws a ten-pixel dot
+// centred one pixel inside the picture, so it reads as a marker floating past the
+// map. The percentages are held two percent inside the artwork instead.
+func TestDotsStayOnTheArtwork(t *testing.T) {
+	// 萨拉斯高地框的东边缘（x 4952），哨兵站在 x 4946 —— 修复前 top≈0.3%
+	box, ok := ZoneAt(0, 4946, -3234)
+	if !ok {
+		t.Fatal("the eastern Thalassian Highlands spawn has no zone")
+	}
+	px, py := box.marker(4946, -3234)
+	if py < dotMargin || py > 100-dotMargin || px < dotMargin || px > 100-dotMargin {
+		t.Errorf("eastern edge spawn draws at (%.2f%%, %.2f%%), want both inside %.0f..%.0f",
+			px, py, dotMargin, 100-dotMargin)
+	}
+
+	// 中心附近的点不该被移动
+	if px, py := box.marker(3900, -2600); px < 20 || px > 80 || py < 20 || py > 80 {
+		t.Errorf("a central spawn moved to (%.1f%%, %.1f%%)", px, py)
+	}
+
+	// 四个角都夹住
+	probes := []struct{ x, y float64 }{
+		{box.xmin, box.ymin}, {box.xmax, box.ymax}, {box.xmin, box.ymax}, {box.xmax, box.ymin},
+	}
+	for _, pt := range probes {
+		px, py := box.marker(pt.x, pt.y)
+		if px < 0 || px > 100 || py < 0 || py > 100 {
+			t.Errorf("corner (%.0f, %.0f) draws at (%.2f%%, %.2f%%), outside the artwork", pt.x, pt.y, px, py)
+		}
+	}
+}
