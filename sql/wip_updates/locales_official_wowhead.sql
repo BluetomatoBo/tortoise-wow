@@ -12,6 +12,10 @@
 -- 生成时间 2026-10-10。带原值条件、可重复导入。
 -- 生效：mangosd 控制台 `.reload locales_quest` / `locales_creature` / `locales_gameobject`
 
+-- 一致性说明：wowhead 对**同一实体**偶尔给出两种写法（如 Anachronos 是「安纳克洛斯」，
+-- 而它的巨龙形态却是「安纳克罗斯巨龙形态」；Goma/Felhound 的同名条目它根本没收）。
+-- 此类以「库内同名实体互相一致」为准，故 15410/5606/6010 沿用 names_fixes 里的统一写法。
+
 SET NAMES utf8mb4;
 
 -- ---- locales_quest（279 条）----
@@ -468,7 +472,6 @@ UPDATE `locales_creature` SET `name_loc4` = '白毛座狼' WHERE `entry` = 5198 
 UPDATE `locales_creature` SET `name_loc4` = '因格' WHERE `entry` = 5388 AND `name_loc4` = '因格·绒套';
 UPDATE `locales_creature` SET `name_loc4` = '工蝎群' WHERE `entry` = 5409 AND `name_loc4` = '被奴役的收割者';
 UPDATE `locales_creature` SET `name_loc4` = '被抓住的麻风侏儒' WHERE `entry` = 5568 AND `name_loc4` = '被抓住的麻疯侏儒';
-UPDATE `locales_creature` SET `name_loc4` = '高玛' WHERE `entry` = 5606 AND `name_loc4` = '戈马';
 UPDATE `locales_creature` SET `name_loc4` = '扎祖' WHERE `entry` = 5609 AND `name_loc4` = '札祖';
 UPDATE `locales_creature` SET `name_loc4` = '帕特里克·加瑞特' WHERE `entry` = 5651 AND `name_loc4` = '派翠克·加瑞特';
 UPDATE `locales_creature` SET `name_loc4` = '练习用的假人' WHERE `entry` = 5652 AND `name_loc4` = '幽暗城练习假人';
@@ -484,7 +487,6 @@ UPDATE `locales_creature` SET `name_loc4` = '哈特拉斯' WHERE `entry` = 5934 
 UPDATE `locales_creature` SET `name_loc4` = '不可战胜的的铁眼' WHERE `entry` = 5935 AND `name_loc4` = '不可战胜的铁眼';
 UPDATE `locales_creature` SET `name_loc4` = '拾骨者' WHERE `entry` = 5983 AND `name_loc4` = '拾骨邪饲者';
 UPDATE `locales_creature` SET `name_loc4` = '魔誓祭司' WHERE `entry` = 6004 AND `name_loc4` = '魔誓仪祭师';
-UPDATE `locales_creature` SET `name_loc4` = '地狱巨犬' WHERE `entry` = 6010 AND `name_loc4` = '地狱犬';
 UPDATE `locales_creature` SET `name_loc4` = '恶魔指挥官' WHERE `entry` = 6071 AND `name_loc4` = '军团犬';
 UPDATE `locales_creature` SET `name_loc4` = '骑乘用虎（乳白色）' WHERE `entry` = 6074 AND `name_loc4` = '条纹霜刃豹';
 UPDATE `locales_creature` SET `name_loc4` = '骑乘用迅猛龙（绿色）' WHERE `entry` = 6075 AND `name_loc4` = '绿色迅猛龙';
@@ -682,7 +684,6 @@ UPDATE `locales_creature` SET `name_loc4` = '玛克希玛' WHERE `entry` = 15303
 UPDATE `locales_creature` SET `name_loc4` = '蒸汽车' WHERE `entry` = 15328 AND `name_loc4` = '暗月蒸汽坦克';
 UPDATE `locales_creature` SET `name_loc4` = '泽兰上校' WHERE `entry` = 15385 AND `name_loc4` = '泽朗上校';
 UPDATE `locales_creature` SET `name_loc4` = '耶吉斯少校' WHERE `entry` = 15386 AND `name_loc4` = '叶吉斯少校';
-UPDATE `locales_creature` SET `name_loc4` = '阿纳克洛斯巨龙形态' WHERE `entry` = 15410 AND `name_loc4` = '安纳克罗斯巨龙形态';
 UPDATE `locales_creature` SET `name_loc4` = '亚雷戈斯龙类形态' WHERE `entry` = 15411 AND `name_loc4` = '阿瑞苟斯';
 UPDATE `locales_creature` SET `name_loc4` = '甲壳虫' WHERE `entry` = 15475 AND `name_loc4` = '甲虫';
 UPDATE `locales_creature` SET `name_loc4` = '尼根·陶蹄' WHERE `entry` = 15532 AND `name_loc4` = '石头守卫陶蹄';
@@ -2079,78 +2080,3 @@ UPDATE `locales_item` SET `name_loc4` = '食人魔玩偶' WHERE `entry` = 23716 
 UPDATE `locales_item` SET `name_loc4` = '飞刀又见飞刀' WHERE `entry` = 24071 AND `name_loc4` = '布兰德匕首';
 UPDATE `locales_item` SET `name_loc4` = '潜行者的日记' WHERE `entry` = 24282 AND `name_loc4` = '盗贼的日记';
 
--- ---- locales_spell（74 条）----
-UPDATE `locales_spell` SET `name_loc4` = '熔火爆裂' WHERE `entry` = 534 AND `name_loc4` = '熔岩爆裂';
-UPDATE `locales_spell` SET `name_loc4` = '熔火爆裂' WHERE `entry` = 561 AND `name_loc4` = '熔岩爆裂';
-UPDATE `locales_spell` SET `name_loc4` = '熔火爆裂' WHERE `entry` = 900 AND `name_loc4` = '熔岩爆裂';
-UPDATE `locales_spell` SET `name_loc4` = '搜索' WHERE `entry` = 921 AND `name_loc4` = '偷窃';
-UPDATE `locales_spell` SET `name_loc4` = '熔火爆裂' WHERE `entry` = 924 AND `name_loc4` = '熔岩爆裂';
-UPDATE `locales_spell` SET `name_loc4` = '熔火爆裂' WHERE `entry` = 952 AND `name_loc4` = '熔岩爆裂';
-UPDATE `locales_spell` SET `name_loc4` = '拯救圣印' WHERE `entry` = 1039 AND `name_loc4` = '拯救祝福';
-UPDATE `locales_spell` SET `name_loc4` = '爆击' WHERE `entry` = 1132 AND `name_loc4` = '致命一击';
-UPDATE `locales_spell` SET `name_loc4` = '智慧燃烧' WHERE `entry` = 1483 AND `name_loc4` = '智慧燃烧 III';
-UPDATE `locales_spell` SET `name_loc4` = '智慧燃烧' WHERE `entry` = 1484 AND `name_loc4` = '智慧燃烧 IV';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 2098 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '微型收割机组件' WHERE `entry` = 3963 AND `name_loc4` = '联合收割机组件';
-UPDATE `locales_spell` SET `name_loc4` = '微型收割机组件' WHERE `entry` = 4019 AND `name_loc4` = '联合收割机组件';
-UPDATE `locales_spell` SET `name_loc4` = '迟钝诱饵效果' WHERE `entry` = 4045 AND `name_loc4` = '活动假人效果';
-UPDATE `locales_spell` SET `name_loc4` = '闪光诱饵效果' WHERE `entry` = 4049 AND `name_loc4` = '高级假人效果';
-UPDATE `locales_spell` SET `name_loc4` = '搜索' WHERE `entry` = 5167 AND `name_loc4` = '偷窃';
-UPDATE `locales_spell` SET `name_loc4` = '迪菲亚潜行者伪装' WHERE `entry` = 5169 AND `name_loc4` = '迪菲亚盗贼伪装';
-UPDATE `locales_spell` SET `name_loc4` = '迪菲亚潜行者伪装' WHERE `entry` = 5269 AND `name_loc4` = '迪菲亚盗贼伪装';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 6712 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 6760 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 6761 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 6762 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 6763 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 6764 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 6765 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '弧光扳手' WHERE `entry` = 7430 AND `name_loc4` = '扳手';
-UPDATE `locales_spell` SET `name_loc4` = '弧光扳手' WHERE `entry` = 7431 AND `name_loc4` = '扳手';
-UPDATE `locales_spell` SET `name_loc4` = '公式：浸魔胸甲 - 次级精神' WHERE `entry` = 7462 AND `name_loc4` = '公式：浸魔胸甲 - 初级精神';
-UPDATE `locales_spell` SET `name_loc4` = '被遗忘者的意志' WHERE `entry` = 7744 AND `name_loc4` = '亡灵意志';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 8623 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 8624 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 8625 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 8626 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '潜行者工具架召唤' WHERE `entry` = 9949 AND `name_loc4` = '盗贼工具架召唤';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 11299 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 11300 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 11301 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 11302 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '密谋' WHERE `entry` = 14158 AND `name_loc4` = '谋杀';
-UPDATE `locales_spell` SET `name_loc4` = '密谋' WHERE `entry` = 14159 AND `name_loc4` = '谋杀';
-UPDATE `locales_spell` SET `name_loc4` = '强化刺骨' WHERE `entry` = 14162 AND `name_loc4` = '强化剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '强化刺骨' WHERE `entry` = 14163 AND `name_loc4` = '强化剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '强化刺骨' WHERE `entry` = 14164 AND `name_loc4` = '强化剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '熔火爆裂' WHERE `entry` = 15040 AND `name_loc4` = '熔岩爆裂';
-UPDATE `locales_spell` SET `name_loc4` = '熔火爆裂' WHERE `entry` = 15095 AND `name_loc4` = '熔岩爆裂';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 15691 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 15692 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '香脆翅根' WHERE `entry` = 15935 AND `name_loc4` = '香脆蝙蝠翅';
-UPDATE `locales_spell` SET `name_loc4` = '食谱：香脆翅根' WHERE `entry` = 15936 AND `name_loc4` = '食谱：香脆蝙蝠翅';
-UPDATE `locales_spell` SET `name_loc4` = '灰烬风暴' WHERE `entry` = 17956 AND `name_loc4` = '琥珀风暴';
-UPDATE `locales_spell` SET `name_loc4` = '灰烬风暴' WHERE `entry` = 17957 AND `name_loc4` = '琥珀风暴';
-UPDATE `locales_spell` SET `name_loc4` = '灰烬风暴' WHERE `entry` = 17958 AND `name_loc4` = '琥珀风暴';
-UPDATE `locales_spell` SET `name_loc4` = '命令之吼' WHERE `entry` = 22440 AND `name_loc4` = '命令怒吼';
-UPDATE `locales_spell` SET `name_loc4` = '幽魂之狼速度' WHERE `entry` = 22801 AND `name_loc4` = '幽灵狼速度';
-UPDATE `locales_spell` SET `name_loc4` = '提高爆击法术' WHERE `entry` = 23433 AND `name_loc4` = '提高致命一击法术';
-UPDATE `locales_spell` SET `name_loc4` = '提高爆击法术' WHERE `entry` = 23434 AND `name_loc4` = '提高致命一击法术';
-UPDATE `locales_spell` SET `name_loc4` = '提高神圣爆击' WHERE `entry` = 23435 AND `name_loc4` = '提高神圣致命一击';
-UPDATE `locales_spell` SET `name_loc4` = '提高暗影爆击法术' WHERE `entry` = 23440 AND `name_loc4` = '提高暗影致命一击法术';
-UPDATE `locales_spell` SET `name_loc4` = '提高暗影爆击法术' WHERE `entry` = 23443 AND `name_loc4` = '提高暗影致命一击法术';
-UPDATE `locales_spell` SET `name_loc4` = '提高爆击自然法术' WHERE `entry` = 23570 AND `name_loc4` = '提高致命一击自然法术';
-UPDATE `locales_spell` SET `name_loc4` = '强化刺骨/割裂' WHERE `entry` = 24471 AND `name_loc4` = '强化剔骨/割裂';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 27611 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '潜行者护甲充能' WHERE `entry` = 27787 AND `name_loc4` = '盗贼护甲充能';
-UPDATE `locales_spell` SET `name_loc4` = '潜行者护甲充能' WHERE `entry` = 27788 AND `name_loc4` = '盗贼护甲充能';
-UPDATE `locales_spell` SET `name_loc4` = '攻击强度 - 野性（+305）' WHERE `entry` = 28717 AND `name_loc4` = '攻击强度-野性(+305)';
-UPDATE `locales_spell` SET `name_loc4` = '提高法术爆击率' WHERE `entry` = 30440 AND `name_loc4` = '提高法术命中几率';
-UPDATE `locales_spell` SET `name_loc4` = '提高法术爆击率' WHERE `entry` = 30441 AND `name_loc4` = '提高法术命中几率';
-UPDATE `locales_spell` SET `name_loc4` = '极致' WHERE `entry` = 30902 AND `name_loc4` = '致命';
-UPDATE `locales_spell` SET `name_loc4` = '极致' WHERE `entry` = 30903 AND `name_loc4` = '致命';
-UPDATE `locales_spell` SET `name_loc4` = '极致' WHERE `entry` = 30904 AND `name_loc4` = '致命';
-UPDATE `locales_spell` SET `name_loc4` = '极致' WHERE `entry` = 30905 AND `name_loc4` = '致命';
-UPDATE `locales_spell` SET `name_loc4` = '极致' WHERE `entry` = 30906 AND `name_loc4` = '致命';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 31016 AND `name_loc4` = '剔骨';
-UPDATE `locales_spell` SET `name_loc4` = '刺骨' WHERE `entry` = 31017 AND `name_loc4` = '剔骨';

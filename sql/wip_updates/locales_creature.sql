@@ -2465,7 +2465,7 @@ INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (1425, '鱼肉�
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (1481, '处女号的船长') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (2258, '山岭之王') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (2476, '巢穴之母') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
-INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (2805, '材料商') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
+INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (2805, '卷轴和药剂') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (2810, '高级商人') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (2876, '鳄鱼训练师') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 
 INSERT INTO `locales_creature` (`entry`, `subname_loc4`) VALUES (3230, '萨尔的顾问') ON DUPLICATE KEY UPDATE `subname_loc4` = VALUES(`subname_loc4`);  -- 

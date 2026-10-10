@@ -357,3 +357,45 @@ wowhead 接口 `nether.wowhead.com/classic/tooltip/{kind}/{id}?locale=zhCN` 给�
 两者都带原值条件、**幂等**（重复导入后各表校验和不变）。
 生效：`.reload locales_quest` / `locales_creature` / `locales_gameobject` / `locales_item` /
 `locales_spell` / `locales_page_text` / `locales_broadcast_text` / `mangos_string`
+
+## 名称之外的字段校验：副名 / 物品说明 / 法术文本（2026-10-10，第九轮）
+
+上一轮只校验了「名称」。这一轮把**其它能被外部数据源校验的字段**也做了，并回答一个问题：
+wowhead 到底能拿到哪些字段。
+
+| 字段 | 数据源 | 规模 | 结果 |
+|---|---|---|---|
+| 生物副名 `subname_loc4` | **wowhead** tooltip（副名在 tooltip 第 2 行） | 2,444 | **修 307** |
+| 物品说明 `description_loc4` | **官方 1.12.1 英文 + 官方中文**（wowhead 不给这个字段） | 3,173 | **0 差异**（1,597 条可对照，全部逐字一致） |
+| 法术名/等级/说明/光环说明 | **客户端 Spell.dbc**（zhCN 槽，占位符原样） | 27,928 | **修 2,664** |
+| 区域名 `NameLoc4` | AreaTable.dbc | 1,481 | 修 1 |
+| 阵营名 `name_loc4` | Faction.dbc | 202 | **修 33** |
+| 飞行点名 `name_loc4` | TaxiNodes.dbc | 109 | 修 5 |
+
+**wowhead 能拿到什么**（实测）：`nether.wowhead.com/classic/tooltip/{npc|item|quest|spell|object}/{id}?locale=zhCN`
+返回 `name` + `tooltip` + `quality/icon/spells`。**副本名在 npc tooltip 里**（第 2 行）；
+**物品说明（flavor text）不在里面**，网页与 XML 端点都被 CloudFront 403 —— 所以物品说明改走官方库比对。
+
+**客户端 DBC 比 wowhead 更权威的地方**：法术/区域/阵营/飞行点的文本是**客户端自己显示**的，
+服务端 `locales_*` 要与之一致，否则会出现「聊天里一个名、法术书里另一个名」。DBC 还保留
+`$s1/$d` 占位符（wowhead 给的是代入数值后的成品，无法直接写库）。
+
+典型修正：
+* 副名 `#514` 锻造训练师→**初级铁匠**、`#543` 兽栏管理员→**宠物训练师**、`#1275` 材料商→**施法材料商**
+* 法术名 `#1022` 保护祝福→**保护之手**（英文是 Hand of Protection）、`#1044` →**自由之手**、
+  `#687` 恶魔皮肤→**魔甲术**（原值是另一个法术的名字）、`#921` 搜索→**偷窃**、`#2098` 刺骨→**剔骨**
+* 法术说明 `#19465` 官方把蝰蛇钉刺/毒蝎钉刺两条效果都写全了，原译文缺一半；`#2246` 原写「废弃技能」，
+  官方是「火焰法术和攻击造成的伤害提高$s1点。」
+* 阵营 `#15` Defias Brotherhood 迪菲亚盗贼→**迪菲亚兄弟会**、`#32` Trogg 石腭怪→**穴居人**
+
+**顺带修掉两个「文件互相打架」的坑**（都是这次全量回放测试暴露的）：
+1. `locales_name_fixes.sql` 第八批里硬编码的副名目标值与我这次的 wowhead 修正冲突 ——
+   重放会把 39 条改回旧值。已按当前（wowhead 正确值）重写该批。
+2. 同文件的 15410/5606/6010 三条与 `locales_official_wowhead.sql` 形成来回乒乓
+   （wowhead 对**同一实体**给了两种写法：Anachronos 是「安纳克洛斯」、其巨龙形态却是
+   「安纳克洛斯巨龙形态」；Goma/Felhound 的同名条目它没收录）。按「库内同名实体互相一致」
+   保留统一写法，并把 wowhead 文件里那 3 条过时语句删掉。
+3. `locales_simplified_cleanup.sql` 的「夜精灵→暗夜精灵」原来用占位符往返（每轮白报 36 行改动），
+   改成带守卫的单条语句。
+
+**结论**：所有 wip 文件现在**全量回放两遍，第二遍 0 改动**。
