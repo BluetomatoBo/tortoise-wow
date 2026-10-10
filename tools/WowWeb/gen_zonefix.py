@@ -41,9 +41,11 @@ import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from gen_zonegrid import vanilla_areas  # noqa: E402  （同一目录的生成器，复用它的区域表读取）
 DEFAULT_OUT = os.path.join(HERE, "internal", "web", "zonefix.txt")
 
-CELL = 128.0        # 码；格子越小越贴合，128 码约合 4 个 MCNK 块
+CELL = 533.3333333 / 16   # 码；与 gen_zonegrid 的 MCNK 格一致，混层（地表+洞穴同格）才分得开
 RADIUS = 16         # 专属内容向外生长多少格（16 × 128 = 2048 码）
 NEAR = 2.0          # 证据要「近一倍以上」才覆盖现状
 NESTED = 0.85       # 小框有 85% 落在其它候选框里，就当成包含关系，不动
@@ -60,6 +62,12 @@ VERIFIED = {
         "Mangy Silvermane / Old Farwell / Grant Lafford —— 辛特兰的 NPC",
     ("hilsbrad", "gilneas"):
         "Greymane Preserver —— 吉尔尼斯（乌龟服自定义区）的怪",
+    ("wetlands", "gilneas"):
+        "Spitecrest Wavesinger（乌龟服自定义，站在吉尔尼斯半岛西岸 x≈-2620）",
+    ("silverpine", "gilneas"):
+        "同一批 Spitecrest Wavesinger；原版地形把半岛标成了银松/湿地",
+    ("stranglethorn", "lapidis"):
+        "Chieftain Woh'zo / Hazzuri Beastkeeper（乌龟服自定义，x≈-12500 的拉皮迪斯岛）",
     ("easternplaguelands", "westernplaguelands"):
         "Plague Lurker / Diseased Grizzly / Elder Meadowrun —— 西瘟疫之地的怪",
     ("westfall", "stranglethorn"):
@@ -86,6 +94,12 @@ VERIFIED = {
         "Infinite Dragonspawn / Infinite Riftguard —— 时光之穴",
     ("redridge", "swampofsorrows"):
         "Draenethyst Crystals / Lost One Muckdweller —— 悲伤沼泽的物件与怪",
+    ("cavernsoftime", "tanaris"):
+        "Glasshide Gazer / Scorpid Dunestalker / Blisterpaw Hyena —— 塔纳利斯地表的怪（洞穴自己的青铜龙在 z≈-211）",
+    ("timbermawentrance", "aszhara"):
+        "Legashi Satyr / Mosshoof Courser / Storm Bay Warrior —— 艾萨拉的怪",
+    ("timbermawtunnels", "felwood"):
+        "木喉要塞隧道口外的费伍德内容",
 }
 
 # 判据给得出、但按内容核验**不对**的：保留现状，写在这里免得以后有人又加回来。
@@ -106,6 +120,9 @@ REJECTED = {
     ("elwynn", "westfall"): "存疑，先不动",
     ("redridge", "elwynn"): "Dead-Tooth Jack / Defias Bandit，存疑",
     ("lapidis", "gillijim"): "两个都是乌龟服自定义岛，存疑",
+    ("darnassus", "teldrassil"): "达纳苏斯是独立区域（WMO 城市），城市里就该是它",
+    ("stormwind", "elwynn"): "同上，暴风城",
+    ("dunmorogh", "northwind"): "格子里混着霜鬃巨魔（丹莫罗的），存疑",
 }
 
 
@@ -122,8 +139,8 @@ def load_boxes(path):
 
 def spawns_from_mysql(mysql):
     """读出所有生物与物件的刷新坐标。"""
-    query = ("SELECT id, map, position_x, position_y FROM creature "
-             "UNION ALL SELECT id, map, position_x, position_y FROM gameobject;")
+    query = ("SELECT id, map, position_x, position_y, position_z FROM creature "
+             "UNION ALL SELECT id, map, position_x, position_y, position_z FROM gameobject;")
     out = subprocess.run(mysql.split() + ["-e", query], capture_output=True, text=True)
     if out.returncode != 0:
         sys.exit("mysql 读取失败：%s" % (out.stderr.strip() or out.returncode))
@@ -133,12 +150,46 @@ def spawns_from_mysql(mysql):
         if len(parts) < 4 or not parts[0].strip():
             continue
         try:
-            rows.append((int(parts[0]), int(parts[1]), float(parts[2]), float(parts[3])))
+            rows.append((int(parts[0]), int(parts[1]), float(parts[2]), float(parts[3]),
+                         float(parts[4])))
         except ValueError:
             continue
     if not rows:
         sys.exit("没有读到刷新点，检查 --mysql")
     return rows
+
+
+def load_grid(path):
+    """读 gen_zonegrid.py 生成的网格：{(map, cell_y): [(start, dir, len)]}。
+
+    生成顺序是先 `gen_zonegrid.py` 再本脚本：嵌套区域的「地表边距」要用地形网格复核。
+    """
+    rows = {}
+    if not os.path.isfile(path):
+        return rows
+    for line in open(path, encoding="utf-8"):
+        if line.startswith("#") or not line.strip():
+            continue
+        map_id, cell_y, body = line.split("\t")
+        runs = []
+        for part in body.split():
+            spec, _, length = part.partition("*")
+            start, _, directory = spec.partition(":")
+            runs.append((int(start), directory, int(length) if length else 1))
+        rows[(int(map_id), int(cell_y))] = runs
+    return rows
+
+
+def grid_dir(rows, map_id, x, y, cell):
+    """地形网格在该点的答案（网格里没有该格就 None）。"""
+    runs = rows.get((map_id, int(math.floor(y / cell))))
+    if not runs:
+        return None
+    cx = int(math.floor(x / cell))
+    for start, directory, length in runs:
+        if start <= cx < start + length:
+            return directory
+    return None
 
 
 def main():
@@ -159,6 +210,7 @@ def main():
     for b in boxes:
         by_map[b["map"]].append(b)
     name_of = {b["area"]: b["dir"] for b in boxes}
+    area_of_dir = {b["dir"]: b["area"] for b in boxes}
 
     def area_of(b):
         return (b["x2"] - b["x1"]) * (b["y2"] - b["y1"])
@@ -169,6 +221,19 @@ def main():
         return out if with_continent else [b for b in out if b["area"] != 0]
 
     def current(m, x, y):
+        """页面实际会用的判定：嵌套 →（网格）→ 面积最小的框。
+
+        修正表是相对**这条路**写的：先按框规则算出来的候选，会与页面真正的答案不符。
+        """
+        c = [b for b in candidates(m, x, y)]
+        if len(c) >= 2:
+            small = min(c, key=area_of)
+            if area_of(small) <= 3.0e6 and any(inside_fraction(small, b) >= NESTED for b in c if b is not small):
+                return small["area"]
+        if grid_rows:
+            directory = grid_dir(grid_rows, m, x, y, 533.3333333 / 16)
+            if directory in area_of_dir:
+                return area_of_dir[directory]
         c = candidates(m, x, y) or candidates(m, x, y, True)
         return min(c, key=area_of)["area"] if c else None
 
@@ -177,12 +242,24 @@ def main():
         h = max(0.0, min(small["y2"], big["y2"]) - max(small["y1"], big["y1"]))
         return (w * h) / area_of(small)
 
+    grid_rows = load_grid(os.path.join(os.path.dirname(args.out), "zonegrid.txt"))
+    if grid_rows:
+        print("读了 zonegrid.txt（%d 行）：判定链与页面一致（嵌套 → 网格 → 框规则）" % len(grid_rows))
+
     spawns = spawns_from_mysql(args.mysql)
     print("刷新点 %d 个，区域框 %d 个" % (len(spawns), len(boxes)))
 
+    # 每格里有哪些 entry（判「是不是乌龟服自定义内容」用）与哪些 z（判地表/洞穴用）
+    entries_by_cell = collections.defaultdict(list)
+    z_by_cell = collections.defaultdict(list)
+    for entry, m, x, y, z in spawns:
+        cell = (m, int(x // CELL), int(y // CELL))
+        entries_by_cell[cell].append(entry)
+        z_by_cell[cell].append(z)
+
     cells = collections.defaultdict(set)
     exclusive = collections.defaultdict(set)
-    for _, m, x, y in spawns:
+    for _, m, x, y, z in spawns:
         c = candidates(m, x, y)
         if not c:
             continue
@@ -212,6 +289,91 @@ def main():
     fixes = {}          # cell -> area
     pairs = {}          # cell -> (现状区域, 应判区域)
     groups = collections.Counter()
+
+    # 自定义区域（乌龟服新加的，或者原版没启用、被乌龟服启用的）：它们的地形瓦片是老区域的
+    # （吉尔尼斯半岛在原版数据里就标成希尔斯布莱德，拉皮迪斯岛标成荆棘谷），所以地形网格会给成
+    # 邻居。但这些区域自己的内容确实站在那儿（61363 Greymane Preserver、91818 Chieftain Woh'zo），
+    # 判据是：面积最小的那个框里、内容含**乌龟服自定义生物/物件**（entry >= 50000）的格子，
+    # 判给这个框——这一支不看地形网格，因为它正是为「地形陈旧」准备的。
+    custom_areas = set()
+    vanilla = vanilla_areas(os.path.expanduser("~/Downloads/WoW_Classic"))
+    if vanilla:
+        print("原版 AreaTable 区域 %d 个" % len(vanilla))
+        custom_areas = {b["area"] for b in boxes if b["area"] and b["area"] not in vanilla}
+    custom_fix = 0
+    if custom_areas:
+        for cell, areas in cells.items():
+            m, cx, cy = cell
+            x, y = (cx + 0.5) * CELL, (cy + 0.5) * CELL
+            cands = sorted(candidates(m, x, y), key=area_of)
+            if not cands:
+                continue
+            entries = entries_by_cell.get(cell, ())
+            if not entries or max(entries) < 50000:
+                continue
+            inner_dir = name_of.get(cands[0]["area"])
+            outer = current(m, x, y)
+            if outer == cands[0]["area"]:
+                continue
+            outer_dir = name_of.get(outer)
+            if not inner_dir or not outer_dir:
+                continue
+            fixes[cell] = cands[0]["area"]
+            pairs[cell] = (outer_dir, inner_dir)
+            groups[(outer_dir, inner_dir)] += 1
+            custom_fix += 1
+    print("其中「自定义区域内含自定义内容」候选 %d 格" % custom_fix)
+
+    # 嵌套区域的「地表边距」：城市/洞穴/副本门口这些框套在别的区域里，框规则会把整块地都算给自己，
+    # 但落在**地表**的那些点其实属于外圈区域。判据用 z：同一格里所有点的 z 都贴着外圈专属内容的
+    # z（±40 码）就算地表；只要有一个点明显更深/更高（洞穴内部），这一格就留给内圈。
+
+    outer_of = {}
+    for cell in cells:
+        m, cx, cy = cell
+        x, y = (cx + 0.5) * CELL, (cy + 0.5) * CELL
+        cands = sorted(candidates(m, x, y), key=area_of)
+        if len(cands) < 2:
+            continue
+        small = cands[0]
+        if small["area"] == 0 or area_of(small) > 3.0e6:
+            continue
+        for big in cands[1:]:
+            if big["area"] == 0 or inside_fraction(small, big) < 0.85:
+                continue
+            outer_of[cell] = (small["area"], big["area"])
+            break
+    outer_z = {}
+    for area, seeds in exclusive.items():
+        zs = [z for cell in seeds for z in z_by_cell.get(cell, [])]
+        if len(zs) >= 5:
+            zs.sort()
+            outer_z[area] = zs[len(zs) // 2]
+    nested_margin = 0
+    for cell, (inner, outer) in outer_of.items():
+        base = outer_z.get(outer)
+        zs = z_by_cell.get(cell)
+        if base is None or not zs:
+            continue
+        x, y = (cell[1] + 0.5) * CELL, (cell[2] + 0.5) * CELL
+        if current(cell[0], x, y) != inner:
+            continue                                     # 框规则本来就把这格算给内圈
+        if any(abs(z - base) > 40 for z in zs):
+            continue                                     # 有洞穴内部的点：整格留给内圈
+        inner_dir = name_of.get(inner)
+        outer_dir = name_of.get(outer)
+        if not inner_dir or not outer_dir:
+            continue
+        # 地形网格必须同意（或者根本没数据，例如山体内部）：网格说是别处时不动，
+        # 那多半是副本门口这种「地图框盖到了邻区地形上」的情况。
+        terrain = grid_dir(grid_rows, cell[0], x, y, 533.3333333 / 16) if grid_rows else None
+        if terrain is not None and terrain != outer_dir:
+            continue
+        fixes[cell] = outer
+        pairs[cell] = (inner_dir, outer_dir)
+        groups[(inner_dir, outer_dir)] += 1
+        nested_margin += 1
+    print("其中「嵌套区域的地表边距」候选 %d 格" % nested_margin)
     for cell, areas in cells.items():
         m, cx, cy = cell
         x, y = (cx + 0.5) * CELL, (cy + 0.5) * CELL
@@ -231,6 +393,12 @@ def main():
         cur = current(m, x, y)
         if a1 == cur:
             continue
+        # 地形网格必须同意（或根本没数据）：网格说是别处时，多半是「地图框盖到了邻区地形上」
+        # 的副本门口/洞穴，判据靠的是内容距离，不如地形本身可靠。
+        if grid_rows:
+            terrain = grid_dir(grid_rows, m, x, y, 533.3333333 / 16)
+            if terrain is not None and terrain != name_of.get(a1):
+                continue
         fixes[cell] = a1
         pairs[cell] = (name_of.get(cur, cur), name_of.get(a1, a1))
         groups[pairs[cell]] += 1
@@ -243,10 +411,11 @@ def main():
     if args.report:
         names = {}
         if args.names:
-            query = ("SELECT ct.name, c.map, FLOOR(c.position_x/128), FLOOR(c.position_y/128)"
+            query = ("SELECT ct.name, c.map, FLOOR(c.position_x/%.6f), FLOOR(c.position_y/%.6f)"
                      " FROM creature c JOIN creature_template ct ON ct.entry = c.id"
-                     " UNION ALL SELECT gt.name, g.map, FLOOR(g.position_x/128), FLOOR(g.position_y/128)"
-                     " FROM gameobject g JOIN gameobject_template gt ON gt.entry = g.id;")
+                     " UNION ALL SELECT gt.name, g.map, FLOOR(g.position_x/%.6f), FLOOR(g.position_y/%.6f)"
+                     " FROM gameobject g JOIN gameobject_template gt ON gt.entry = g.id;"
+                     % (CELL, CELL, CELL, CELL))
             out = subprocess.run(args.mysql.split() + ["-e", query], capture_output=True, text=True)
             for line in out.stdout.split("\n")[1:]:
                 parts = line.split("\t")

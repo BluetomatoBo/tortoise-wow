@@ -470,3 +470,75 @@ func TestZoneFixTableIsUsable(t *testing.T) {
 		}
 	}
 }
+
+// TestZoneGridPicksTheClientsOwnZone covers the area grid: the game itself reads
+// the MCNK areaid out of the map files (GridMap::getArea), and the page now asks
+// the same grid first, so a globally spread object - a small thorium vein is the
+// one that was reported - stops landing on whichever neighbour's box is smallest.
+func TestZoneGridPicksTheClientsOwnZone(t *testing.T) {
+	cases := []struct {
+		what  string
+		mapID uint16
+		x, y  float64
+		want  string
+	}{
+		{"闪金镇旅店", 0, -9466.4, 21.4, "elwynn"},
+		{"暴风城", 0, -8800, 600, "stormwind"},
+		{"奥格瑞玛", 1, 1700, -4400, "orgrimmar"},
+		{"呢喃食尸鬼（提尔之手）", 0, 2020.03, -4481.07, "easternplaguelands"},
+		{"瑟银矿·塔纳利斯", 1, -8311, -2296, "tanaris"},
+		// 这一格在拉皮迪斯岛的框里，旁边就是乌龟服自定义的哈祖里食人妖：自定义区域的内容
+		// 站在老区域的地形上（地形网格会说荆棘谷），修正表把它判回岛上。
+		{"瑟银矿·拉皮迪斯岛一带", 0, -12164.3, 3604.4, "lapidis"},
+		{"瑟银矿·燃烧平原", 0, -8078, -2229, "burningsteppes"},
+		{"瑟银矿·安戈洛环形山", 1, -6279, -1266, "ungorocrater"},
+	}
+	for _, tc := range cases {
+		box, ok := ZoneAt(tc.mapID, tc.x, tc.y)
+		if !ok {
+			t.Errorf("%s: no zone for (%.0f, %.0f) on map %d", tc.what, tc.x, tc.y, tc.mapID)
+			continue
+		}
+		if box.dir != tc.want {
+			t.Errorf("%s: (%.0f, %.0f) on map %d is %s, want %s",
+				tc.what, tc.x, tc.y, tc.mapID, box.dir, tc.want)
+		}
+	}
+}
+
+// TestZoneGridTableIsUsable checks the embedded grid against the boxes: every
+// directory it names has to be a zone with a map, the runs have to be sorted and
+// non-empty, and every data line has to have been parsed - a row silently dropped
+// is a part of the world that quietly goes back to the box rule.
+func TestZoneGridTableIsUsable(t *testing.T) {
+	if len(zoneGrid) == 0 {
+		t.Fatal("zonegrid.txt is empty or was not embedded")
+	}
+	rows := 0
+	for _, line := range strings.Split(zoneGridData, "\n") {
+		if line != "" && !strings.HasPrefix(line, "#") {
+			rows++
+		}
+	}
+	if len(zoneGrid) != rows {
+		t.Errorf("zonegrid.txt has %d rows but %d were parsed", rows, len(zoneGrid))
+	}
+	for key, runs := range zoneGrid {
+		if len(runs) == 0 {
+			t.Errorf("grid row %+v has no runs", key)
+		}
+		for i, run := range runs {
+			if _, ok := boxesByDir[key.mapID][run.dir]; !ok {
+				t.Errorf("grid row %+v names zone %q, which has no map on map %d",
+					key, run.dir, key.mapID)
+			}
+			if run.end <= run.start {
+				t.Errorf("grid row %+v has an empty run %+v", key, run)
+			}
+			if i > 0 && run.start < runs[i-1].end {
+				t.Errorf("grid row %+v has overlapping or unsorted runs: %+v then %+v",
+					key, runs[i-1], run)
+			}
+		}
+	}
+}

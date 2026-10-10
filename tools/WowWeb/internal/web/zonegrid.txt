@@ -1,0 +1,884 @@
+# 坐标 → 区域网格：由 tools/WowWeb/gen_zonegrid.py 从客户端 ADT 的 MCNK areaid 生成，别手改
+# 格式：<map>\t<cell_y>\t<xstart>:<区域目录> [<xstart>:<区域目录> ...]（x 从 xstart 起连续）
+# 格子边长 33.3333 码；世界坐标 → 格子：x=floor(X/33.3333)，y=floor(Y/33.3333)
+# 区域目录对应 internal/web/mapzones.txt 的目录名；没有列出的格子页面回落到框规则
+0	-192	-48:hinterlands*96
+0	-191	-48:hinterlands*96
+0	-190	-48:hinterlands*96
+0	-189	-48:hinterlands*96
+0	-188	-48:hinterlands*96
+0	-187	-48:hinterlands*96
+0	-186	-48:hinterlands*96
+0	-185	-48:hinterlands*96
+0	-184	-48:hinterlands*96
+0	-183	-48:hinterlands*96
+0	-182	-48:hinterlands*96
+0	-181	-48:hinterlands*96
+0	-180	-48:hinterlands*96
+0	-179	-48:hinterlands*96
+0	-178	-48:hinterlands*96 48:easternplaguelands*13
+0	-177	-48:hinterlands*89 41:easternplaguelands*30 75:easternplaguelands
+0	-176	-336:swampofsorrows*96 -240:wetlands*170 -70:arathi*38 -32:hinterlands*66 34:easternplaguelands 48:scarletenclave*27 75:easternplaguelands*21
+0	-175	-336:swampofsorrows*96 -240:wetlands*119 -121:grimreaches -120:wetlands*50 -70:arathi*38 -32:hinterlands*65 33:easternplaguelands*2 48:scarletenclave*27 75:easternplaguelands*21
+0	-174	-336:swampofsorrows*96 -240:wetlands*107 -133:grimreaches*6 -127:wetlands*5 -122:grimreaches*2 -120:wetlands*50 -70:arathi*38 -32:hinterlands*65 33:easternplaguelands*2 48:scarletenclave*27 75:easternplaguelands*21
+0	-173	-336:swampofsorrows*96 -240:wetlands*101 -139:grimreaches*17 -122:wetlands*52 -70:arathi*38 -32:hinterlands*65 33:easternplaguelands*2 48:scarletenclave*27 75:easternplaguelands*21
+0	-172	-336:swampofsorrows*96 -240:wetlands*65 -175:grimreaches*2 -173:wetlands*8 -165:grimreaches*17 -148:wetlands*2 -146:grimreaches*28 -118:wetlands*48 -70:arathi*38 -32:hinterlands*65 33:easternplaguelands*2 48:scarletenclave*6 54:easternplaguelands*3 57:scarletenclave*18 75:easternplaguelands*21
+0	-171	-336:swampofsorrows*96 -240:wetlands*68 -172:grimreaches*56 -116:wetlands -115:grimreaches*4 -111:wetlands*41 -70:arathi*38 -32:hinterlands*65 33:easternplaguelands*2 48:scarletenclave*5 53:easternplaguelands*6 59:scarletenclave*16 75:easternplaguelands*23
+0	-170	-336:swampofsorrows*96 -240:wetlands*59 -181:grimreaches*75 -106:wetlands*36 -70:arathi*38 -32:hinterlands*65 33:easternplaguelands*2 46:easternplaguelands*16 62:scarletenclave*13 75:easternplaguelands*25
+0	-169	-336:swampofsorrows*96 -240:wetlands*57 -183:grimreaches*82 -101:wetlands -100:grimreaches -99:wetlands*29 -70:arathi*38 -32:hinterlands*65 33:easternplaguelands*2 44:easternplaguelands*11 55:scarletenclave 56:easternplaguelands*10 66:scarletenclave*8 74:easternplaguelands*27
+0	-168	-336:swampofsorrows*96 -240:wetlands*54 -186:grimreaches*89 -97:wetlands*27 -70:arathi*38 -32:hinterlands*66 34:easternplaguelands*68
+0	-167	-336:swampofsorrows*96 -240:wetlands*53 -187:grimreaches*89 -98:wetlands*28 -70:arathi*38 -32:hinterlands*67 35:easternplaguelands*69
+0	-166	-336:swampofsorrows*96 -240:wetlands*52 -188:grimreaches*92 -96:wetlands*26 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*69
+0	-165	-336:swampofsorrows*96 -240:wetlands*51 -189:grimreaches*94 -95:wetlands*25 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*73
+0	-164	-336:swampofsorrows*96 -240:wetlands*50 -190:grimreaches*96 -94:wetlands*2 -92:grimreaches*2 -90:wetlands*20 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*16 52:scarletenclave 53:easternplaguelands*56
+0	-163	-336:swampofsorrows*96 -240:wetlands*49 -191:grimreaches*97 -94:wetlands*3 -91:grimreaches*2 -89:wetlands*19 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*75
+0	-162	-336:swampofsorrows*96 -240:wetlands*47 -193:grimreaches*100 -93:wetlands*3 -90:grimreaches -89:wetlands*19 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*76
+0	-161	-336:swampofsorrows*96 -240:wetlands*46 -194:grimreaches*101 -93:wetlands*23 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*76
+0	-160	-352:swampofsorrows*112 -240:wetlands*46 -194:grimreaches*101 -93:wetlands*23 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-159	-352:swampofsorrows*112 -240:wetlands*45 -195:grimreaches*3 -192:wetlands -191:grimreaches*98 -93:wetlands*23 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-158	-352:swampofsorrows*112 -240:wetlands*44 -196:grimreaches -195:wetlands -194:grimreaches -193:wetlands -192:grimreaches*100 -92:wetlands*2 -90:grimreaches -89:wetlands*19 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-157	-352:swampofsorrows*112 -240:wetlands*43 -197:grimreaches*3 -194:wetlands*2 -192:grimreaches*100 -92:wetlands*2 -90:grimreaches*2 -88:wetlands*18 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-156	-352:swampofsorrows*112 -240:wetlands*42 -198:grimreaches*2 -196:wetlands*4 -192:grimreaches*100 -92:wetlands*2 -90:grimreaches*2 -88:wetlands*18 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-155	-352:swampofsorrows*112 -240:wetlands*41 -199:grimreaches*2 -197:wetlands*5 -192:grimreaches*100 -92:wetlands*3 -89:grimreaches*2 -87:wetlands*17 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-154	-352:swampofsorrows*112 -240:wetlands*41 -199:grimreaches -198:wetlands*6 -192:grimreaches*100 -92:wetlands*3 -89:grimreaches*2 -87:wetlands*17 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-153	-352:swampofsorrows*112 -240:wetlands*40 -200:grimreaches -199:wetlands*7 -192:grimreaches*101 -91:wetlands*2 -89:grimreaches*2 -87:wetlands*17 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-152	-352:swampofsorrows*112 -240:wetlands*39 -201:grimreaches*2 -199:wetlands*7 -192:grimreaches*101 -91:wetlands*3 -88:grimreaches -87:wetlands*17 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-151	-352:swampofsorrows*112 -240:wetlands*39 -201:grimreaches -200:wetlands*8 -192:grimreaches*102 -90:wetlands*2 -88:grimreaches -87:wetlands*17 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-150	-352:swampofsorrows*112 -240:wetlands*38 -202:grimreaches*2 -200:wetlands -199:grimreaches*2 -197:wetlands*4 -193:grimreaches*103 -90:wetlands*2 -88:grimreaches -87:wetlands*17 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-149	-352:swampofsorrows*112 -240:wetlands*39 -201:grimreaches*2 -199:wetlands -198:grimreaches -197:wetlands*4 -193:grimreaches*103 -90:wetlands*20 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-148	-352:swampofsorrows*112 -240:wetlands*47 -193:grimreaches*103 -90:wetlands*20 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-147	-352:swampofsorrows*112 -240:wetlands*47 -193:grimreaches -192:wetlands -191:grimreaches*101 -90:wetlands*20 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-146	-352:swampofsorrows*112 -240:wetlands*47 -193:grimreaches -192:wetlands -191:grimreaches*101 -90:wetlands*20 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-145	-352:swampofsorrows*112 -240:wetlands*48 -192:grimreaches*102 -90:wetlands*20 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*91
+0	-144	-400:swampofsorrows*160 -240:wetlands*48 -192:grimreaches*102 -90:wetlands*20 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*156
+0	-143	-400:swampofsorrows*116 -284:redridge*2 -282:swampofsorrows*12 -270:redridge*4 -266:swampofsorrows*6 -260:redridge -259:swampofsorrows*19 -240:wetlands*48 -192:grimreaches*102 -90:wetlands*20 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*156
+0	-142	-400:swampofsorrows*115 -285:redridge*5 -280:swampofsorrows*9 -271:redridge*14 -257:swampofsorrows*17 -240:wetlands*48 -192:grimreaches*102 -90:wetlands*20 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*156
+0	-141	-400:swampofsorrows*114 -286:redridge*7 -279:swampofsorrows*7 -272:redridge*16 -256:swampofsorrows*16 -240:wetlands*47 -193:grimreaches*102 -91:wetlands*21 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*156
+0	-140	-400:swampofsorrows*114 -286:redridge*30 -256:swampofsorrows*16 -240:wetlands*46 -194:grimreaches*103 -91:wetlands*21 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*156
+0	-139	-400:swampofsorrows*115 -285:redridge*29 -256:swampofsorrows*16 -240:wetlands*47 -193:grimreaches*101 -92:wetlands*22 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*156
+0	-138	-400:swampofsorrows*116 -284:redridge*28 -256:swampofsorrows*16 -240:wetlands*48 -192:grimreaches*100 -92:wetlands*22 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*156
+0	-137	-400:swampofsorrows*116 -284:redridge*28 -256:swampofsorrows*16 -240:wetlands*48 -192:grimreaches*100 -92:wetlands*22 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*156
+0	-136	-400:swampofsorrows*117 -283:redridge*27 -256:swampofsorrows*16 -240:wetlands*49 -191:grimreaches*98 -93:wetlands*23 -70:arathi*38 -32:hinterlands*68 36:easternplaguelands*156
+0	-135	-400:swampofsorrows*117 -283:redridge*27 -256:swampofsorrows*16 -240:wetlands*49 -191:grimreaches*99 -92:wetlands*22 -70:arathi*38 -32:hinterlands*72 40:easternplaguelands*152
+0	-134	-400:swampofsorrows*118 -282:redridge*26 -256:swampofsorrows*16 -240:wetlands*49 -191:grimreaches*99 -92:wetlands*22 -70:arathi*38 -32:hinterlands*73 41:easternplaguelands*151
+0	-133	-400:swampofsorrows*117 -283:redridge*27 -256:swampofsorrows*16 -240:wetlands*50 -190:grimreaches*19 -171:lochmodan*7 -164:grimreaches*74 -90:wetlands*20 -70:arathi*38 -32:hinterlands*73 41:easternplaguelands*151
+0	-132	-400:swampofsorrows*117 -283:redridge*27 -256:swampofsorrows*16 -240:wetlands*6 -234:burningsteppes*11 -223:badlands*31 -192:wetlands*11 -181:grimreaches*9 -172:lochmodan*26 -146:grimreaches*56 -90:wetlands*20 -70:arathi*38 -32:hinterlands*73 41:easternplaguelands*151
+0	-131	-400:swampofsorrows*116 -284:redridge*28 -256:burningsteppes*14 -242:swampofsorrows*2 -240:wetlands*4 -236:burningsteppes*13 -223:badlands*34 -189:wetlands*16 -173:lochmodan*28 -145:grimreaches*55 -90:wetlands*20 -70:arathi*38 -32:hinterlands*73 41:easternplaguelands*151
+0	-130	-400:swampofsorrows*115 -285:redridge*29 -256:burningsteppes*16 -240:wetlands*3 -237:burningsteppes*14 -223:badlands*34 -189:wetlands*10 -179:lochmodan*43 -136:grimreaches*45 -91:wetlands*21 -70:arathi*38 -32:hinterlands*74 42:easternplaguelands*150
+0	-129	-400:swampofsorrows*115 -285:redridge*29 -256:burningsteppes*33 -223:badlands*34 -189:wetlands*10 -179:lochmodan*43 -136:grimreaches*44 -92:wetlands*22 -70:arathi*38 -32:hinterlands*74 42:easternplaguelands*150
+0	-128	-400:swampofsorrows*114 -286:redridge*30 -256:burningsteppes*33 -223:badlands*34 -189:wetlands*10 -179:lochmodan*44 -135:grimreaches*42 -93:wetlands*23 -70:arathi*38 -27:hinterlands*69 42:easternplaguelands*150
+0	-127	-400:swampofsorrows*113 -287:redridge*31 -256:burningsteppes*33 -223:badlands*34 -189:wetlands*10 -179:lochmodan*45 -134:grimreaches*40 -94:wetlands*24 -70:arathi*38 -28:hinterlands*70 42:easternplaguelands*150
+0	-126	-400:swampofsorrows*113 -287:redridge*31 -256:burningsteppes*33 -223:badlands*36 -187:lochmodan*55 -132:grimreaches*15 -117:wetlands*2 -115:grimreaches*18 -97:wetlands*27 -70:arathi*38 -28:hinterlands*69 41:easternplaguelands*151
+0	-125	-400:swampofsorrows*113 -287:redridge*31 -256:burningsteppes*33 -223:badlands*36 -187:lochmodan*56 -131:grimreaches*14 -117:wetlands*10 -107:grimreaches*6 -101:wetlands*31 -70:arathi*38 -28:hinterlands*68 40:easternplaguelands*152
+0	-124	-400:swampofsorrows*113 -287:redridge*31 -256:burningsteppes*33 -223:badlands*36 -187:lochmodan*58 -129:grimreaches*7 -122:wetlands*18 -104:grimreaches*3 -101:wetlands*31 -70:arathi*38 -29:hinterlands*68 39:easternplaguelands*153
+0	-123	-400:swampofsorrows*113 -287:redridge*31 -256:burningsteppes*33 -223:badlands*36 -187:lochmodan*59 -128:grimreaches*4 -124:wetlands*20 -104:grimreaches*2 -102:wetlands*32 -70:arathi*38 -29:hinterlands*68 39:easternplaguelands*153
+0	-122	-400:swampofsorrows*113 -287:redridge*31 -256:burningsteppes*33 -223:badlands*36 -187:lochmodan*59 -128:wetlands*58 -70:arathi*42 -28:hinterlands*67 39:easternplaguelands*153
+0	-121	-400:swampofsorrows*113 -287:redridge*31 -256:burningsteppes*33 -223:badlands*36 -187:lochmodan*59 -128:wetlands*58 -70:arathi*43 -27:hinterlands*65 38:easternplaguelands*154
+0	-120	-400:swampofsorrows*113 -287:redridge*31 -256:burningsteppes*33 -223:badlands*36 -187:lochmodan*59 -128:wetlands*58 -70:arathi*44 -26:hinterlands*64 38:easternplaguelands*154
+0	-119	-400:swampofsorrows*112 -288:redridge*32 -256:burningsteppes*33 -223:badlands*36 -187:lochmodan*59 -128:wetlands*58 -70:arathi*45 -25:hinterlands*63 38:easternplaguelands*154
+0	-118	-400:swampofsorrows*112 -288:redridge*32 -256:burningsteppes*33 -223:badlands*36 -187:lochmodan*59 -128:wetlands*58 -70:arathi*45 -25:hinterlands*63 38:easternplaguelands*154
+0	-117	-400:swampofsorrows*112 -288:redridge*32 -256:burningsteppes*33 -223:badlands*36 -187:lochmodan*59 -128:wetlands*58 -70:arathi*46 -24:hinterlands*61 37:easternplaguelands*155
+0	-116	-400:swampofsorrows*112 -288:redridge*32 -256:burningsteppes*33 -223:badlands*36 -187:lochmodan*59 -128:wetlands*58 -70:arathi*46 -24:hinterlands*61 37:easternplaguelands*155
+0	-115	-400:swampofsorrows*112 -288:redridge*32 -256:burningsteppes*33 -223:badlands*39 -184:lochmodan*56 -128:wetlands*58 -70:arathi*47 -23:hinterlands*60 37:easternplaguelands*155
+0	-114	-400:swampofsorrows*112 -288:redridge*32 -256:burningsteppes*33 -223:badlands*40 -183:lochmodan*55 -128:wetlands*58 -70:arathi*49 -21:hinterlands*57 36:easternplaguelands*156
+0	-113	-400:swampofsorrows*112 -288:redridge*32 -256:burningsteppes*33 -223:badlands*40 -183:lochmodan*55 -128:wetlands*58 -70:arathi*50 -20:hinterlands*56 36:easternplaguelands*156
+0	-112	-400:swampofsorrows*112 -288:redridge*32 -256:burningsteppes*33 -223:badlands*40 -183:lochmodan*46 -137:wetlands*67 -70:arathi*51 -19:hinterlands*54 35:easternplaguelands*157
+0	-111	-400:swampofsorrows*43 -357:blastedlands*29 -328:swampofsorrows*40 -288:redridge*32 -256:burningsteppes*33 -223:badlands*40 -183:lochmodan*46 -137:wetlands*67 -70:arathi*52 -18:hinterlands*51 33:easternplaguelands*159
+0	-110	-400:swampofsorrows*41 -359:blastedlands*33 -326:swampofsorrows*38 -288:redridge*32 -256:burningsteppes*33 -223:badlands*40 -183:lochmodan*46 -137:wetlands*67 -70:arathi*53 -17:hinterlands*49 32:easternplaguelands*160
+0	-109	-400:swampofsorrows*40 -360:blastedlands*35 -325:swampofsorrows*37 -288:redridge*28 -260:burningsteppes*2 -258:redridge -257:burningsteppes*34 -223:badlands*40 -183:lochmodan*46 -137:wetlands*67 -70:arathi*53 -17:hinterlands*45 28:easternplaguelands*164
+0	-108	-400:swampofsorrows*39 -361:blastedlands*37 -324:swampofsorrows*31 -293:redridge*33 -260:burningsteppes*37 -223:badlands*41 -182:lochmodan*45 -137:wetlands*67 -70:arathi*53 -17:hinterlands*45 28:easternplaguelands*164
+0	-107	-400:swampofsorrows*38 -362:blastedlands*39 -323:swampofsorrows*30 -293:redridge*33 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*41 -139:wetlands*69 -70:arathi*53 -17:hinterlands*45 28:easternplaguelands*164
+0	-106	-400:swampofsorrows*37 -363:blastedlands*41 -322:swampofsorrows*29 -293:redridge*33 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*41 -139:wetlands*69 -70:arathi*53 -17:hinterlands*44 27:easternplaguelands*165
+0	-105	-400:swampofsorrows*37 -363:blastedlands*41 -322:swampofsorrows*25 -297:redridge*37 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*41 -139:wetlands*69 -70:arathi*53 -17:hinterlands*43 26:easternplaguelands*166
+0	-104	-400:swampofsorrows*36 -364:blastedlands*44 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*41 -139:wetlands*69 -70:arathi*53 -17:hinterlands*42 25:easternplaguelands*167
+0	-103	-400:swampofsorrows*36 -364:blastedlands*44 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*40 -140:wetlands*70 -70:arathi*53 -17:hinterlands*42 25:easternplaguelands*167
+0	-102	-400:swampofsorrows*35 -365:blastedlands*45 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*39 -141:wetlands*71 -70:arathi*53 -17:hinterlands*42 25:easternplaguelands*167
+0	-101	-400:swampofsorrows*35 -365:blastedlands*45 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*39 -141:wetlands*71 -70:arathi*53 -17:hinterlands*42 25:easternplaguelands*167
+0	-100	-400:swampofsorrows*34 -366:blastedlands*46 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*39 -141:wetlands*71 -70:arathi*53 -17:hinterlands*42 25:easternplaguelands*167
+0	-99	-400:swampofsorrows*34 -366:blastedlands*46 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*39 -141:wetlands*71 -70:arathi*53 -17:hinterlands*42 25:easternplaguelands*167
+0	-98	-400:swampofsorrows*34 -366:blastedlands*46 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*39 -141:wetlands*71 -70:arathi*53 -17:hinterlands*42 25:easternplaguelands*167
+0	-97	-400:swampofsorrows*34 -366:blastedlands*47 -319:swampofsorrows*21 -298:redridge*38 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*40 -140:wetlands*70 -70:arathi*53 -17:hinterlands*42 25:easternplaguelands*167
+0	-96	-400:swampofsorrows*34 -366:blastedlands*47 -319:swampofsorrows*21 -298:redridge*38 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*42 -138:wetlands*68 -70:arathi*53 -17:hinterlands*42 25:easternplaguelands*167
+0	-95	-400:swampofsorrows*34 -366:blastedlands*46 -320:swampofsorrows*22 -298:redridge*38 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*43 -137:wetlands*67 -70:arathi*53 -17:hinterlands*42 25:easternplaguelands*167
+0	-94	-400:swampofsorrows*34 -366:blastedlands*46 -320:swampofsorrows*22 -298:redridge*38 -260:burningsteppes*37 -223:badlands*43 -180:lochmodan*43 -137:wetlands*67 -70:arathi*53 -17:hinterlands*42 25:easternplaguelands*167
+0	-93	-400:swampofsorrows*34 -366:blastedlands*46 -320:swampofsorrows*22 -298:redridge*38 -260:burningsteppes*37 -223:badlands*37 -186:lochmodan*49 -137:wetlands*67 -70:arathi*52 -18:hinterlands*42 24:easternplaguelands*8 32:westernplaguelands*11 43:easternplaguelands*149
+0	-92	-400:swampofsorrows*33 -367:blastedlands*47 -320:swampofsorrows*22 -298:redridge*38 -260:burningsteppes*38 -222:badlands*34 -188:lochmodan*51 -137:wetlands*67 -70:arathi*51 -19:hinterlands*43 24:easternplaguelands*7 31:westernplaguelands*14 45:easternplaguelands*147
+0	-91	-400:swampofsorrows*32 -368:blastedlands*48 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*38 -222:badlands*34 -188:lochmodan*51 -137:wetlands*67 -70:arathi*50 -20:hinterlands*43 23:easternplaguelands*7 30:westernplaguelands*15 45:easternplaguelands*147
+0	-90	-400:swampofsorrows*32 -368:blastedlands*48 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*38 -222:badlands*34 -188:lochmodan*51 -137:wetlands*67 -70:arathi*50 -20:hinterlands*42 22:easternplaguelands*7 29:westernplaguelands*16 45:easternplaguelands*147
+0	-89	-400:swampofsorrows*30 -370:blastedlands*50 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*38 -222:badlands*34 -188:lochmodan*51 -137:wetlands*67 -70:arathi*50 -20:hinterlands*42 22:easternplaguelands*7 29:westernplaguelands*17 46:easternplaguelands*146
+0	-88	-400:swampofsorrows*29 -371:blastedlands*51 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*38 -222:badlands*34 -188:lochmodan*51 -137:wetlands*67 -70:arathi*50 -20:hinterlands*42 22:easternplaguelands*6 28:westernplaguelands*21 49:easternplaguelands*143
+0	-87	-400:swampofsorrows*27 -373:blastedlands*53 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*38 -222:badlands*34 -188:lochmodan*51 -137:wetlands*67 -70:arathi*50 -20:hinterlands*41 21:easternplaguelands*7 28:westernplaguelands*22 50:easternplaguelands*142
+0	-86	-400:swampofsorrows*19 -380:blastedlands*60 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*38 -222:badlands*34 -188:lochmodan*51 -137:wetlands*67 -70:arathi*50 -20:hinterlands*41 21:easternplaguelands*7 28:westernplaguelands*23 51:easternplaguelands*141
+0	-85	-400:swampofsorrows*19 -381:blastedlands*61 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*38 -222:badlands*34 -188:lochmodan*51 -137:wetlands*67 -70:arathi*50 -20:hinterlands*41 21:easternplaguelands*6 27:westernplaguelands*24 51:easternplaguelands*141
+0	-84	-400:swampofsorrows*19 -381:blastedlands*61 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*38 -222:badlands*34 -188:lochmodan*51 -137:wetlands*67 -70:arathi*50 -20:hinterlands*41 21:easternplaguelands*6 27:westernplaguelands*24 51:easternplaguelands*141
+0	-83	-400:swampofsorrows*19 -381:blastedlands*61 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*38 -222:badlands*34 -188:lochmodan*51 -137:wetlands*67 -70:arathi*50 -20:hinterlands*41 21:easternplaguelands*5 26:westernplaguelands*26 52:easternplaguelands*140
+0	-82	-400:swampofsorrows*19 -381:blastedlands*61 -320:swampofsorrows*23 -297:redridge*37 -260:burningsteppes*39 -221:badlands*33 -188:lochmodan*51 -137:wetlands*67 -70:arathi*50 -20:hinterlands*41 21:easternplaguelands*5 26:westernplaguelands*26 52:easternplaguelands*140
+0	-81	-400:swampofsorrows*18 -382:blastedlands*61 -321:swampofsorrows*24 -297:redridge*37 -260:burningsteppes*38 -222:badlands*35 -187:lochmodan*50 -137:wetlands*67 -70:arathi*50 -20:hinterlands*41 21:easternplaguelands*5 26:westernplaguelands*26 52:easternplaguelands*140
+0	-80	-373:blastedlands*51 -322:swampofsorrows*25 -297:redridge*37 -260:burningsteppes*38 -222:badlands*35 -187:lochmodan*50 -137:wetlands*67 -70:arathi*50 -20:hinterlands*41 21:easternplaguelands*5 26:westernplaguelands*26 52:easternplaguelands*40 92:thalassianhighlands*20 112:easternplaguelands*80
+0	-79	-373:blastedlands*51 -322:swampofsorrows*25 -297:redridge*37 -260:burningsteppes*38 -222:badlands*35 -187:lochmodan*50 -137:wetlands*67 -70:arathi*50 -20:hinterlands*41 21:easternplaguelands*4 25:westernplaguelands*27 52:easternplaguelands*39 91:thalassianhighlands*21 112:easternplaguelands*80
+0	-78	-373:blastedlands*51 -322:swampofsorrows*24 -298:redridge*38 -260:burningsteppes*37 -223:badlands*36 -187:lochmodan*22 -165:dunmorogh*5 -160:lochmodan*23 -137:wetlands*67 -70:arathi*50 -20:hinterlands*41 21:easternplaguelands*4 25:westernplaguelands*42 67:easternplaguelands*23 90:thalassianhighlands*22 112:easternplaguelands*80
+0	-77	-373:blastedlands*48 -325:deadwindpass*2 -323:swampofsorrows*25 -298:redridge*38 -260:burningsteppes*37 -223:badlands*36 -187:lochmodan*20 -167:dunmorogh*7 -160:lochmodan*23 -137:wetlands*66 -71:arathi*51 -20:hinterlands*42 22:easternplaguelands*3 25:westernplaguelands*43 68:easternplaguelands*21 89:thalassianhighlands*23 112:easternplaguelands*80
+0	-76	-373:blastedlands*46 -327:deadwindpass*5 -322:swampofsorrows*24 -298:redridge*38 -260:burningsteppes*37 -223:badlands*36 -187:lochmodan*19 -168:dunmorogh*12 -156:lochmodan*19 -137:wetlands*66 -71:arathi*51 -20:hinterlands*43 23:easternplaguelands*2 25:westernplaguelands*44 69:easternplaguelands*20 89:thalassianhighlands*23 112:easternplaguelands*80
+0	-75	-373:blastedlands*44 -329:deadwindpass*7 -322:swampofsorrows*24 -298:redridge*38 -260:burningsteppes*36 -224:badlands*37 -187:lochmodan*18 -169:dunmorogh*13 -156:lochmodan*19 -137:wetlands*66 -71:arathi*52 -19:hinterlands*43 24:westernplaguelands*46 70:easternplaguelands*19 89:thalassianhighlands*23 112:easternplaguelands*80
+0	-74	-373:blastedlands*44 -329:deadwindpass*7 -322:swampofsorrows*24 -298:redridge*38 -260:burningsteppes*36 -224:badlands*37 -187:lochmodan*14 -173:dunmorogh*20 -153:lochmodan*16 -137:wetlands*66 -71:arathi*52 -19:hinterlands*43 24:westernplaguelands*47 71:easternplaguelands*18 89:thalassianhighlands*23 112:easternplaguelands*80
+0	-73	-374:blastedlands*33 -341:deadwindpass*5 -336:blastedlands*7 -329:deadwindpass*8 -321:swampofsorrows*23 -298:redridge*41 -257:burningsteppes*34 -223:badlands*36 -187:lochmodan*13 -174:dunmorogh*27 -147:lochmodan*10 -137:wetlands*66 -71:arathi*53 -18:hinterlands*42 24:westernplaguelands*48 72:easternplaguelands*17 89:thalassianhighlands*23 112:easternplaguelands*80
+0	-72	-374:blastedlands*31 -343:deadwindpass*23 -320:swampofsorrows*22 -298:redridge*41 -257:burningsteppes*34 -223:badlands*36 -187:lochmodan*9 -178:dunmorogh*33 -145:lochmodan*6 -139:dunmorogh*2 -137:wetlands*66 -71:arathi*54 -17:hinterlands*41 24:westernplaguelands*50 74:easternplaguelands*15 89:thalassianhighlands*23 112:easternplaguelands*80
+0	-71	-374:blastedlands*31 -343:deadwindpass*23 -320:swampofsorrows*22 -298:redridge*41 -257:burningsteppes*34 -223:badlands*35 -188:dunmorogh*5 -183:lochmodan*3 -180:dunmorogh*35 -145:lochmodan*6 -139:dunmorogh*2 -137:wetlands*67 -70:arathi*54 -16:hinterlands*40 24:westernplaguelands*62 86:easternplaguelands*4 90:thalassianhighlands*22 112:easternplaguelands*80
+0	-70	-374:blastedlands*30 -344:deadwindpass*31 -313:swampofsorrows*15 -298:redridge*41 -257:burningsteppes*34 -223:badlands*35 -188:dunmorogh*43 -145:lochmodan*6 -139:dunmorogh*2 -137:wetlands*67 -70:arathi*54 -16:hinterlands*40 24:westernplaguelands*63 87:easternplaguelands*3 90:thalassianhighlands*22 112:easternplaguelands*80
+0	-69	-374:blastedlands*30 -344:deadwindpass*39 -305:swampofsorrows*7 -298:redridge*41 -257:burningsteppes*34 -223:badlands*31 -192:searinggorge*3 -189:dunmorogh*52 -137:wetlands*67 -70:arathi*55 -15:hinterlands*39 24:westernplaguelands*65 89:easternplaguelands*4 93:thalassianhighlands*19 112:easternplaguelands*80
+0	-68	-374:blastedlands*30 -344:deadwindpass*39 -305:swampofsorrows*7 -298:redridge*41 -257:burningsteppes*34 -223:badlands*31 -192:searinggorge*3 -189:dunmorogh*52 -137:wetlands*67 -70:arathi*56 -14:hinterlands*41 27:westernplaguelands*62 89:easternplaguelands*6 95:thalassianhighlands*17 112:tirisfal*80
+0	-67	-374:blastedlands*30 -344:deadwindpass*39 -305:swampofsorrows -304:deadwindpass*6 -298:redridge*41 -257:burningsteppes*34 -223:badlands*31 -192:searinggorge*3 -189:dunmorogh*52 -137:wetlands*67 -70:arathi*56 -14:hinterlands*41 27:westernplaguelands*64 91:easternplaguelands*4 95:thalassianhighlands*17 112:tirisfal*80
+0	-66	-374:blastedlands*30 -344:deadwindpass*46 -298:redridge*40 -258:burningsteppes*35 -223:badlands*31 -192:searinggorge*3 -189:dunmorogh*52 -137:wetlands*67 -70:arathi*57 -13:hinterlands*39 26:westernplaguelands*69 95:thalassianhighlands*17 112:tirisfal*80
+0	-65	-374:blastedlands*30 -344:deadwindpass*46 -298:redridge*38 -260:burningsteppes*37 -223:badlands*31 -192:searinggorge*5 -187:dunmorogh*50 -137:wetlands*67 -70:arathi*58 -12:hinterlands*34 22:westernplaguelands*74 96:azeroth 97:thalassianhighlands*15 112:tirisfal*80
+0	-64	-432:stranglethorn*91 -341:deadwindpass*42 -299:redridge*39 -260:burningsteppes*37 -223:badlands*29 -194:searinggorge*8 -186:dunmorogh*49 -137:wetlands*66 -71:arathi*65 -6:hinterlands*26 20:westernplaguelands*76 96:thalassianhighlands*16 112:tirisfal*80
+0	-63	-432:stranglethorn*93 -339:deadwindpass*35 -304:redridge*44 -260:burningsteppes*38 -222:badlands*27 -195:searinggorge*9 -186:dunmorogh*68 -118:wetlands*47 -71:arathi*65 -6:hinterlands*25 19:westernplaguelands*77 96:thalassianhighlands*16 112:tirisfal*80
+0	-62	-432:stranglethorn*93 -339:deadwindpass*35 -304:redridge*44 -260:burningsteppes*38 -222:searinggorge*2 -220:badlands*10 -210:searinggorge*25 -185:dunmorogh*67 -118:wetlands*47 -71:arathi*65 -6:hinterlands*25 19:westernplaguelands*77 96:thalassianhighlands*16 112:tirisfal*80
+0	-61	-432:stranglethorn*93 -339:deadwindpass*35 -304:redridge*44 -260:burningsteppes*38 -222:searinggorge*37 -185:dunmorogh*67 -118:wetlands*47 -71:arathi*65 -6:hinterlands*25 19:westernplaguelands*74 93:thalassianhighlands*19 112:tirisfal*80
+0	-60	-432:stranglethorn*93 -339:deadwindpass*35 -304:redridge*44 -260:burningsteppes*38 -222:searinggorge*37 -185:dunmorogh*67 -118:wetlands*47 -71:arathi*62 -9:hilsbrad*3 -6:hinterlands*25 19:westernplaguelands*74 93:thalassianhighlands*19 112:tirisfal*80
+0	-59	-432:stranglethorn*93 -339:deadwindpass*35 -304:redridge*44 -260:burningsteppes*38 -222:searinggorge*39 -183:dunmorogh*65 -118:wetlands*47 -71:arathi*58 -13:hilsbrad*2 -11:arathi -10:hilsbrad*4 -6:hinterlands*25 19:westernplaguelands*74 93:thalassianhighlands*19 112:tirisfal*80
+0	-58	-432:stranglethorn*93 -339:deadwindpass*35 -304:redridge*44 -260:burningsteppes*38 -222:searinggorge*39 -183:dunmorogh*65 -118:wetlands*47 -71:arathi*58 -13:hilsbrad*7 -6:hinterlands*25 19:westernplaguelands*74 93:thalassianhighlands*19 112:tirisfal*80
+0	-57	-432:stranglethorn*93 -339:deadwindpass*35 -304:redridge*44 -260:burningsteppes*38 -222:searinggorge*39 -183:dunmorogh*65 -118:wetlands*48 -70:arathi*56 -14:hilsbrad*8 -6:hinterlands*24 18:westernplaguelands*75 93:thalassianhighlands*19 112:tirisfal*80
+0	-56	-432:stranglethorn*93 -339:deadwindpass*37 -302:redridge*42 -260:burningsteppes*38 -222:searinggorge*39 -183:dunmorogh*65 -118:wetlands*47 -71:arathi*56 -15:hilsbrad*9 -6:hinterlands*24 18:westernplaguelands*75 93:thalassianhighlands*19 112:tirisfal*80
+0	-55	-432:stranglethorn*93 -339:deadwindpass*37 -302:redridge*42 -260:burningsteppes*38 -222:searinggorge*39 -183:dunmorogh*65 -118:wetlands*47 -71:arathi*54 -17:hilsbrad*13 -4:hinterlands*22 18:westernplaguelands*75 93:thalassianhighlands*19 112:tirisfal*80
+0	-54	-432:stranglethorn*93 -339:deadwindpass*34 -305:duskwood*5 -300:redridge*40 -260:burningsteppes*38 -222:searinggorge*39 -183:dunmorogh*65 -118:wetlands*47 -71:arathi*53 -18:hilsbrad*24 6:hinterlands*11 17:westernplaguelands*76 93:thalassianhighlands*19 112:tirisfal*80
+0	-53	-432:stranglethorn*93 -339:deadwindpass*32 -307:duskwood*8 -299:redridge*39 -260:burningsteppes*38 -222:searinggorge*39 -183:dunmorogh*65 -118:wetlands*46 -72:arathi*53 -19:hilsbrad*19 0:alterac*11 11:hinterlands*4 15:alterac*6 21:westernplaguelands*73 94:thalassianhighlands*18 112:tirisfal*80
+0	-52	-432:stranglethorn*93 -339:deadwindpass*32 -307:duskwood*10 -297:redridge*6 -291:elwynn*35 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*65 -118:wetlands*44 -74:arathi*54 -20:hilsbrad*20 0:alterac*22 22:westernplaguelands*72 94:thalassianhighlands*18 112:tirisfal*80
+0	-51	-432:stranglethorn*93 -339:deadwindpass*29 -310:duskwood*13 -297:elwynn*41 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*65 -118:wetlands*44 -74:arathi*53 -21:hilsbrad*21 0:alterac*22 22:westernplaguelands*73 95:thalassianhighlands*17 112:tirisfal*80
+0	-50	-432:stranglethorn*94 -338:duskwood*2 -336:deadwindpass*26 -310:duskwood*14 -296:elwynn*40 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*65 -118:wetlands*44 -74:arathi*52 -22:hilsbrad*21 -1:alterac*23 22:westernplaguelands*74 96:azeroth*3 99:thalassianhighlands*13 112:tirisfal*80
+0	-49	-432:stranglethorn*94 -338:duskwood*7 -331:deadwindpass*9 -322:duskwood*26 -296:elwynn*40 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*65 -118:wetlands*44 -74:arathi*50 -24:hilsbrad*22 -2:alterac*24 22:westernplaguelands*2 24:alterac*4 28:westernplaguelands*68 96:azeroth*7 103:thalassianhighlands*9 112:tirisfal*80
+0	-48	-480:stranglethorn*142 -338:duskwood*9 -329:deadwindpass*6 -323:duskwood*26 -297:elwynn*41 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*65 -118:wetlands*44 -74:arathi*49 -25:hilsbrad*22 -3:alterac*32 29:westernplaguelands*70 99:tirisfal*61
+0	-47	-480:stranglethorn*142 -338:duskwood*41 -297:elwynn*41 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*64 -119:wetlands*45 -74:arathi*48 -26:hilsbrad*24 -2:alterac*28 26:westernplaguelands*73 99:tirisfal*61
+0	-46	-480:stranglethorn*141 -339:duskwood*41 -298:elwynn*42 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*63 -120:wetlands*46 -74:arathi*47 -27:hilsbrad*26 -1:alterac*27 26:westernplaguelands*73 99:tirisfal*61
+0	-45	-480:stranglethorn*141 -339:duskwood*40 -299:elwynn*43 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*62 -121:wetlands*47 -74:arathi*45 -29:hilsbrad*29 0:alterac*26 26:westernplaguelands*73 99:tirisfal*61
+0	-44	-480:stranglethorn*141 -339:duskwood*39 -300:elwynn*44 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*61 -122:wetlands*48 -74:arathi*43 -31:hilsbrad*32 1:alterac*25 26:westernplaguelands*73 99:tirisfal*61
+0	-43	-480:stranglethorn*141 -339:duskwood*39 -300:elwynn*44 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*60 -123:wetlands*49 -74:arathi*41 -33:hilsbrad*36 3:alterac*23 26:westernplaguelands*73 99:tirisfal*61
+0	-42	-480:stranglethorn*141 -339:duskwood*39 -300:elwynn*44 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*60 -123:wetlands*50 -73:arathi*39 -34:hilsbrad*37 3:alterac*23 26:westernplaguelands*73 99:tirisfal*61
+0	-41	-480:stranglethorn*141 -339:duskwood*39 -300:elwynn*44 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*58 -125:wetlands*53 -72:arathi*15 -57:hilsbrad*6 -51:arathi*14 -37:hilsbrad*41 4:alterac*22 26:westernplaguelands*73 99:tirisfal*61
+0	-40	-480:stranglethorn*141 -339:duskwood*39 -300:elwynn*44 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*58 -125:wetlands*53 -72:arathi*5 -67:wetlands*3 -64:hilsbrad*3 -61:arathi*3 -58:hilsbrad*7 -51:arathi*4 -47:hilsbrad*52 5:alterac*20 25:westernplaguelands*74 99:tirisfal*61
+0	-39	-480:stranglethorn*141 -339:duskwood*39 -300:elwynn*43 -257:burningsteppes*35 -222:searinggorge*39 -183:dunmorogh*58 -125:wetlands*61 -64:hilsbrad*4 -60:arathi -59:hilsbrad*8 -51:arathi -50:hilsbrad*55 5:alterac*20 25:westernplaguelands*74 99:tirisfal*61
+0	-38	-480:stranglethorn*141 -339:duskwood*40 -299:elwynn*41 -258:burningsteppes*36 -222:searinggorge*39 -183:dunmorogh*58 -125:wetlands*61 -64:hilsbrad*70 6:alterac*19 25:westernplaguelands*38 63:tirisfal*19 82:westernplaguelands*17 99:tirisfal*61
+0	-37	-480:stranglethorn*141 -339:duskwood*40 -299:elwynn*41 -258:burningsteppes*36 -222:searinggorge*39 -183:dunmorogh*58 -125:wetlands*61 -64:hilsbrad*71 7:alterac*18 25:westernplaguelands*38 63:tirisfal*26 89:westernplaguelands*10 99:tirisfal*61
+0	-36	-480:stranglethorn*141 -339:duskwood*40 -299:elwynn*41 -258:burningsteppes*36 -222:searinggorge*39 -183:dunmorogh*58 -125:wetlands*61 -64:hilsbrad*72 8:alterac*17 25:westernplaguelands*38 63:tirisfal*27 90:westernplaguelands*9 99:tirisfal*61
+0	-35	-480:stranglethorn*141 -339:duskwood*40 -299:elwynn*42 -257:burningsteppes*35 -222:searinggorge*39 -183:dunmorogh*58 -125:wetlands*61 -64:hilsbrad*73 9:alterac*16 25:westernplaguelands*35 60:tirisfal*31 91:westernplaguelands*8 99:tirisfal*61
+0	-34	-480:stranglethorn*141 -339:duskwood*40 -299:elwynn*43 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*58 -125:wetlands*61 -64:hilsbrad*74 10:alterac*15 25:westernplaguelands*35 60:tirisfal*32 92:westernplaguelands*7 99:tirisfal*61
+0	-33	-480:stranglethorn*140 -340:duskwood*41 -299:elwynn*43 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*58 -125:wetlands*61 -64:hilsbrad*74 10:alterac*15 25:westernplaguelands*35 60:tirisfal*33 93:westernplaguelands*6 99:tirisfal*61
+0	-32	-480:stranglethorn*140 -340:duskwood*41 -299:elwynn*43 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*57 -126:wetlands*62 -64:hilsbrad*74 10:alterac*15 25:westernplaguelands*35 60:tirisfal*100
+0	-31	-480:stranglethorn*140 -340:duskwood*42 -298:elwynn*42 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*57 -126:wetlands*62 -64:hilsbrad*74 10:alterac*16 26:westernplaguelands*34 60:tirisfal*100
+0	-30	-480:stranglethorn*140 -340:duskwood*42 -298:elwynn*42 -256:burningsteppes*34 -222:searinggorge*39 -183:dunmorogh*56 -127:wetlands*63 -64:hilsbrad*74 10:alterac*18 28:westernplaguelands*32 60:tirisfal*100
+0	-29	-480:stranglethorn*140 -340:duskwood*42 -298:elwynn*42 -256:burningsteppes*33 -223:searinggorge*40 -183:dunmorogh*56 -127:wetlands*63 -64:hilsbrad*73 9:alterac*21 30:westernplaguelands*29 59:tirisfal*101
+0	-28	-480:stranglethorn*140 -340:duskwood*42 -298:elwynn*42 -256:burningsteppes*33 -223:searinggorge*40 -183:dunmorogh*56 -127:wetlands*63 -64:hilsbrad*69 5:alterac*27 32:westernplaguelands*26 58:tirisfal*102
+0	-27	-480:stranglethorn*140 -340:duskwood*42 -298:elwynn*42 -256:burningsteppes*33 -223:searinggorge*40 -183:dunmorogh*56 -127:wetlands*63 -64:hilsbrad*68 4:alterac*29 33:westernplaguelands*24 57:tirisfal*103
+0	-26	-480:stranglethorn*140 -340:duskwood*42 -298:elwynn*42 -256:burningsteppes*33 -223:searinggorge*38 -185:dunmorogh*57 -128:wetlands*64 -64:hilsbrad*68 4:alterac*30 34:westernplaguelands*22 56:tirisfal*104
+0	-25	-480:stranglethorn*140 -340:duskwood*42 -298:elwynn*42 -256:burningsteppes*33 -223:searinggorge*38 -185:dunmorogh*55 -130:wetlands*66 -64:hilsbrad*68 4:alterac*32 36:westernplaguelands*19 55:tirisfal*105
+0	-24	-480:stranglethorn*140 -340:duskwood*42 -298:elwynn*42 -256:burningsteppes*34 -222:searinggorge*9 -213:northwind*7 -206:searinggorge*21 -185:dunmorogh*54 -131:wetlands*67 -64:hilsbrad*69 5:alterac*34 39:westernplaguelands*6 45:tirisfal*115
+0	-23	-480:stranglethorn*140 -340:duskwood*42 -298:elwynn*42 -256:burningsteppes*34 -222:searinggorge*9 -213:northwind*7 -206:searinggorge*21 -185:dunmorogh*53 -132:wetlands*68 -64:hilsbrad*71 7:alterac*32 39:westernplaguelands*6 45:tirisfal*115
+0	-22	-480:stranglethorn*140 -340:duskwood*43 -297:elwynn*39 -258:northwind*3 -255:burningsteppes*33 -222:searinggorge*9 -213:northwind*7 -206:searinggorge*21 -185:dunmorogh*53 -132:wetlands*68 -64:hilsbrad*71 7:alterac*31 38:westernplaguelands*6 44:tirisfal*116
+0	-21	-480:stranglethorn*140 -340:duskwood*43 -297:elwynn*38 -259:northwind*5 -254:burningsteppes*19 -235:northwind*3 -232:burningsteppes*10 -222:searinggorge*8 -214:northwind*22 -192:searinggorge*7 -185:dunmorogh*53 -132:wetlands*67 -65:hilsbrad*71 6:alterac*33 39:westernplaguelands*4 43:tirisfal*117
+0	-20	-480:stranglethorn*140 -340:duskwood*44 -296:elwynn*36 -260:northwind*12 -248:burningsteppes*11 -237:northwind*5 -232:burningsteppes*10 -222:searinggorge*8 -214:northwind*23 -191:searinggorge*3 -188:dunmorogh*55 -133:wetlands*68 -65:hilsbrad*60 -5:alterac*6 1:hilsbrad*4 5:alterac*34 39:westernplaguelands*3 42:tirisfal*118
+0	-19	-480:stranglethorn*140 -340:duskwood*44 -296:elwynn*35 -261:northwind*13 -248:burningsteppes*9 -239:northwind*7 -232:burningsteppes*10 -222:searinggorge*8 -214:northwind*26 -188:dunmorogh*54 -134:wetlands*69 -65:hilsbrad*59 -6:alterac*46 40:westernplaguelands*2 42:tirisfal*118
+0	-18	-480:stranglethorn*140 -340:duskwood*44 -296:elwynn*34 -262:northwind*17 -245:burningsteppes*4 -241:northwind*9 -232:burningsteppes*10 -222:searinggorge*8 -214:northwind*26 -188:dunmorogh*53 -135:wetlands*70 -65:hilsbrad*59 -6:alterac*46 40:westernplaguelands*2 42:tirisfal*118
+0	-17	-480:stranglethorn*140 -340:duskwood*44 -296:elwynn*35 -261:northwind*16 -245:burningsteppes*4 -241:northwind*9 -232:burningsteppes*10 -222:searinggorge*8 -214:northwind*26 -188:dunmorogh*53 -135:wetlands*71 -64:hilsbrad*58 -6:alterac*46 40:westernplaguelands*2 42:tirisfal*118
+0	-16	-480:stranglethorn*141 -339:duskwood*42 -297:elwynn*36 -261:northwind*73 -188:dunmorogh*52 -136:wetlands*72 -64:hilsbrad*60 -4:alterac*44 40:westernplaguelands*2 42:tirisfal*118
+0	-15	-480:stranglethorn*142 -338:duskwood*41 -297:elwynn*36 -261:northwind*73 -188:dunmorogh*51 -137:wetlands*73 -64:hilsbrad*60 -4:alterac*45 41:westernplaguelands 42:tirisfal*118
+0	-14	-480:stranglethorn*142 -338:duskwood*40 -298:elwynn*36 -262:northwind*74 -188:dunmorogh*51 -137:wetlands*73 -64:hilsbrad*60 -4:alterac*45 41:westernplaguelands 42:tirisfal*118
+0	-13	-480:stranglethorn*141 -339:duskwood*40 -299:elwynn*42 -257:northwind*69 -188:dunmorogh*51 -137:wetlands*73 -64:hilsbrad*60 -4:alterac*45 41:westernplaguelands 42:tirisfal*118
+0	-12	-480:stranglethorn*141 -339:duskwood*39 -300:elwynn*43 -257:northwind*69 -188:dunmorogh*51 -137:wetlands*73 -64:hilsbrad*57 -7:alterac*48 41:westernplaguelands 42:tirisfal*118
+0	-11	-480:stranglethorn*141 -339:duskwood*39 -300:elwynn*43 -257:northwind*68 -189:dunmorogh*51 -138:wetlands*74 -64:hilsbrad*55 -9:alterac*51 42:tirisfal*118
+0	-10	-480:stranglethorn*141 -339:duskwood*39 -300:elwynn*43 -257:northwind*68 -189:dunmorogh*50 -139:wetlands*75 -64:hilsbrad*55 -9:alterac*51 42:tirisfal*118
+0	-9	-480:stranglethorn*141 -339:duskwood*39 -300:elwynn*43 -257:northwind*67 -190:dunmorogh*50 -140:wetlands*76 -64:hilsbrad*55 -9:alterac*51 42:tirisfal*118
+0	-8	-480:stranglethorn*142 -338:duskwood*38 -300:elwynn*44 -256:northwind*66 -190:dunmorogh*48 -142:wetlands*78 -64:hilsbrad*56 -8:alterac*51 43:tirisfal*117
+0	-7	-480:stranglethorn*142 -338:duskwood*38 -300:elwynn*44 -256:northwind*65 -191:dunmorogh*48 -143:wetlands*79 -64:hilsbrad*58 -6:alterac*49 43:tirisfal*117
+0	-6	-480:stranglethorn*142 -338:duskwood*38 -300:elwynn*44 -256:northwind*65 -191:dunmorogh*48 -143:wetlands*79 -64:hilsbrad*61 -3:alterac*46 43:tirisfal*117
+0	-5	-480:stranglethorn*142 -338:duskwood*38 -300:elwynn*44 -256:northwind*64 -192:dunmorogh*49 -143:wetlands*79 -64:hilsbrad*60 -4:alterac*47 43:tirisfal*117
+0	-4	-480:stranglethorn*142 -338:duskwood*37 -301:elwynn*45 -256:northwind*62 -194:dunmorogh*51 -143:wetlands*79 -64:hilsbrad*59 -5:alterac*48 43:tirisfal*117
+0	-3	-480:stranglethorn*143 -337:duskwood*35 -302:elwynn*46 -256:northwind*61 -195:dunmorogh*52 -143:wetlands*79 -64:hilsbrad*59 -5:alterac*48 43:tirisfal*117
+0	-2	-480:stranglethorn*143 -337:duskwood*35 -302:elwynn*46 -256:northwind*60 -196:dunmorogh*53 -143:wetlands*79 -64:hilsbrad*59 -5:alterac*48 43:tirisfal*117
+0	-1	-480:stranglethorn*143 -337:duskwood*34 -303:elwynn*47 -256:northwind*59 -197:dunmorogh*54 -143:wetlands*79 -64:hilsbrad*59 -5:alterac*48 43:tirisfal*117
+0	0	-480:stranglethorn*143 -337:duskwood*33 -304:elwynn*48 -256:hinterlands*2 -254:northwind*52 -202:dunmorogh*59 -143:wetlands*79 -64:hilsbrad*59 -5:alterac*48 43:tirisfal*117
+0	1	-480:stranglethorn*143 -337:duskwood*33 -304:elwynn*48 -256:hinterlands*2 -254:northwind*52 -202:dunmorogh*59 -143:wetlands*79 -64:hilsbrad*59 -5:alterac*28 23:silverpine*4 27:alterac*14 41:tirisfal*119
+0	2	-480:stranglethorn*143 -337:duskwood*33 -304:elwynn*48 -256:hinterlands*2 -254:northwind*52 -202:dunmorogh*59 -143:wetlands*79 -64:hilsbrad*59 -5:alterac*27 22:silverpine*6 28:alterac*12 40:tirisfal*120
+0	3	-480:stranglethorn*143 -337:duskwood*33 -304:elwynn*48 -256:hinterlands*8 -248:northwind*46 -202:dunmorogh*59 -143:wetlands*79 -64:hilsbrad*59 -5:alterac*27 22:silverpine*9 31:alterac*9 40:tirisfal*120
+0	4	-480:stranglethorn*142 -338:duskwood*34 -304:elwynn*48 -256:hinterlands*7 -249:easternplaguelands -248:northwind*46 -202:dunmorogh*59 -143:wetlands*79 -64:hilsbrad*59 -5:alterac*27 22:silverpine*10 32:alterac*7 39:tirisfal*121
+0	5	-480:stranglethorn*142 -338:duskwood*34 -304:elwynn*48 -256:hinterlands*7 -249:easternplaguelands -248:northwind*46 -202:dunmorogh*59 -143:wetlands*79 -64:hilsbrad*58 -6:alterac*27 21:silverpine*14 35:alterac*4 39:tirisfal*121
+0	6	-480:stranglethorn*142 -338:duskwood*34 -304:elwynn*48 -256:hinterlands*7 -249:easternplaguelands -248:northwind*45 -203:dunmorogh*60 -143:wetlands*79 -64:hilsbrad*57 -7:alterac*27 20:silverpine*15 35:alterac*4 39:tirisfal*121
+0	7	-480:stranglethorn*142 -338:duskwood*35 -303:elwynn*36 -267:stormwind*2 -265:elwynn*7 -258:stormwind*2 -256:hinterlands*6 -250:easternplaguelands*2 -248:northwind*44 -204:dunmorogh*61 -143:wetlands*79 -64:hilsbrad*56 -8:alterac*28 20:silverpine*15 35:alterac*4 39:tirisfal*121
+0	8	-480:stranglethorn*142 -338:duskwood*35 -303:elwynn*34 -269:stormwind*4 -265:elwynn*5 -260:stormwind*4 -256:hinterlands*6 -250:easternplaguelands*2 -248:northwind*44 -204:dunmorogh*61 -143:wetlands*79 -64:hilsbrad*55 -9:alterac*29 20:silverpine*19 39:tirisfal*121
+0	9	-480:stranglethorn*142 -338:duskwood*35 -303:elwynn*33 -270:stormwind*5 -265:elwynn -264:stormwind -263:elwynn -262:stormwind*6 -256:hinterlands*6 -250:easternplaguelands*3 -247:northwind*42 -205:dunmorogh*62 -143:wetlands*79 -64:hilsbrad*55 -9:alterac*27 18:silverpine*22 40:tirisfal*120
+0	10	-480:stranglethorn*142 -338:westfall*2 -336:duskwood*34 -302:elwynn*31 -271:stormwind*15 -256:hinterlands*6 -250:easternplaguelands*3 -247:northwind*42 -205:dunmorogh*62 -143:wetlands*79 -64:hilsbrad*55 -9:alterac*27 18:silverpine*22 40:tirisfal*120
+0	11	-480:stranglethorn*142 -338:westfall*3 -335:duskwood*33 -302:elwynn*31 -271:stormwind*15 -256:hinterlands*5 -251:easternplaguelands*4 -247:northwind*40 -207:dunmorogh*64 -143:wetlands*79 -64:hilsbrad*55 -9:alterac*27 18:silverpine*22 40:tirisfal*120
+0	12	-480:stranglethorn*142 -338:westfall*4 -334:duskwood*31 -303:elwynn*31 -272:stormwind*16 -256:hinterlands*5 -251:easternplaguelands*4 -247:northwind*40 -207:dunmorogh*64 -143:wetlands*79 -64:hilsbrad*53 -11:silverpine*3 -8:alterac*25 17:silverpine*24 41:tirisfal*119
+0	13	-480:stranglethorn*142 -338:westfall*5 -333:duskwood*30 -303:elwynn*30 -273:stormwind*17 -256:hinterlands*5 -251:easternplaguelands*4 -247:northwind*40 -207:dunmorogh*64 -143:wetlands*79 -64:hilsbrad*53 -11:silverpine*5 -6:alterac*23 17:silverpine*29 46:tirisfal*114
+0	14	-480:stranglethorn*142 -338:westfall*5 -333:duskwood*30 -303:elwynn*29 -274:stormwind*18 -256:hinterlands*4 -252:easternplaguelands*5 -247:northwind*40 -207:dunmorogh*64 -143:wetlands*79 -64:hilsbrad*52 -12:silverpine*8 -4:alterac*21 17:silverpine*29 46:tirisfal*114
+0	15	-480:stranglethorn*142 -338:westfall*6 -332:duskwood*27 -305:elwynn*31 -274:stormwind*18 -256:hinterlands*4 -252:easternplaguelands*5 -247:northwind*40 -207:dunmorogh*64 -143:wetlands*79 -64:hilsbrad*51 -13:silverpine*9 -4:alterac*21 17:silverpine*29 46:tirisfal*114
+0	16	-480:stranglethorn*142 -338:westfall*7 -331:duskwood*25 -306:elwynn*32 -274:stormwind*28 -246:northwind*39 -207:dunmorogh*76 -131:wetlands*66 -65:hilsbrad*51 -14:silverpine*60 46:tirisfal*114
+0	17	-480:stranglethorn*141 -339:westfall*9 -330:duskwood*24 -306:elwynn*33 -273:stormwind*26 -247:northwind*41 -206:dunmorogh*75 -131:wetlands*66 -65:hilsbrad*50 -15:silverpine*61 46:tirisfal*114
+0	18	-480:stranglethorn*140 -340:westfall*12 -328:duskwood*22 -306:elwynn*33 -273:stormwind*26 -247:northwind*41 -206:dunmorogh*75 -131:wetlands*66 -65:hilsbrad*48 -17:silverpine*63 46:tirisfal*114
+0	19	-480:stranglethorn*139 -341:westfall*24 -317:duskwood*11 -306:elwynn*34 -272:stormwind*26 -246:northwind*41 -205:dunmorogh*74 -131:wetlands*66 -65:hilsbrad*46 -19:silverpine*66 47:tirisfal*113
+0	20	-480:stranglethorn*138 -342:westfall*26 -316:duskwood*10 -306:elwynn*30 -276:stormwind*30 -246:northwind*41 -205:dunmorogh*74 -131:wetlands*66 -65:hilsbrad*44 -21:silverpine*69 48:tirisfal*112
+0	21	-480:stranglethorn*137 -343:westfall*29 -314:duskwood*8 -306:elwynn*30 -276:stormwind*30 -246:northwind*41 -205:dunmorogh*74 -131:wetlands*66 -65:hilsbrad*44 -21:silverpine*69 48:tirisfal*112
+0	22	-480:stranglethorn*137 -343:westfall*30 -313:duskwood*7 -306:elwynn*5 -301:westfall*4 -297:elwynn*21 -276:stormwind*30 -246:northwind*41 -205:dunmorogh*74 -131:wetlands*66 -65:hilsbrad*44 -21:silverpine*69 48:tirisfal*112
+0	23	-480:stranglethorn*137 -343:westfall*47 -296:elwynn*20 -276:stormwind*30 -246:northwind*41 -205:dunmorogh*74 -131:wetlands*66 -65:hilsbrad*44 -21:silverpine*69 48:tirisfal*112
+0	24	-480:stranglethorn*137 -343:westfall*48 -295:elwynn*17 -278:stormwind*32 -246:northwind*41 -205:dunmorogh*74 -131:wetlands*66 -65:hilsbrad*44 -21:silverpine*69 48:tirisfal*112
+0	25	-480:stranglethorn*137 -343:westfall*49 -294:elwynn*16 -278:stormwind*32 -246:northwind*41 -205:dunmorogh*74 -131:wetlands*66 -65:hilsbrad*43 -22:silverpine*70 48:tirisfal*112
+0	26	-480:stranglethorn*137 -343:westfall*55 -288:elwynn*10 -278:stormwind*32 -246:northwind*41 -205:dunmorogh*74 -131:wetlands*66 -65:hilsbrad*43 -22:silverpine*70 48:tirisfal*112
+0	27	-480:stranglethorn*137 -343:westfall*55 -288:elwynn*10 -278:stormwind*32 -246:northwind*41 -205:dunmorogh*73 -132:wetlands*67 -65:hilsbrad*43 -22:silverpine*70 48:tirisfal*112
+0	28	-480:stranglethorn*137 -343:westfall*55 -288:elwynn*10 -278:stormwind*32 -246:northwind*40 -206:dunmorogh*73 -133:wetlands*68 -65:hilsbrad*34 -31:silverpine*79 48:tirisfal*112
+0	29	-480:stranglethorn*137 -343:westfall*55 -288:elwynn*8 -280:stormwind*33 -247:northwind*41 -206:dunmorogh*72 -134:wetlands*69 -65:hilsbrad*34 -31:silverpine*79 48:tirisfal*112
+0	30	-480:stranglethorn*137 -343:westfall*56 -287:elwynn*4 -283:westfall*8 -275:stormwind*28 -247:northwind*42 -205:dunmorogh*70 -135:wetlands*70 -65:hilsbrad*35 -30:silverpine*78 48:tirisfal*112
+0	31	-480:stranglethorn*137 -343:westfall*68 -275:stormwind*28 -247:northwind*44 -203:dunmorogh*67 -136:wetlands*71 -65:hilsbrad*35 -30:silverpine*78 48:tirisfal*112
+0	32	-480:stranglethorn*137 -343:westfall*71 -272:stormwind*26 -246:northwind*3 -243:stormwind*3 -240:northwind*36 -204:westfall*12 -192:dunmorogh*16 -160:wetlands*95 -65:hilsbrad*35 -30:silverpine*78 48:tirisfal*112
+0	33	-480:stranglethorn*137 -343:westfall*71 -272:stormwind*32 -240:northwind*37 -203:westfall*11 -192:dunmorogh*16 -160:wetlands*95 -65:hilsbrad*33 -32:silverpine*80 48:tirisfal*112
+0	34	-480:stranglethorn*137 -343:westfall*71 -272:stormwind*32 -240:northwind*37 -203:westfall*11 -192:dunmorogh*16 -160:wetlands*95 -65:hilsbrad*33 -32:silverpine*80 48:tirisfal*112
+0	35	-480:stranglethorn*137 -343:westfall*73 -270:stormwind*30 -240:northwind*37 -203:westfall*11 -192:dunmorogh*16 -160:wetlands*95 -65:hilsbrad*33 -32:silverpine*80 48:tirisfal*112
+0	36	-480:stranglethorn*137 -343:westfall*78 -265:stormwind*25 -240:northwind*37 -203:westfall*8 -195:azeroth*2 -193:westfall -192:dunmorogh*16 -160:wetlands*95 -65:hilsbrad*33 -32:silverpine*80 48:tirisfal*112
+0	37	-480:stranglethorn*137 -343:westfall*78 -265:stormwind*25 -240:northwind*37 -203:westfall*7 -196:azeroth*4 -192:dunmorogh*16 -160:wetlands*95 -65:hilsbrad*33 -32:silverpine*79 47:tirisfal*113
+0	38	-480:stranglethorn*137 -343:westfall*80 -263:stormwind*23 -240:northwind*36 -204:westfall*7 -197:azeroth*6 -191:dunmorogh*15 -160:wetlands*95 -65:hilsbrad*33 -32:silverpine*79 47:tirisfal*113
+0	39	-480:stranglethorn*137 -343:westfall*80 -263:stormwind*23 -240:northwind*35 -205:westfall*3 -202:azeroth*15 -187:dunmorogh*11 -160:wetlands*95 -65:hilsbrad*33 -32:silverpine*79 47:tirisfal*113
+0	40	-480:stranglethorn*137 -343:westfall*87 -256:stormwind*16 -240:northwind*34 -206:westfall*2 -204:azeroth*19 -185:dunmorogh*9 -160:wetlands*95 -65:hilsbrad*33 -32:silverpine*79 47:tirisfal*113
+0	41	-480:stranglethorn*137 -343:westfall*87 -256:stormwind*16 -240:northwind*34 -206:azeroth*23 -183:dunmorogh*7 -160:wetlands*95 -65:hilsbrad*33 -32:silverpine*79 47:tirisfal*113
+0	42	-480:stranglethorn*129 -351:westfall*95 -256:stormwind*16 -240:northwind*34 -206:azeroth*25 -181:dunmorogh*5 -160:wetlands*95 -65:hilsbrad*33 -32:silverpine*79 47:tirisfal*113
+0	43	-480:stranglethorn*129 -351:westfall*95 -256:stormwind*16 -240:westfall -239:northwind*32 -207:azeroth*31 -160:wetlands*95 -65:hilsbrad*39 -26:silverpine*73 47:tirisfal*113
+0	44	-480:stranglethorn*128 -352:westfall*96 -256:stormwind*16 -240:westfall -239:northwind*31 -208:azeroth*32 -160:wetlands*95 -65:hilsbrad*39 -26:silverpine*73 47:tirisfal*113
+0	45	-480:stranglethorn*127 -353:westfall*97 -256:stormwind*16 -240:westfall*2 -238:northwind*30 -208:azeroth*32 -160:wetlands*95 -65:hilsbrad*39 -26:silverpine*72 46:tirisfal*114
+0	46	-480:stranglethorn*127 -353:westfall*97 -256:stormwind*16 -240:westfall*2 -238:northwind*30 -208:azeroth*32 -160:wetlands*95 -65:hilsbrad*39 -26:silverpine*71 45:tirisfal*115
+0	47	-480:stranglethorn*126 -354:westfall*98 -256:stormwind*16 -240:westfall*5 -235:northwind*27 -208:azeroth*32 -160:wetlands*95 -65:hilsbrad*39 -26:silverpine*71 45:tirisfal*115
+0	48	-480:stranglethorn*125 -355:westfall*83 -272:stormwind*16 -256:westfall*23 -233:northwind*18 -215:azeroth*19 -196:westfall*4 -160:wetlands*95 -65:hilsbrad*40 -25:silverpine*71 46:tirisfal*114
+0	49	-480:stranglethorn*124 -356:westfall*84 -272:stormwind*16 -256:westfall*26 -230:northwind*16 -214:azeroth*16 -198:westfall*6 -160:wetlands*95 -65:hilsbrad*40 -25:silverpine*71 46:tirisfal*114
+0	50	-480:stranglethorn*123 -357:westfall*85 -272:stormwind*16 -256:westfall*28 -228:azeroth*4 -224:northwind*10 -214:azeroth*14 -200:westfall*8 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*88 46:tirisfal*114
+0	51	-480:stranglethorn*123 -357:westfall*85 -272:stormwind*16 -256:westfall*28 -228:azeroth*4 -224:northwind*10 -214:azeroth*12 -202:westfall*10 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*88 46:tirisfal*114
+0	52	-480:stranglethorn*122 -358:westfall*86 -272:stormwind*16 -256:westfall*28 -228:azeroth*4 -224:northwind*10 -214:azeroth*11 -203:westfall*11 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*88 46:tirisfal*114
+0	53	-480:stranglethorn*122 -358:westfall*86 -272:stormwind*16 -256:westfall*28 -228:azeroth*5 -223:northwind*9 -214:azeroth*10 -204:westfall*12 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*89 47:tirisfal*113
+0	54	-480:stranglethorn*125 -355:westfall*83 -272:stormwind*16 -256:westfall*28 -228:azeroth*5 -223:northwind*8 -215:azeroth*10 -205:westfall*13 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*89 47:tirisfal*113
+0	55	-480:stranglethorn*126 -354:westfall*82 -272:stormwind*16 -256:westfall*29 -227:azeroth*5 -222:northwind*6 -216:azeroth*10 -206:westfall*14 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*89 47:tirisfal*113
+0	56	-480:stranglethorn*127 -353:westfall*81 -272:stormwind*16 -256:westfall*29 -227:azeroth*19 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*89 47:tirisfal*113
+0	57	-480:stranglethorn*126 -354:westfall*82 -272:stormwind*16 -256:westfall*29 -227:azeroth*17 -210:westfall*18 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*89 47:tirisfal*113
+0	58	-480:stranglethorn*126 -354:westfall*82 -272:stormwind*16 -256:westfall*29 -227:azeroth*16 -211:westfall*19 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	59	-480:stranglethorn*127 -353:westfall*81 -272:stormwind*16 -256:westfall*31 -225:azeroth*14 -211:westfall*19 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	60	-480:stranglethorn*127 -353:westfall*81 -272:stormwind*16 -256:westfall*36 -220:azeroth -219:westfall*27 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	61	-480:stranglethorn*127 -353:westfall*81 -272:stormwind*16 -256:westfall*64 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	62	-480:stranglethorn*127 -353:westfall*81 -272:stormwind*16 -256:westfall*64 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	63	-480:stranglethorn*127 -353:westfall*81 -272:stormwind*16 -256:westfall*64 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	64	-480:stranglethorn*127 -353:westfall*81 -272:azeroth*64 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	65	-480:stranglethorn*127 -353:westfall*81 -272:azeroth*64 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	66	-480:stranglethorn*127 -353:westfall*81 -272:azeroth*64 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	67	-480:stranglethorn*126 -354:westfall*82 -272:azeroth*64 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	68	-480:stranglethorn*126 -354:westfall*82 -272:azeroth*8 -264:balor*9 -255:azeroth*47 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	69	-480:stranglethorn*126 -354:westfall*74 -280:balor*8 -272:azeroth*7 -265:balor*11 -254:azeroth*46 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	70	-480:stranglethorn*126 -354:westfall*73 -281:balor*11 -270:azeroth*3 -267:balor*14 -253:azeroth*45 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	71	-480:stranglethorn*126 -354:westfall*72 -282:balor*30 -252:azeroth*44 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	72	-480:stranglethorn*126 -354:westfall*71 -283:balor*32 -251:azeroth*43 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	73	-480:stranglethorn*126 -354:westfall*70 -284:balor*33 -251:azeroth*43 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	74	-480:stranglethorn*125 -355:westfall*70 -285:balor*35 -250:azeroth*42 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	75	-480:stranglethorn*125 -355:westfall*69 -286:balor*38 -248:azeroth*40 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	76	-480:stranglethorn*124 -356:westfall*70 -286:balor*39 -247:azeroth*39 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	77	-480:stranglethorn*124 -356:westfall*69 -287:balor*41 -246:azeroth*38 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	78	-480:stranglethorn*124 -356:westfall*69 -287:balor*42 -245:azeroth*37 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	79	-432:stranglethorn*77 -355:westfall*67 -288:balor*44 -244:azeroth*36 -208:westfall*16 -160:wetlands*95 -65:hilsbrad*23 -42:silverpine*90 48:tirisfal*112
+0	80	-432:gillijim*48 -384:stranglethorn*29 -355:westfall*51 -304:azeroth*16 -288:balor*46 -242:azeroth*34 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	81	-432:gillijim*48 -384:stranglethorn*29 -355:westfall*51 -304:azeroth*16 -288:balor*59 -229:azeroth*21 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	82	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*60 -228:azeroth*20 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	83	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*61 -227:azeroth*19 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	84	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*63 -225:azeroth*17 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	85	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*63 -225:azeroth*17 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	86	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*64 -224:azeroth*16 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	87	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*64 -224:azeroth*16 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	88	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*64 -224:azeroth*16 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	89	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*65 -223:azeroth*15 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	90	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*65 -223:azeroth*15 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	91	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*65 -223:azeroth*15 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	92	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*65 -223:azeroth*15 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	93	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*65 -223:azeroth*15 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	94	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*64 -224:azeroth*16 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	95	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*64 -224:azeroth*16 -208:westfall*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	96	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*64 -224:azeroth*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	97	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*64 -224:azeroth*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	98	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*63 -225:azeroth*17 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	99	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*63 -225:azeroth*17 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	100	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*63 -225:azeroth*17 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	101	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*63 -225:azeroth*17 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	102	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*16 -288:balor*63 -225:azeroth*17 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	103	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*17 -287:balor*61 -226:azeroth*18 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	104	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*17 -287:balor*61 -226:azeroth*18 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	105	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*18 -286:balor*60 -226:azeroth*18 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	106	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*18 -286:balor*61 -225:azeroth*17 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	107	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*18 -286:balor*61 -225:azeroth*17 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	108	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*18 -286:balor*62 -224:azeroth*16 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	109	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*19 -285:balor*62 -223:azeroth*15 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	110	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*19 -285:balor*62 -223:azeroth*15 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	111	-432:gillijim*48 -384:stranglethorn*28 -356:westfall*52 -304:azeroth*20 -284:balor*61 -223:azeroth*15 -80:wetlands*15 -65:hilsbrad*23 -42:silverpine*95 53:tirisfal*107
+0	112	-384:stranglethorn*48 -304:azeroth*21 -283:balor*60 -223:azeroth*15
+0	113	-384:stranglethorn*48 -304:azeroth*21 -283:balor*60 -223:azeroth*15
+0	114	-384:stranglethorn*48 -304:azeroth*22 -282:balor*58 -224:azeroth*16
+0	115	-384:stranglethorn*48 -304:azeroth*22 -282:balor*57 -225:azeroth*17
+0	116	-384:stranglethorn*48 -304:azeroth*23 -281:balor*56 -225:azeroth*17
+0	117	-384:stranglethorn*48 -304:azeroth*25 -279:balor*53 -226:azeroth*18
+0	118	-384:stranglethorn*48 -304:azeroth*26 -278:balor*52 -226:azeroth*18
+0	119	-384:stranglethorn*48 -304:azeroth*27 -277:balor*50 -227:azeroth*19
+0	120	-384:stranglethorn*48 -304:azeroth*30 -274:balor*47 -227:azeroth*19
+0	121	-384:stranglethorn*48 -304:azeroth*51 -253:balor*7 -246:azeroth*2 -244:balor*16 -228:azeroth*20
+0	122	-384:stranglethorn*48 -304:azeroth*65 -239:balor*10 -229:azeroth*21
+0	123	-384:stranglethorn*48 -304:azeroth*96
+0	124	-384:stranglethorn*48 -304:azeroth*96
+0	125	-384:stranglethorn*48 -304:azeroth*96
+0	126	-384:stranglethorn*48 -304:azeroth*96
+0	127	-384:stranglethorn*48 -304:azeroth*96
+0	128	-304:azeroth*96
+0	129	-304:azeroth*96
+0	130	-304:azeroth*96
+0	131	-304:azeroth*96
+0	132	-304:azeroth*96
+0	133	-304:azeroth*96
+0	134	-304:azeroth*96
+0	135	-304:azeroth*96
+0	136	-304:azeroth*96
+0	137	-304:azeroth*96
+0	138	-304:azeroth*96
+0	139	-304:azeroth*96
+0	140	-304:azeroth*96
+0	141	-304:azeroth*96
+0	142	-304:azeroth*96
+0	143	-304:azeroth*96
+0	432	-448:dunmorogh*32
+0	433	-448:dunmorogh*32
+0	434	-448:dunmorogh*32
+0	435	-448:dunmorogh*32
+0	436	-448:dunmorogh*32
+0	437	-448:dunmorogh*32
+0	438	-448:dunmorogh*32
+0	439	-448:dunmorogh*32
+0	440	-448:dunmorogh*32
+0	441	-448:dunmorogh*32
+0	442	-448:dunmorogh*32
+0	443	-448:dunmorogh*32
+0	444	-448:dunmorogh*32
+0	445	-448:dunmorogh*32
+0	446	-448:dunmorogh*32
+0	447	-448:dunmorogh*32
+0	448	-448:dunmorogh*32
+0	449	-448:dunmorogh*32
+0	450	-448:dunmorogh*32
+0	451	-448:dunmorogh*32
+0	452	-448:dunmorogh*32
+0	453	-448:dunmorogh*32
+0	454	-448:dunmorogh*32
+0	455	-448:dunmorogh*32
+0	456	-448:dunmorogh*32
+0	457	-448:dunmorogh*32
+0	458	-448:dunmorogh*32
+0	459	-448:dunmorogh*32
+0	460	-448:dunmorogh*32
+0	461	-448:dunmorogh*32
+0	462	-448:dunmorogh*32
+0	463	-448:dunmorogh*32
+1	-256	16:durotar*16 32:aszhara*17 49:kalimdor*15 64:aszhara*128
+1	-255	16:durotar*16 32:aszhara*160
+1	-254	16:durotar*16 32:aszhara*160
+1	-253	16:durotar*16 32:aszhara*160
+1	-252	16:durotar*16 32:aszhara*160
+1	-251	16:durotar*16 32:aszhara*160
+1	-250	16:durotar*16 32:aszhara*160
+1	-249	16:durotar*16 32:aszhara*160
+1	-248	16:durotar*16 32:aszhara*160
+1	-247	16:durotar*16 32:aszhara*160
+1	-246	16:durotar*16 32:aszhara*160
+1	-245	16:durotar*16 32:aszhara*160
+1	-244	16:durotar*16 32:aszhara*160
+1	-243	16:durotar*16 32:aszhara*160
+1	-242	16:durotar*16 32:aszhara*160
+1	-241	16:durotar*16 32:aszhara*160
+1	-240	16:durotar*16 32:aszhara*160
+1	-239	16:durotar*16 32:aszhara*160
+1	-238	16:durotar*16 32:aszhara*160
+1	-237	16:durotar*16 32:aszhara*160
+1	-236	16:durotar*16 32:aszhara*160
+1	-235	16:durotar*16 32:aszhara*160
+1	-234	16:durotar*16 32:aszhara*160
+1	-233	16:durotar*16 32:aszhara*160
+1	-232	16:durotar*16 32:aszhara*160
+1	-231	16:durotar*16 32:aszhara*160
+1	-230	16:durotar*16 32:aszhara*160
+1	-229	16:durotar*16 32:aszhara*160
+1	-228	16:durotar*16 32:aszhara*160
+1	-227	16:durotar*16 32:aszhara*22 55:aszhara*137
+1	-226	16:durotar*16 32:aszhara*160
+1	-225	16:durotar*16 32:aszhara*160
+1	-224	16:durotar*16 32:aszhara*158 190:kalimdor*130
+1	-223	16:durotar*16 32:aszhara*157 189:kalimdor*131
+1	-222	16:durotar*16 32:aszhara*157 189:kalimdor*15 204:moonwhisper*4 208:kalimdor*112
+1	-221	16:durotar*16 32:aszhara*157 189:kalimdor*14 203:moonwhisper*12 215:kalimdor*105
+1	-220	16:durotar*16 32:aszhara*156 188:kalimdor*14 202:moonwhisper*14 216:kalimdor*104
+1	-219	16:durotar*16 32:aszhara*156 188:kalimdor*13 201:moonwhisper*21 222:kalimdor*98
+1	-218	16:durotar*16 32:aszhara*156 188:kalimdor*13 201:moonwhisper*25 226:kalimdor*94
+1	-217	16:durotar*16 32:aszhara*155 187:kalimdor*13 200:moonwhisper*26 226:kalimdor*10 236:moonwhisper*6 242:kalimdor*78
+1	-216	16:durotar*16 32:aszhara*153 185:kalimdor*13 198:moonwhisper*30 228:kalimdor*7 235:moonwhisper*7 242:kalimdor*78
+1	-215	16:durotar*16 32:aszhara*151 183:kalimdor*11 194:moonwhisper*34 228:kalimdor*7 235:moonwhisper*8 243:kalimdor*77
+1	-214	16:durotar*16 32:aszhara*151 183:kalimdor*9 192:moonwhisper*38 230:kalimdor*2 232:moonwhisper*12 244:kalimdor*76
+1	-213	16:durotar*16 32:aszhara*150 182:kalimdor*10 192:moonwhisper*52 244:kalimdor*26 270:moonwhisper*18 288:kalimdor*32
+1	-212	16:durotar*16 32:aszhara*149 181:kalimdor*10 191:moonwhisper*53 244:kalimdor*18 262:moonwhisper*29 291:kalimdor*29
+1	-211	16:durotar*16 32:aszhara*148 180:kalimdor*10 190:moonwhisper*55 245:kalimdor*13 258:moonwhisper*35 293:kalimdor*27
+1	-210	16:durotar*16 32:aszhara*147 179:kalimdor*10 189:moonwhisper*60 249:kalimdor*6 255:moonwhisper*38 293:kalimdor*27
+1	-209	16:durotar*16 32:aszhara*147 179:kalimdor*10 189:moonwhisper*105 294:kalimdor*26
+1	-208	-144:dustwallow*29 -108:dustwallow*44 -64:barrens*6 -58:durotar*90 32:aszhara*144 176:kalimdor*12 188:moonwhisper*106 294:kalimdor*26
+1	-207	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*144 176:kalimdor*10 186:moonwhisper*108 294:kalimdor*26
+1	-206	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*143 175:kalimdor*10 185:moonwhisper*33 219:moonwhisper*75 294:kalimdor*26
+1	-205	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*142 174:kalimdor*11 185:moonwhisper*109 294:kalimdor*26
+1	-204	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*142 174:kalimdor*10 184:moonwhisper*110 294:kalimdor*26
+1	-203	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*16 48:kalimdor 49:aszhara*124 173:kalimdor*5 178:moonwhisper*117 295:kalimdor*25
+1	-202	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*140 172:kalimdor*5 177:moonwhisper*118 295:kalimdor*25
+1	-201	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*140 172:kalimdor*4 176:moonwhisper*119 295:kalimdor*25
+1	-200	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*139 171:kalimdor*4 175:moonwhisper*120 295:kalimdor*25
+1	-199	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*139 171:kalimdor*4 175:moonwhisper*120 295:kalimdor*25
+1	-198	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*138 170:kalimdor*4 174:moonwhisper*121 295:kalimdor*25
+1	-197	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*135 167:kalimdor*7 174:moonwhisper*121 295:kalimdor*25
+1	-196	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*135 167:kalimdor*7 174:moonwhisper*121 295:kalimdor*25
+1	-195	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*135 167:kalimdor*2 169:moonwhisper*126 295:kalimdor*25
+1	-194	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*135 167:moonwhisper*128 295:kalimdor*25
+1	-193	-144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*135 167:moonwhisper*115 283:moonwhisper*12 295:kalimdor*25
+1	-192	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*90 32:aszhara*135 167:moonwhisper*128 295:kalimdor*25
+1	-191	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*91 33:aszhara*133 166:moonwhisper*129 295:kalimdor*25
+1	-190	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*92 34:aszhara*131 165:moonwhisper*129 294:kalimdor*26
+1	-189	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*92 34:aszhara*131 165:moonwhisper*128 293:kalimdor*27
+1	-188	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*93 35:aszhara*129 164:moonwhisper*129 293:kalimdor*27
+1	-187	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*94 36:aszhara*127 163:moonwhisper*130 293:kalimdor*27
+1	-186	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*95 37:aszhara*126 163:moonwhisper*130 293:kalimdor*27
+1	-185	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*95 37:aszhara*125 162:moonwhisper*131 293:kalimdor*27
+1	-184	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*96 38:aszhara*121 159:moonwhisper*134 293:kalimdor*27
+1	-183	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*97 39:aszhara*119 158:moonwhisper*135 293:kalimdor*27
+1	-182	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*97 39:aszhara*117 156:moonwhisper*137 293:kalimdor*27
+1	-181	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*98 40:aszhara*115 155:moonwhisper*138 293:kalimdor*27
+1	-180	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*99 41:aszhara*114 155:moonwhisper*138 293:kalimdor*27
+1	-179	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*101 43:aszhara*112 155:moonwhisper*138 293:kalimdor*27
+1	-178	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*101 43:aszhara*112 155:moonwhisper*78 234:moonwhisper*59 293:kalimdor*27
+1	-177	-288:tanaris*96 -144:dustwallow*80 -64:barrens*6 -58:durotar*101 43:aszhara*111 154:moonwhisper*139 293:kalimdor*27
+1	-176	-384:tanaris*223 -161:dustwallow*97 -64:barrens*6 -58:durotar*102 44:aszhara*109 153:moonwhisper*140 293:kalimdor*27
+1	-175	-384:tanaris*223 -161:dustwallow*97 -64:barrens*6 -58:durotar*102 44:aszhara 46:aszhara*106 152:moonwhisper*142 294:kalimdor*26
+1	-174	-384:tanaris*223 -161:dustwallow*97 -64:barrens*6 -58:durotar*105 47:aszhara*105 152:moonwhisper*142 294:kalimdor*26
+1	-173	-384:tanaris*223 -161:dustwallow*97 -64:barrens*6 -58:durotar*106 48:aszhara*103 151:moonwhisper*143 294:kalimdor*26
+1	-172	-384:tanaris*223 -161:dustwallow*97 -64:barrens*6 -58:durotar*107 49:aszhara*101 150:moonwhisper*144 294:kalimdor*26
+1	-171	-384:tanaris*223 -161:dustwallow*97 -64:barrens*6 -58:durotar*108 50:aszhara*100 150:moonwhisper*144 294:kalimdor*26
+1	-170	-384:tanaris*223 -161:dustwallow*97 -64:barrens*6 -58:durotar*109 51:aszhara*98 149:moonwhisper*145 294:kalimdor*26
+1	-169	-384:tanaris*223 -161:dustwallow*97 -64:barrens*6 -58:durotar*111 53:aszhara*96 149:moonwhisper*145 294:kalimdor*26
+1	-168	-384:tanaris*223 -161:dustwallow*97 -64:barrens*6 -58:durotar*112 54:aszhara*95 149:moonwhisper*68 218:moonwhisper*80 298:kalimdor*22
+1	-167	-384:tanaris*223 -161:dustwallow*97 -64:barrens*6 -58:durotar*113 55:aszhara*94 149:moonwhisper*150 299:kalimdor*21
+1	-166	-384:tanaris*223 -161:dustwallow*97 -64:barrens*7 -57:durotar*113 56:aszhara*92 148:moonwhisper*152 300:kalimdor*20
+1	-165	-384:tanaris*223 -161:dustwallow*97 -64:barrens*8 -56:durotar*113 57:aszhara*89 146:moonwhisper*156 302:kalimdor*18
+1	-164	-384:tanaris*223 -161:dustwallow*97 -64:barrens*8 -56:durotar*120 64:kalimdor*4 68:aszhara*77 145:moonwhisper*32 177:winterspring*10 187:moonwhisper*116 303:kalimdor*17
+1	-163	-384:tanaris*223 -161:dustwallow*97 -64:barrens*9 -55:durotar*119 64:kalimdor*5 69:aszhara*75 144:moonwhisper*29 173:winterspring*46 236:moonwhisper*67 303:kalimdor*17
+1	-162	-384:tanaris*223 -161:dustwallow*97 -64:barrens*10 -54:durotar*118 64:kalimdor*5 69:aszhara*75 144:moonwhisper*25 169:winterspring*51 238:moonwhisper*65 303:kalimdor*17
+1	-161	-384:tanaris*223 -161:dustwallow*97 -64:barrens*11 -53:durotar*117 64:kalimdor*5 69:aszhara*75 144:moonwhisper*22 166:winterspring*56 240:moonwhisper*63 303:kalimdor*17
+1	-160	-384:tanaris*223 -161:dustwallow*97 -64:barrens*11 -53:durotar*122 69:aszhara*74 143:moonwhisper*21 164:winterspring*60 241:moonwhisper*61 302:kalimdor*18
+1	-159	-384:tanaris*223 -161:dustwallow*97 -64:barrens*11 -53:durotar*122 69:aszhara*74 143:moonwhisper*20 163:winterspring*63 242:moonwhisper*60 302:kalimdor*18
+1	-158	-384:tanaris*223 -161:dustwallow*97 -64:barrens*11 -53:durotar*122 69:aszhara*74 143:moonwhisper*17 160:winterspring*67 242:moonwhisper*60 302:kalimdor*18
+1	-157	-384:tanaris*223 -161:dustwallow*97 -64:barrens*11 -53:durotar*123 70:aszhara*72 142:moonwhisper*18 160:winterspring*68 242:moonwhisper*59 301:kalimdor*19
+1	-156	-384:tanaris*223 -161:dustwallow*97 -64:barrens*12 -52:durotar*122 70:aszhara*72 142:moonwhisper*18 160:winterspring*72 244:moonwhisper*57 301:kalimdor*19
+1	-155	-384:tanaris*223 -161:dustwallow*97 -64:barrens*12 -52:durotar*123 71:aszhara*63 134:winterspring*8 142:moonwhisper*9 151:winterspring*83 245:moonwhisper*55 300:kalimdor*20
+1	-154	-384:tanaris*223 -161:dustwallow*97 -64:barrens*13 -51:durotar*122 71:aszhara*62 133:winterspring*103 245:moonwhisper*55 300:kalimdor*20
+1	-153	-384:tanaris*223 -161:dustwallow*97 -64:barrens*14 -50:durotar*121 71:aszhara*61 132:winterspring*106 245:moonwhisper*55 300:kalimdor*20
+1	-152	-384:tanaris*223 -161:dustwallow*97 -64:barrens*14 -50:durotar*121 71:aszhara*61 132:winterspring*107 246:moonwhisper*54 300:kalimdor*20
+1	-151	-384:tanaris*223 -161:dustwallow*97 -64:barrens*15 -49:durotar*120 71:aszhara*60 131:winterspring*108 247:moonwhisper*53 300:kalimdor*20
+1	-150	-384:tanaris*223 -161:dustwallow*97 -64:barrens*16 -48:durotar*119 71:aszhara*59 130:winterspring*109 247:moonwhisper*53 300:kalimdor*20
+1	-149	-384:tanaris*223 -161:dustwallow*97 -64:barrens*17 -47:durotar*103 56:orgrimmar*8 64:durotar*8 72:aszhara*52 124:winterspring*116 248:moonwhisper*51 299:kalimdor*21
+1	-148	-384:tanaris*223 -161:dustwallow*97 -64:barrens*18 -46:durotar*102 56:orgrimmar*8 64:durotar*8 72:aszhara*51 123:winterspring*118 249:moonwhisper*49 298:kalimdor*22
+1	-147	-384:tanaris*223 -161:dustwallow*97 -64:barrens*19 -45:durotar*100 55:orgrimmar*13 68:durotar*4 72:aszhara*50 122:winterspring*120 249:moonwhisper*49 298:kalimdor*22
+1	-146	-384:tanaris*223 -161:dustwallow*97 -64:barrens*21 -43:durotar*97 54:orgrimmar*14 68:durotar*4 72:aszhara*50 122:winterspring*121 249:moonwhisper*47 296:kalimdor*24
+1	-145	-384:tanaris*223 -161:dustwallow*97 -64:barrens*21 -43:durotar*97 54:orgrimmar*14 68:durotar*4 72:aszhara*50 122:winterspring*122 250:moonwhisper*44 294:kalimdor*26
+1	-144	-384:tanaris*223 -161:dustwallow*97 -64:barrens*22 -42:durotar*95 53:orgrimmar*15 68:durotar*4 72:aszhara*50 122:winterspring*122 250:moonwhisper*43 293:kalimdor*27
+1	-143	-384:tanaris*223 -161:dustwallow*97 -64:barrens*22 -42:durotar*94 52:orgrimmar*16 68:durotar*4 72:aszhara*50 122:winterspring*123 251:moonwhisper*15 267:moonwhisper*26 293:kalimdor*27
+1	-142	-384:tanaris*223 -161:dustwallow*97 -64:barrens*22 -42:durotar*93 51:orgrimmar*17 68:durotar*4 72:aszhara*49 121:winterspring*124 252:moonwhisper*41 293:kalimdor*27
+1	-141	-384:tanaris*223 -161:dustwallow*97 -64:barrens*21 -43:durotar*94 51:orgrimmar*17 68:durotar*4 72:aszhara*49 121:winterspring*125 252:moonwhisper*42 294:kalimdor*26
+1	-140	-384:tanaris*223 -161:dustwallow*97 -64:barrens*21 -43:durotar*93 50:orgrimmar*18 68:durotar*4 72:aszhara*48 120:winterspring*126 252:moonwhisper*42 294:kalimdor*26
+1	-139	-384:tanaris*223 -161:dustwallow*97 -64:barrens*21 -43:durotar*92 49:orgrimmar*19 68:durotar*4 72:aszhara*48 120:winterspring*127 253:moonwhisper*41 294:kalimdor*26
+1	-138	-384:tanaris*223 -161:dustwallow*97 -64:barrens*23 -41:durotar*85 44:orgrimmar*24 68:durotar*4 72:aszhara*47 119:winterspring*128 253:moonwhisper*41 294:kalimdor*26
+1	-137	-384:tanaris*223 -161:dustwallow*97 -64:barrens*24 -40:durotar*82 42:orgrimmar*26 68:durotar*4 72:aszhara*47 119:winterspring*129 253:moonwhisper*41 294:kalimdor*26
+1	-136	-384:tanaris*190 -194:thousandneedles*33 -161:dustwallow*97 -64:barrens*24 -40:durotar*82 42:orgrimmar*26 68:durotar*4 72:aszhara*47 119:winterspring*130 254:moonwhisper*40 294:kalimdor*26
+1	-135	-384:tanaris*190 -194:thousandneedles*33 -161:dustwallow*97 -64:barrens*25 -39:durotar*81 42:orgrimmar*19 61:durotar*11 72:aszhara*47 119:winterspring*130 254:moonwhisper*41 295:kalimdor*25
+1	-134	-384:tanaris*190 -194:thousandneedles*33 -161:dustwallow*98 -63:barrens*25 -38:durotar*80 42:orgrimmar*19 61:durotar*11 72:aszhara*46 118:winterspring*131 254:moonwhisper*41 295:kalimdor*25
+1	-133	-384:tanaris*182 -202:thousandneedles*41 -161:dustwallow*98 -63:barrens*26 -37:durotar*79 42:orgrimmar*19 61:durotar*11 72:aszhara*46 118:winterspring*132 254:moonwhisper*42 296:kalimdor*24
+1	-132	-384:tanaris*182 -202:thousandneedles*41 -161:dustwallow*98 -63:barrens*27 -36:durotar*78 42:orgrimmar*19 61:durotar*11 72:aszhara*45 117:winterspring*133 254:moonwhisper*42 296:kalimdor*24
+1	-131	-384:tanaris*182 -202:thousandneedles*41 -161:dustwallow*98 -63:barrens*34 -29:durotar*71 42:orgrimmar*21 63:durotar*9 72:aszhara*45 117:winterspring*134 255:moonwhisper*41 296:kalimdor*24
+1	-130	-384:tanaris*182 -202:thousandneedles*41 -161:dustwallow*98 -63:barrens*34 -29:durotar*71 42:orgrimmar*21 63:durotar*9 72:aszhara*45 117:winterspring*134 255:moonwhisper*41 296:kalimdor*24
+1	-129	-384:tanaris*182 -202:thousandneedles*41 -161:dustwallow*98 -63:barrens*34 -29:durotar*71 42:orgrimmar*21 63:durotar*9 72:aszhara*45 117:winterspring*134 255:moonwhisper*42 297:kalimdor*23
+1	-128	-384:tanaris*182 -202:thousandneedles*41 -161:dustwallow*98 -63:barrens*35 -28:durotar*70 42:orgrimmar*21 63:durotar*8 71:aszhara*46 117:winterspring*135 256:moonwhisper*41 297:kalimdor*23
+1	-127	-384:tanaris*182 -202:thousandneedles*41 -161:dustwallow*96 -65:barrens*39 -26:durotar*68 42:orgrimmar*21 63:durotar*8 71:aszhara*46 117:winterspring*43 160:hyjal*13 173:winterspring*79 256:moonwhisper*41 297:kalimdor*23
+1	-126	-384:tanaris*182 -202:thousandneedles*41 -161:dustwallow*96 -65:barrens*39 -26:durotar*70 44:orgrimmar*19 63:durotar*8 71:aszhara*45 116:winterspring*42 158:hyjal*15 173:winterspring*79 256:moonwhisper*41 297:kalimdor*23
+1	-125	-384:tanaris*182 -202:thousandneedles*41 -161:dustwallow*96 -65:barrens*39 -26:durotar*71 45:orgrimmar*18 63:durotar*8 71:aszhara*45 116:winterspring*37 153:hyjal*21 174:winterspring*78 256:moonwhisper*40 296:kalimdor*24
+1	-124	-384:tanaris*181 -203:thousandneedles*42 -161:dustwallow*95 -66:barrens*41 -25:durotar*70 45:orgrimmar*18 63:durotar*8 71:aszhara*45 116:winterspring*34 150:hyjal*24 174:winterspring*78 256:moonwhisper*40 296:kalimdor*24
+1	-123	-384:tanaris*180 -204:thousandneedles*43 -161:dustwallow*95 -66:barrens*44 -22:durotar*67 45:orgrimmar*18 63:durotar*8 71:aszhara*45 116:winterspring*33 149:hyjal*26 175:winterspring*78 256:moonwhisper*39 295:kalimdor*25
+1	-122	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*94 -67:barrens*44 -23:durotar*69 46:orgrimmar*16 62:durotar*9 71:aszhara*24 95:ashenvale*4 99:aszhara*17 116:winterspring*31 147:hyjal*29 176:winterspring*77 256:moonwhisper*39 295:kalimdor*25
+1	-121	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*94 -67:barrens*44 -23:durotar*70 47:orgrimmar*13 60:durotar*11 71:aszhara*21 92:ashenvale*10 102:aszhara*14 117:winterspring*30 147:hyjal*30 177:winterspring*76 256:moonwhisper*37 293:kalimdor*27
+1	-120	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*93 -68:barrens*47 -21:durotar*69 48:orgrimmar*11 59:durotar*12 71:aszhara*20 91:ashenvale*13 104:aszhara*12 117:winterspring*29 146:hyjal*32 178:winterspring*73 252:winterspring*2 256:moonwhisper*37 293:kalimdor*27
+1	-119	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*92 -69:barrens*51 -18:durotar*67 49:orgrimmar*7 56:durotar*15 71:aszhara*18 89:ashenvale*18 107:aszhara*9 116:ashenvale 117:winterspring*21 138:hyjal*41 179:winterspring*72 256:moonwhisper*36 292:kalimdor*28
+1	-118	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*92 -69:barrens*55 -14:durotar*65 51:orgrimmar*4 55:durotar*16 71:aszhara*17 88:ashenvale*29 117:winterspring*20 137:hyjal*43 180:winterspring*71 256:moonwhisper*36 292:kalimdor*28
+1	-117	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*90 -71:barrens*60 -11:durotar*43 32:barrens*18 50:durotar*2 52:orgrimmar*2 54:durotar*17 71:aszhara*16 87:ashenvale*31 118:winterspring*18 136:hyjal*44 180:winterspring*71 256:moonwhisper*36 292:kalimdor*28
+1	-116	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*90 -71:barrens*63 -8:durotar*37 29:barrens*22 51:durotar*20 71:aszhara*15 86:ashenvale*32 118:winterspring*17 135:hyjal*46 181:winterspring*70 256:moonwhisper*35 291:kalimdor*29
+1	-115	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*89 -72:barrens*65 -7:durotar*36 29:barrens*22 51:aszhara*4 55:durotar*16 71:aszhara*14 85:ashenvale*33 118:winterspring*17 135:hyjal*46 181:winterspring*70 256:moonwhisper*35 291:kalimdor*29
+1	-114	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*89 -72:barrens*69 -3:durotar*16 13:barrens*38 51:aszhara*6 57:durotar*14 71:aszhara*13 84:ashenvale*34 118:winterspring*17 135:hyjal*47 182:winterspring*69 256:moonwhisper*34 290:kalimdor*30
+1	-113	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*89 -72:barrens*120 48:durotar 49:barrens 50:ashenvale*4 54:aszhara*6 60:durotar*11 71:aszhara*9 80:ashenvale*38 118:winterspring*17 135:hyjal*47 182:winterspring*34 218:winterspring*33 256:moonwhisper*32 288:kalimdor*32
+1	-112	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*90 -71:barrens*119 48:durotar*3 51:ashenvale*4 55:aszhara*8 63:durotar*4 67:aszhara*8 75:ashenvale*41 134:hyjal*49 183:winterspring*33 220:winterspring*31 259:darkshore*61
+1	-111	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*92 -69:barrens*117 48:durotar*4 52:ashenvale*5 57:aszhara*15 72:ashenvale*44 133:hyjal*50 183:winterspring*33 220:winterspring*31 259:darkshore*61
+1	-110	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*91 -70:barrens*118 48:durotar*6 54:ashenvale*6 60:aszhara*10 70:ashenvale*46 132:hyjal*51 183:winterspring*28 221:winterspring*30 259:darkshore*61
+1	-109	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*91 -70:barrens*118 48:durotar*6 54:ashenvale*62 131:hyjal*52 183:winterspring*27 222:winterspring*29 259:darkshore*61
+1	-108	-384:tanaris*179 -205:thousandneedles*43 -162:dustwallow*89 -73:barrens*121 48:durotar*2 50:ashenvale*2 52:durotar*3 55:ashenvale*61 131:hyjal*53 184:winterspring*26 223:winterspring*17 259:darkshore*61
+1	-107	-384:tanaris*179 -205:thousandneedles*41 -164:dustwallow*91 -73:barrens*121 48:durotar 49:ashenvale*5 54:durotar*2 56:ashenvale*60 129:hyjal*55 184:winterspring*26 223:winterspring*15 259:darkshore*61
+1	-106	-384:tanaris*179 -205:thousandneedles*41 -164:dustwallow*91 -73:barrens*120 47:durotar 48:ashenvale*7 55:durotar 56:ashenvale*53 129:hyjal*55 184:winterspring*26 224:winterspring*12 259:darkshore*61
+1	-105	-384:tanaris*179 -205:thousandneedles*43 -162:dustwallow*89 -73:barrens*118 45:durotar*2 47:ashenvale*8 55:durotar 56:ashenvale*50 129:hyjal*56 185:winterspring*25 226:winterspring*8 259:darkshore*61
+1	-104	-384:tanaris*179 -205:thousandneedles*44 -161:dustwallow*88 -73:barrens*117 44:durotar 45:ashenvale*10 55:durotar 56:ashenvale*50 128:hyjal*57 185:winterspring*25 227:winterspring*5 259:darkshore*61
+1	-103	-384:tanaris*179 -205:thousandneedles*45 -160:dustwallow*87 -73:barrens*116 43:durotar 44:ashenvale*11 55:durotar 56:ashenvale*49 128:hyjal*58 186:winterspring*24 259:darkshore*61
+1	-102	-384:tanaris*179 -205:thousandneedles*46 -159:dustwallow*86 -73:barrens*115 42:durotar*2 44:ashenvale*10 54:durotar 55:ashenvale*49 128:hyjal*58 186:winterspring*24 259:darkshore*61
+1	-101	-384:tanaris*180 -204:thousandneedles*46 -158:dustwallow*86 -72:barrens*114 42:durotar*2 44:ashenvale*9 53:durotar 54:ashenvale*49 128:hyjal*58 186:winterspring*24 259:darkshore*61
+1	-100	-384:tanaris*180 -204:thousandneedles*47 -157:dustwallow*86 -71:barrens*113 42:durotar*2 44:ashenvale*8 52:durotar 53:ashenvale*50 128:hyjal*58 186:winterspring*24 259:darkshore*61
+1	-99	-384:tanaris*180 -204:thousandneedles*47 -157:dustwallow*87 -70:barrens*114 44:durotar*2 46:ashenvale*56 127:hyjal*59 186:winterspring*24 259:darkshore*61
+1	-98	-384:tanaris*180 -204:thousandneedles*47 -157:dustwallow*88 -69:barrens*114 45:durotar 46:ashenvale*56 127:hyjal*59 186:winterspring*24 259:darkshore*61
+1	-97	-384:tanaris*208 -176:thousandneedles*19 -157:dustwallow*88 -69:barrens*115 46:ashenvale*56 127:hyjal*59 186:winterspring*24 259:darkshore*61
+1	-96	-384:tanaris*208 -176:thousandneedles*22 -154:dustwallow*85 -69:barrens*115 46:ashenvale*53 126:hyjal*60 186:winterspring*24 217:moonglade*42 259:darkshore*61
+1	-95	-384:tanaris*208 -176:thousandneedles*22 -154:dustwallow*86 -68:barrens*114 46:ashenvale*52 126:hyjal*60 186:winterspring*24 217:moonglade*42 259:darkshore*61
+1	-94	-384:tanaris*208 -176:thousandneedles*22 -154:dustwallow*85 -69:barrens*115 46:ashenvale*52 125:hyjal*61 186:winterspring*24 217:moonglade*42 259:darkshore*61
+1	-93	-384:tanaris*208 -176:thousandneedles*22 -154:dustwallow*85 -69:barrens*115 46:ashenvale*51 125:hyjal*60 185:winterspring*24 217:moonglade*42 259:darkshore*61
+1	-92	-384:tanaris*208 -176:thousandneedles*22 -154:dustwallow*85 -69:barrens*115 46:ashenvale*50 125:hyjal*60 185:winterspring*24 216:moonglade*43 259:darkshore*61
+1	-91	-384:tanaris*208 -176:thousandneedles*22 -154:barrens*5 -149:dustwallow*79 -70:barrens*116 46:ashenvale*50 124:hyjal*60 184:winterspring*25 215:moonglade*44 259:darkshore*61
+1	-90	-384:tanaris*208 -176:thousandneedles*22 -154:barrens*8 -146:dustwallow*75 -71:barrens*115 44:ashenvale*52 124:hyjal*60 184:winterspring*25 215:moonglade*44 259:darkshore*61
+1	-89	-384:tanaris*208 -176:thousandneedles*22 -154:barrens*10 -144:dustwallow*73 -71:barrens*115 44:ashenvale*52 124:hyjal*60 184:winterspring*25 214:moonglade*45 259:darkshore*61
+1	-88	-384:tanaris*208 -176:thousandneedles*22 -154:barrens*11 -143:dustwallow*72 -71:barrens*115 44:ashenvale*52 124:hyjal*59 183:winterspring*28 213:moonglade*46 259:darkshore*61
+1	-87	-384:tanaris*208 -176:thousandneedles*22 -154:barrens*11 -143:dustwallow*71 -72:barrens*116 44:ashenvale*52 124:hyjal*59 183:winterspring*29 213:moonglade*46 259:darkshore*61
+1	-86	-384:tanaris*208 -176:thousandneedles*22 -154:barrens*12 -142:dustwallow*70 -72:barrens*116 44:ashenvale*52 124:hyjal*59 183:winterspring*29 213:moonglade*46 259:darkshore*61
+1	-85	-384:tanaris*208 -176:thousandneedles*22 -154:barrens*12 -142:dustwallow*69 -73:barrens*117 44:ashenvale*52 124:hyjal*59 183:winterspring*29 212:moonglade*47 259:darkshore*61
+1	-84	-384:tanaris*208 -176:thousandneedles*22 -154:barrens*12 -142:dustwallow*64 -78:barrens -77:dustwallow*2 -75:barrens*119 44:ashenvale*52 124:hyjal*58 182:winterspring*30 212:moonglade*47 259:darkshore*61
+1	-83	-384:tanaris*208 -176:thousandneedles*22 -154:barrens*12 -142:dustwallow*63 -79:barrens*113 41:barrens*3 44:ashenvale*52 124:hyjal*58 182:winterspring*30 212:moonglade*47 259:darkshore*61
+1	-82	-384:tanaris*208 -176:thousandneedles*22 -154:barrens*13 -141:dustwallow*61 -80:barrens*114 41:barrens*3 44:ashenvale*52 124:hyjal*57 181:winterspring*31 212:moonglade*47 259:darkshore*61
+1	-81	-384:tanaris*208 -176:thousandneedles*23 -153:barrens*13 -140:dustwallow*60 -80:barrens*114 41:barrens*3 44:ashenvale*52 124:hyjal*56 180:winterspring*32 212:moonglade*47 259:darkshore*61
+1	-80	-384:tanaris*208 -176:thousandneedles*23 -153:barrens*14 -139:dustwallow*49 -90:barrens*2 -88:dustwallow*7 -81:barrens*115 41:barrens*3 44:ashenvale*52 124:hyjal*55 179:winterspring*33 212:moonglade*47 259:darkshore*61
+1	-79	-384:tanaris*208 -176:thousandneedles*24 -152:barrens*14 -138:dustwallow*38 -100:barrens*3 -97:dustwallow*7 -90:barrens*124 40:ashenvale*56 124:hyjal*55 179:winterspring*33 212:moonglade*47 259:darkshore*61
+1	-78	-384:tanaris*208 -176:thousandneedles*24 -152:barrens*16 -136:dustwallow*11 -125:barrens*5 -120:dustwallow*20 -100:barrens*4 -96:dustwallow*5 -91:barrens*125 40:ashenvale*56 124:hyjal*55 179:winterspring*33 212:moonglade*47 259:darkshore*61
+1	-77	-384:tanaris*159 -225:ungorocrater*21 -204:tanaris*28 -176:thousandneedles*24 -152:barrens*17 -135:dustwallow*9 -126:barrens*7 -119:dustwallow -118:barrens*5 -113:dustwallow*11 -102:barrens*136 40:ashenvale*56 124:hyjal*54 178:winterspring*34 212:moonglade*47 259:darkshore*61
+1	-76	-384:tanaris*158 -226:ungorocrater*28 -198:tanaris*22 -176:thousandneedles*24 -152:barrens*18 -134:dustwallow*6 -128:barrens*15 -113:dustwallow*7 -106:barrens*146 40:ashenvale*56 124:hyjal*54 178:winterspring*34 212:moonglade*47 259:darkshore*61
+1	-75	-384:tanaris*156 -228:ungorocrater*30 -198:tanaris*22 -176:thousandneedles*25 -151:barrens*18 -133:dustwallow*5 -128:barrens*17 -111:dustwallow*2 -109:barrens*149 40:ashenvale*56 124:hyjal*54 178:winterspring*34 212:moonglade*47 259:darkshore*61
+1	-74	-384:tanaris*150 -234:ungorocrater*38 -196:tanaris*20 -176:thousandneedles*25 -151:barrens*18 -133:dustwallow*5 -128:barrens*168 40:ashenvale*56 124:hyjal*54 178:winterspring*34 212:moonglade*47 259:darkshore*61
+1	-73	-384:tanaris*149 -235:ungorocrater*40 -195:tanaris*19 -176:thousandneedles*26 -150:barrens*190 40:ashenvale*56 124:hyjal*53 177:winterspring*35 212:moonglade*47 259:darkshore*61
+1	-72	-384:tanaris*148 -236:ungorocrater*41 -195:tanaris*19 -176:thousandneedles*27 -149:barrens*189 40:ashenvale*56 125:hyjal*52 177:winterspring*36 213:moonglade*46 259:darkshore*61
+1	-71	-384:tanaris*148 -236:ungorocrater*44 -192:tanaris*16 -176:thousandneedles*28 -148:barrens*188 40:ashenvale*56 125:hyjal*52 177:winterspring*36 213:moonglade*46 259:darkshore*61
+1	-70	-384:tanaris*148 -236:ungorocrater*44 -192:tanaris*16 -176:thousandneedles*29 -147:barrens*187 40:ashenvale*56 126:hyjal*51 177:winterspring*36 213:moonglade*46 259:darkshore*61
+1	-69	-384:tanaris*148 -236:ungorocrater*44 -192:tanaris*16 -176:thousandneedles*29 -147:barrens*187 40:ashenvale*56 126:hyjal*51 177:winterspring*37 214:moonglade*45 259:darkshore*61
+1	-68	-384:tanaris*143 -241:ungorocrater*58 -183:tanaris*6 -177:thousandneedles*31 -146:barrens*186 40:ashenvale*56 127:hyjal*50 177:winterspring*36 213:moonglade*46 259:darkshore*61
+1	-67	-384:tanaris*140 -244:ungorocrater*67 -177:thousandneedles*32 -145:barrens*185 40:ashenvale*56 127:hyjal*50 177:winterspring*34 211:felwood 212:moonglade*47 259:darkshore*61
+1	-66	-384:tanaris*139 -245:ungorocrater*68 -177:thousandneedles*36 -141:barrens*181 40:ashenvale*56 127:hyjal*49 176:felwood*36 212:moonglade*47 259:darkshore*61
+1	-65	-384:tanaris*138 -246:ungorocrater*69 -177:thousandneedles*36 -141:barrens*181 40:ashenvale*56 128:hyjal*48 176:felwood*22 198:timbermawtunnels*4 202:felwood 203:timbermawtunnels*4 207:felwood*5 212:moonglade*47 259:darkshore*61
+1	-64	-384:tanaris*137 -247:ungorocrater*70 -177:thousandneedles*36 -141:barrens*180 39:ashenvale*57 128:hyjal*48 176:felwood*22 198:timbermawtunnels*9 207:felwood*5 212:moonglade*47 259:darkshore*61
+1	-63	-384:tanaris*137 -247:ungorocrater*70 -177:thousandneedles*36 -141:barrens*179 38:ashenvale*58 128:hyjal*48 176:felwood*22 198:timbermawtunnels*9 207:felwood*5 212:moonglade*47 259:darkshore*61
+1	-62	-384:tanaris*136 -248:ungorocrater*71 -177:thousandneedles*36 -141:barrens*178 37:ashenvale*59 128:hyjal*48 176:felwood*36 212:moonglade*47 259:darkshore*61
+1	-61	-384:tanaris*135 -249:ungorocrater*72 -177:thousandneedles*37 -140:barrens*174 37:ashenvale*59 128:hyjal*48 176:felwood*36 212:moonglade*47 259:darkshore*61
+1	-60	-384:tanaris*135 -249:ungorocrater*72 -177:thousandneedles*38 -139:barrens*173 37:ashenvale*61 128:hyjal*48 176:felwood*36 212:moonglade*47 259:darkshore*61
+1	-59	-384:tanaris*134 -250:ungorocrater*73 -177:thousandneedles*38 -139:barrens*173 37:ashenvale*63 129:hyjal*47 176:felwood*36 212:moonglade*47 259:darkshore*61
+1	-58	-384:tanaris*133 -251:ungorocrater*74 -177:thousandneedles*38 -139:barrens*173 37:ashenvale*64 129:hyjal*47 176:felwood*36 212:moonglade*35 247:darkshore*73
+1	-57	-384:tanaris*133 -251:ungorocrater*74 -177:thousandneedles*38 -139:barrens*173 37:ashenvale*64 130:hyjal*46 176:felwood*36 212:moonglade*25 237:darkshore*83
+1	-56	-384:tanaris*133 -251:ungorocrater*74 -177:thousandneedles*40 -137:barrens*171 37:ashenvale*70 107:felwood*21 131:hyjal*45 176:felwood*36 212:moonglade*8 220:darkshore*3 223:moonglade*14 237:darkshore*83
+1	-55	-384:tanaris*133 -251:ungorocrater*74 -177:thousandneedles*38 -139:barrens*173 37:ashenvale*70 107:felwood*21 131:hyjal*45 176:felwood*36 212:moonglade*7 219:darkshore*5 224:moonglade*13 237:darkshore*83
+1	-54	-384:tanaris*133 -251:ungorocrater*74 -177:thousandneedles*39 -138:barrens*172 37:ashenvale*70 107:felwood*21 132:hyjal*44 176:felwood*36 212:moonglade*5 217:darkshore*103
+1	-53	-384:tanaris*133 -251:ungorocrater*74 -177:thousandneedles*40 -137:barrens*171 37:ashenvale*70 107:felwood*21 132:hyjal*44 176:felwood*36 212:moonglade*4 216:darkshore*104
+1	-52	-384:tanaris*133 -251:ungorocrater*74 -177:thousandneedles*40 -137:barrens*171 37:ashenvale*70 107:felwood*21 133:hyjal*43 176:felwood*36 212:moonglade*2 214:darkshore*106
+1	-51	-384:tanaris*133 -251:ungorocrater*74 -177:thousandneedles*40 -137:barrens*171 41:ashenvale*66 107:felwood*21 134:hyjal*42 176:felwood*36 212:moonglade*2 214:darkshore*106
+1	-50	-384:tanaris*133 -251:ungorocrater*74 -177:thousandneedles*40 -137:barrens*171 41:ashenvale*66 107:felwood*21 135:hyjal*41 176:felwood*36 212:moonglade*2 214:darkshore*106
+1	-49	-384:tanaris*133 -251:ungorocrater*74 -177:thousandneedles*40 -137:barrens*171 41:ashenvale*66 107:felwood*21 135:hyjal*41 176:felwood*36 212:moonglade*2 214:darkshore*106
+1	-48	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*40 -137:barrens*171 41:ashenvale*66 107:felwood*21 135:hyjal*33 168:felwood*44 212:darkshore*108
+1	-47	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*40 -137:barrens*171 41:ashenvale*66 107:felwood*21 135:hyjal*32 167:felwood*44 211:darkshore*109
+1	-46	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*40 -137:barrens*51 -86:mulgore*18 -68:barrens*102 40:ashenvale*67 107:felwood*21 135:hyjal*32 167:felwood*44 211:darkshore*109
+1	-45	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*41 -136:barrens*45 -91:mulgore*27 -64:barrens*98 40:ashenvale*67 107:felwood*21 135:hyjal*32 167:felwood*43 210:darkshore*110
+1	-44	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*41 -136:barrens*44 -92:mulgore*33 -59:barrens*93 40:ashenvale*67 107:felwood*21 136:hyjal*26 162:felwood*46 208:darkshore*112
+1	-43	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*41 -136:barrens*40 -96:mulgore*38 -58:barrens*92 40:ashenvale*67 107:felwood*21 137:hyjal*25 162:felwood*46 208:darkshore*112
+1	-42	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*41 -136:barrens*38 -98:mulgore*41 -57:barrens*91 40:ashenvale*67 107:felwood*21 138:hyjal*24 162:felwood*46 208:darkshore*112
+1	-41	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*42 -135:barrens*36 -99:mulgore*43 -56:barrens*90 40:ashenvale*66 106:felwood*22 139:hyjal*23 162:felwood*46 208:darkshore*112
+1	-40	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*43 -134:barrens*35 -99:mulgore*45 -54:barrens*88 41:ashenvale*64 105:felwood*24 141:hyjal*21 162:felwood*46 208:darkshore*112
+1	-39	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*43 -134:barrens*34 -100:mulgore*47 -53:barrens*13 -40:mulgore*16 -24:barrens*58 42:ashenvale*62 104:felwood*27 144:hyjal*18 162:felwood*46 208:darkshore*112
+1	-38	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*44 -133:barrens*32 -101:mulgore*48 -53:barrens*10 -43:mulgore*21 -22:barrens*56 43:ashenvale*60 103:felwood*29 144:hyjal*17 161:felwood*47 208:darkshore*112
+1	-37	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*45 -132:barrens*30 -102:mulgore*49 -53:barrens*8 -45:mulgore*23 -22:barrens*56 44:ashenvale*58 102:felwood*31 144:hyjal*16 160:felwood*48 208:darkshore*112
+1	-36	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*46 -131:barrens*29 -102:mulgore*50 -52:barrens*6 -46:mulgore*25 -21:barrens*55 45:ashenvale*56 101:felwood*35 144:hyjal*16 160:felwood*48 208:darkshore*112
+1	-35	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*47 -130:barrens*26 -104:mulgore*84 -20:barrens*54 49:ashenvale*52 101:felwood*38 144:hyjal*14 158:felwood*50 208:darkshore*112
+1	-34	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*48 -129:barrens*24 -105:mulgore*85 -20:barrens*54 50:ashenvale*51 101:felwood*39 144:felwood*64 208:darkshore*112
+1	-33	-384:tanaris*127 -251:ungorocrater*74 -177:thousandneedles*52 -125:barrens*18 -107:mulgore*87 -20:barrens*54 50:ashenvale*51 101:felwood*42 144:felwood*64 208:darkshore*112
+1	-32	-384:tanaris*45 -339:silithus*82 -251:ungorocrater*70 -159:thousandneedles*36 -108:mulgore*92 -15:barrens*16 1:stonetalonmountains*10 11:barrens*18 29:stonetalonmountains*21 50:ashenvale*51 101:felwood*107 208:darkshore*57 265:teldrassil*103
+1	-31	-384:silithus*127 -251:ungorocrater*70 -159:thousandneedles*36 -109:mulgore*93 -16:barrens*16 0:stonetalonmountains*11 11:barrens*16 27:stonetalonmountains*24 51:ashenvale*50 101:felwood*107 208:darkshore*56 264:teldrassil*104
+1	-30	-384:silithus*127 -251:ungorocrater*70 -159:thousandneedles*37 -109:mulgore*93 -16:barrens*16 0:stonetalonmountains*12 12:barrens*11 23:stonetalonmountains*28 51:ashenvale*50 101:felwood*107 208:darkshore*55 263:teldrassil*105
+1	-29	-384:silithus*127 -251:ungorocrater*69 -159:thousandneedles*38 -109:mulgore*93 -16:barrens*15 -1:stonetalonmountains*13 12:barrens*9 21:stonetalonmountains*30 51:ashenvale*51 102:felwood*106 208:darkshore*54 262:teldrassil*106
+1	-28	-384:silithus*127 -251:ungorocrater*69 -158:thousandneedles*37 -109:mulgore*93 -16:barrens*14 -2:stonetalonmountains*15 13:barrens*7 20:stonetalonmountains*32 52:ashenvale*50 102:felwood*106 208:darkshore*53 261:teldrassil*107
+1	-27	-384:silithus*127 -251:ungorocrater*69 -158:thousandneedles*37 -109:mulgore*93 -16:barrens*13 -3:stonetalonmountains*56 53:ashenvale*49 102:felwood*106 208:darkshore*52 260:teldrassil*108
+1	-26	-384:silithus*127 -251:ungorocrater*68 -157:thousandneedles*32 -125:feralas*4 -109:mulgore*94 -15:barrens*8 -7:stonetalonmountains*60 53:ashenvale*50 103:felwood*105 208:darkshore*51 259:teldrassil*109
+1	-25	-384:silithus*127 -251:ungorocrater*68 -156:thousandneedles*30 -126:feralas*5 -109:mulgore*94 -15:barrens*6 -9:stonetalonmountains*62 53:ashenvale*51 104:felwood*98 202:darkshore*56 258:teldrassil*110
+1	-24	-384:silithus*127 -251:ungorocrater*68 -154:thousandneedles*16 -138:feralas*7 -131:thousandneedles*3 -128:feralas*8 -109:mulgore*95 -14:barrens*4 -10:stonetalonmountains*63 53:ashenvale*52 105:felwood*96 201:darkshore*56 257:teldrassil*111
+1	-23	-384:silithus*127 -251:ungorocrater*68 -153:thousandneedles*12 -141:feralas*22 -109:mulgore*97 -12:barrens*2 -10:stonetalonmountains*63 53:ashenvale*52 105:felwood*95 200:darkshore*55 255:teldrassil*113
+1	-22	-384:silithus*127 -251:ungorocrater*68 -141:feralas*22 -109:mulgore*98 -11:stonetalonmountains*64 53:ashenvale*53 106:felwood*93 199:darkshore*55 254:teldrassil*114
+1	-21	-384:silithus*127 -251:ungorocrater*68 -141:feralas*22 -109:mulgore*98 -11:stonetalonmountains*64 53:ashenvale*53 106:felwood*93 199:darkshore*54 253:teldrassil*115
+1	-20	-384:silithus*127 -251:ungorocrater*68 -141:feralas*22 -109:mulgore*98 -11:stonetalonmountains*64 53:ashenvale*54 107:felwood*89 196:darkshore*56 252:teldrassil*116
+1	-19	-384:silithus*127 -251:ungorocrater*68 -141:feralas*22 -109:mulgore*98 -11:stonetalonmountains*64 53:ashenvale*54 107:felwood*89 196:darkshore*55 251:teldrassil*117
+1	-18	-384:silithus*127 -251:ungorocrater*68 -141:feralas*22 -109:mulgore*98 -11:stonetalonmountains*64 53:ashenvale*59 112:felwood*83 195:darkshore*55 250:teldrassil*118
+1	-17	-384:silithus*127 -251:ungorocrater*66 -143:feralas*24 -109:mulgore*98 -11:stonetalonmountains*64 53:ashenvale*59 112:felwood*83 195:darkshore*55 250:teldrassil*118
+1	-16	-384:silithus*141 -243:ungorocrater*57 -186:silithus*10 -143:feralas*34 -109:mulgore*98 -11:stonetalonmountains*64 53:ashenvale*62 115:felwood*80 195:darkshore*54 249:teldrassil*119
+1	-15	-384:silithus*141 -243:ungorocrater*57 -186:silithus*10 -143:feralas*34 -109:mulgore*98 -11:stonetalonmountains*64 53:ashenvale*62 115:felwood*78 193:darkshore*56 249:teldrassil*119
+1	-14	-384:silithus*143 -241:ungorocrater*52 -189:silithus*13 -143:feralas*34 -109:mulgore*98 -11:stonetalonmountains*64 53:ashenvale*65 118:felwood*74 192:darkshore*57 249:teldrassil*119
+1	-13	-384:silithus*148 -236:ungorocrater*40 -196:silithus*20 -143:feralas*34 -109:mulgore*98 -11:stonetalonmountains*64 53:ashenvale*66 119:felwood*69 188:darkshore*60 248:teldrassil*120
+1	-12	-384:silithus*149 -235:ungorocrater*38 -197:silithus*21 -143:feralas*34 -109:mulgore*75 -34:thunderbluff*5 -29:mulgore*18 -11:stonetalonmountains*64 53:ashenvale*67 120:felwood*68 188:darkshore*60 248:teldrassil*120
+1	-11	-384:silithus*149 -235:ungorocrater*38 -197:silithus*21 -142:feralas*33 -109:mulgore*74 -35:thunderbluff*7 -28:mulgore*17 -11:stonetalonmountains*64 53:ashenvale*68 121:felwood*39 160:darkshore*88 248:teldrassil*120
+1	-10	-384:silithus*149 -235:ungorocrater*38 -197:silithus*21 -142:feralas*33 -109:mulgore*74 -35:thunderbluff*7 -28:mulgore*17 -11:stonetalonmountains*64 53:ashenvale*68 121:felwood*39 160:darkshore*87 247:teldrassil*121
+1	-9	-384:silithus*149 -235:ungorocrater*38 -197:silithus*21 -142:feralas*33 -109:mulgore*74 -35:thunderbluff*7 -28:mulgore*17 -11:stonetalonmountains*64 53:ashenvale*68 121:felwood*39 160:darkshore*87 247:teldrassil*121
+1	-8	-384:silithus*151 -233:ungorocrater*35 -198:silithus*22 -142:feralas*33 -109:mulgore*74 -35:thunderbluff*7 -28:mulgore*17 -11:stonetalonmountains*64 53:ashenvale*68 121:felwood*39 160:darkshore*87 247:teldrassil*121
+1	-7	-384:silithus*154 -230:ungorocrater*27 -203:silithus*27 -142:feralas*33 -109:mulgore*72 -37:thunderbluff*9 -28:mulgore*17 -11:stonetalonmountains*64 53:ashenvale*75 128:darkshore*4 132:felwood*12 144:darkshore*103 247:teldrassil*121
+1	-6	-384:silithus*158 -226:ungorocrater*19 -207:silithus*31 -142:feralas*33 -109:mulgore*64 -45:thunderbluff*4 -41:mulgore*2 -39:thunderbluff*11 -28:mulgore*17 -11:stonetalonmountains*64 53:ashenvale*75 128:darkshore*6 134:felwood*7 141:darkshore*106 247:teldrassil*121
+1	-5	-384:silithus*158 -226:ungorocrater*19 -207:silithus*31 -142:feralas*33 -109:mulgore*64 -45:thunderbluff*16 -29:mulgore*18 -11:stonetalonmountains*64 53:ashenvale*75 128:darkshore*118 246:teldrassil*122
+1	-4	-384:silithus*158 -226:ungorocrater*15 -211:silithus*35 -145:feralas*37 -108:mulgore*62 -46:thunderbluff*17 -29:mulgore*18 -11:stonetalonmountains*64 53:ashenvale*75 128:darkshore*118 246:teldrassil*122
+1	-3	-384:silithus*158 -226:ungorocrater*15 -211:silithus*35 -145:feralas*38 -107:mulgore*61 -46:thunderbluff*17 -29:mulgore*18 -11:stonetalonmountains*64 53:ashenvale*75 128:darkshore*118 246:teldrassil*122
+1	-2	-384:silithus*208 -159:feralas*52 -107:mulgore*61 -46:thunderbluff*17 -29:mulgore*19 -6:stonetalonmountains*59 53:ashenvale*74 127:darkshore*119 246:teldrassil*122
+1	-1	-384:silithus*208 -166:feralas*60 -106:mulgore*61 -45:thunderbluff*17 -28:mulgore*18 -9:stonetalonmountains*62 53:ashenvale*73 126:darkshore*119 245:teldrassil*123
+1	0	-384:silithus*208 -166:feralas*60 -106:mulgore*62 -44:thunderbluff*16 -28:mulgore*18 -9:stonetalonmountains*62 53:ashenvale*72 125:darkshore*120 245:teldrassil*123
+1	1	-384:silithus*208 -166:feralas*60 -106:mulgore*64 -42:thunderbluff*14 -28:mulgore*18 -9:stonetalonmountains*68 59:ashenvale*65 124:darkshore*121 245:teldrassil*123
+1	2	-384:silithus*208 -166:feralas*62 -104:mulgore*62 -42:thunderbluff*14 -28:mulgore*18 -9:stonetalonmountains*68 59:ashenvale*65 124:darkshore*121 245:teldrassil*123
+1	3	-384:silithus*208 -166:feralas*62 -104:mulgore*62 -42:thunderbluff*14 -28:mulgore*18 -9:stonetalonmountains*68 59:ashenvale*66 125:darkshore*119 244:teldrassil*124
+1	4	-384:silithus*208 -166:feralas*63 -103:mulgore*61 -42:thunderbluff*16 -26:mulgore*16 -9:stonetalonmountains*68 59:ashenvale*67 126:darkshore*118 244:teldrassil*124
+1	5	-384:silithus*208 -166:feralas*63 -102:mulgore*60 -42:thunderbluff*16 -26:mulgore*16 -9:stonetalonmountains*68 59:ashenvale*67 126:darkshore*118 244:teldrassil*124
+1	6	-384:silithus*208 -166:feralas*63 -101:mulgore*59 -42:thunderbluff*16 -26:mulgore*15 -9:stonetalonmountains*68 59:ashenvale*67 126:darkshore*118 244:teldrassil*124
+1	7	-384:silithus*208 -166:feralas*63 -99:mulgore*58 -41:thunderbluff*15 -26:mulgore*14 -9:stonetalonmountains*68 59:ashenvale*67 126:darkshore*118 244:teldrassil*124
+1	8	-384:silithus*208 -166:feralas*63 -99:mulgore*66 -33:thunderbluff*7 -26:mulgore*13 -9:stonetalonmountains*68 59:ashenvale*65 124:darkshore*119 243:teldrassil*125
+1	9	-384:silithus*208 -166:feralas*63 -98:mulgore*65 -33:thunderbluff*7 -26:mulgore*12 -9:stonetalonmountains*68 59:ashenvale*62 121:darkshore*122 243:teldrassil*125
+1	10	-384:silithus*208 -166:feralas*63 -96:mulgore*63 -33:thunderbluff*5 -28:mulgore*14 0:stonetalonmountains*59 59:ashenvale*62 121:darkshore*122 243:teldrassil*125
+1	11	-384:silithus*208 -166:feralas*62 -91:mulgore*59 -32:thunderbluff*3 -29:mulgore*14 0:stonetalonmountains*59 59:ashenvale*62 121:darkshore*121 242:teldrassil*126
+1	12	-384:silithus*208 -167:feralas*63 -91:mulgore*75 0:stonetalonmountains*59 59:ashenvale*62 121:darkshore*121 242:teldrassil*126
+1	13	-384:silithus*208 -167:feralas*59 -61:mulgore*45 0:stonetalonmountains*59 59:ashenvale*62 121:darkshore*120 241:teldrassil*127
+1	14	-384:silithus*208 -167:feralas*59 -61:mulgore*4 -57:desolace*4 -53:mulgore*37 0:stonetalonmountains*59 59:ashenvale*62 121:darkshore*120 241:teldrassil*127
+1	15	-384:silithus*208 -167:feralas*59 -62:desolace*10 -52:mulgore*36 10:stonetalonmountains*49 59:ashenvale*63 122:darkshore*118 240:teldrassil*128
+1	16	-384:silithus*80 -272:silithus*96 -167:feralas*71 -62:desolace*10 -49:mulgore*26 -23:desolace*33 10:stonetalonmountains*49 59:ashenvale*63 122:darkshore*118 240:teldrassil*128
+1	17	-384:silithus*80 -272:silithus*96 -167:feralas*71 -62:desolace*10 -45:mulgore*21 -24:desolace*34 10:stonetalonmountains*49 59:ashenvale*63 122:darkshore*118 240:teldrassil*128
+1	18	-384:silithus*80 -272:silithus*96 -167:feralas*71 -62:desolace*10 -41:mulgore*15 -26:desolace*36 10:stonetalonmountains*49 59:ashenvale*63 122:darkshore*117 239:teldrassil*129
+1	19	-384:silithus*80 -272:silithus*96 -167:feralas*71 -64:desolace*74 10:stonetalonmountains*51 61:ashenvale*61 122:darkshore*116 238:teldrassil*130
+1	20	-384:silithus*80 -272:silithus*96 -167:feralas*71 -64:desolace*74 10:stonetalonmountains*51 61:ashenvale*62 123:darkshore*115 238:teldrassil*130
+1	21	-384:silithus*80 -272:silithus*96 -167:feralas*71 -64:desolace*74 10:stonetalonmountains*51 61:ashenvale*63 124:darkshore*113 237:teldrassil*131
+1	22	-384:silithus*80 -272:silithus*96 -167:feralas*71 -64:desolace*74 10:stonetalonmountains*51 61:ashenvale*64 125:darkshore*112 237:teldrassil*131
+1	23	-384:silithus*80 -272:silithus*96 -167:feralas*71 -64:desolace*74 10:stonetalonmountains*60 70:ashenvale 71:stonetalonmountains 72:ashenvale*53 125:darkshore*111 236:teldrassil*132
+1	24	-384:silithus*80 -272:silithus*96 -167:feralas*71 -64:desolace*74 10:stonetalonmountains*62 72:ashenvale*54 126:darkshore*110 236:teldrassil*132
+1	25	-384:silithus*80 -272:silithus*96 -167:feralas*71 -64:desolace*74 10:stonetalonmountains*67 77:ashenvale*50 127:darkshore*107 234:teldrassil*134
+1	26	-384:silithus*80 -272:silithus*96 -167:feralas*71 -64:desolace*74 10:stonetalonmountains*67 77:ashenvale*50 127:darkshore*106 233:teldrassil*135
+1	27	-384:silithus*80 -272:silithus*91 -181:feralas*2 -179:silithus*3 -176:feralas*80 -64:desolace*74 10:stonetalonmountains*67 77:ashenvale*51 128:darkshore*104 232:teldrassil*136
+1	28	-384:silithus*80 -272:silithus*91 -181:feralas*85 -64:desolace*74 10:stonetalonmountains*67 77:ashenvale*51 128:darkshore*103 231:teldrassil*137
+1	29	-384:silithus*80 -272:silithus*91 -181:feralas*85 -64:desolace*74 10:stonetalonmountains*67 77:ashenvale*51 128:darkshore*103 231:teldrassil*137
+1	30	-384:silithus*80 -272:silithus*91 -181:feralas*85 -64:desolace*74 10:stonetalonmountains*67 77:ashenvale*51 128:darkshore*102 230:teldrassil*138
+1	31	-384:silithus*80 -272:silithus*91 -181:feralas*66 -115:diremaulentrance*5 -110:feralas*14 -64:desolace*74 10:stonetalonmountains*78 88:ashenvale*40 128:darkshore*101 229:teldrassil*139
+1	32	-384:silithus*80 -272:silithus*91 -181:feralas*66 -115:diremaulentrance*5 -110:feralas*14 -74:desolace*84 10:stonetalonmountains*78 88:ashenvale*40 128:darkshore*100 228:teldrassil*140
+1	33	-384:silithus*80 -272:silithus*91 -181:feralas*66 -115:diremaulentrance*5 -110:feralas*14 -74:desolace*84 10:stonetalonmountains*78 88:ashenvale*40 128:darkshore*99 227:teldrassil*141
+1	34	-384:silithus*80 -272:silithus*91 -181:feralas*68 -113:diremaulentrance -112:feralas*16 -74:desolace*85 11:stonetalonmountains*77 88:ashenvale*40 128:darkshore*98 226:teldrassil*142
+1	35	-384:silithus*80 -272:silithus*91 -181:feralas*85 -74:desolace*85 11:stonetalonmountains*77 88:ashenvale*40 128:darkshore*97 225:teldrassil*143
+1	36	-384:silithus*80 -272:silithus*91 -181:feralas*85 -74:desolace*85 11:stonetalonmountains*77 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	37	-384:silithus*80 -272:silithus*91 -181:feralas*85 -74:desolace*85 11:stonetalonmountains*77 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	38	-384:silithus*80 -272:silithus*91 -181:feralas*85 -74:desolace*85 11:stonetalonmountains*77 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	39	-384:silithus*80 -272:silithus*91 -181:feralas*85 -74:desolace*85 11:stonetalonmountains*77 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	40	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*85 -74:desolace*86 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	41	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*85 -74:desolace*86 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	42	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*85 -74:desolace*86 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	43	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*85 -74:desolace*86 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	44	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*85 -74:desolace*86 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	45	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*85 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	46	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*85 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	47	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*85 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	48	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*85 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	49	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*85 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	50	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*85 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	51	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*84 11:stonetalonmountains*77 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	52	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*84 11:stonetalonmountains*77 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	53	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*84 11:stonetalonmountains*77 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	54	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*84 11:stonetalonmountains*77 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	55	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*84 11:stonetalonmountains*77 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	56	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*85 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	57	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*85 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	58	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*85 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	59	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*86 13:stonetalonmountains*75 88:ashenvale*40 128:darkshore*96 224:teldrassil*144
+1	60	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*85 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*70 294:darnassus*8 302:teldrassil*66
+1	61	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*85 12:stonetalonmountains*76 88:ashenvale*40 128:darkshore*96 224:teldrassil*69 293:darnassus*11 304:teldrassil*64
+1	62	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*86 13:stonetalonmountains*75 88:ashenvale*40 128:darkshore*96 224:teldrassil*67 291:darnassus*15 306:teldrassil*62
+1	63	-384:silithus*80 -256:ahnqirajentrance*10 -246:silithus*65 -181:feralas*108 -73:desolace*89 16:stonetalonmountains*72 88:ashenvale*40 128:darkshore*96 224:teldrassil*65 289:darnassus*19 308:teldrassil*60
+1	64	-384:silithus*80 -246:silithus*65 -181:feralas*108 -73:desolace*90 32:desolace*32 64:ashenvale*12 76:stonetalonmountains*12 88:ashenvale*40 128:darkshore*96 224:teldrassil*63 287:darnassus*23 310:teldrassil*58
+1	65	-384:silithus*80 -246:silithus*65 -181:feralas*108 -73:desolace*89 32:desolace*32 64:ashenvale*12 76:stonetalonmountains*12 88:ashenvale*40 128:darkshore*96 224:teldrassil*62 286:darnassus*25 311:teldrassil*57
+1	66	-384:silithus*80 -246:silithus*57 -189:feralas*116 -73:desolace*89 32:desolace*32 64:ashenvale*13 77:stonetalonmountains*11 88:ashenvale*40 128:darkshore*96 224:teldrassil*61 285:darnassus*29 314:teldrassil*54
+1	67	-384:silithus*80 -246:silithus*44 -202:feralas*128 -74:desolace*90 32:desolace*32 64:ashenvale*13 77:stonetalonmountains*11 88:ashenvale*40 128:darkshore*96 224:teldrassil*61 285:darnassus*29 314:teldrassil*54
+1	68	-384:silithus*80 -246:silithus*43 -203:feralas*129 -74:desolace*90 32:desolace*32 64:ashenvale*15 79:stonetalonmountains*9 88:ashenvale*40 128:darkshore*96 224:teldrassil*60 284:darnassus*32 316:teldrassil*52
+1	69	-384:silithus*80 -246:silithus*38 -208:feralas*134 -74:desolace*90 32:desolace*32 64:ashenvale*15 79:stonetalonmountains*9 88:ashenvale*40 128:darkshore*96 224:teldrassil*60 284:darnassus*32 316:teldrassil*52
+1	70	-384:silithus*80 -246:silithus*37 -209:feralas*135 -74:desolace*90 32:desolace*32 64:ashenvale*16 80:stonetalonmountains*3 83:ashenvale*2 85:stonetalonmountains*2 87:ashenvale*41 128:darkshore*96 224:teldrassil*60 284:darnassus*31 315:teldrassil*53
+1	71	-384:silithus*80 -246:silithus*32 -214:feralas*140 -74:desolace*90 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*60 284:darnassus*31 315:teldrassil*53
+1	72	-384:silithus*80 -246:silithus*31 -215:feralas*141 -74:desolace*90 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*59 283:darnassus*31 314:teldrassil*54
+1	73	-384:silithus*80 -246:silithus*31 -215:feralas*141 -74:desolace*90 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*59 283:darnassus*31 314:teldrassil*54
+1	74	-384:silithus*80 -246:silithus*27 -219:feralas*145 -74:desolace*90 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*59 283:darnassus*30 313:teldrassil*55
+1	75	-384:silithus*80 -246:silithus*27 -219:feralas*145 -74:desolace*90 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*59 283:darnassus*30 313:teldrassil*55
+1	76	-384:silithus*80 -246:silithus*25 -221:feralas*147 -74:desolace*90 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*60 284:darnassus*28 312:teldrassil*56
+1	77	-384:silithus*80 -246:silithus*22 -224:feralas*150 -74:desolace*90 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*60 284:darnassus*26 310:teldrassil*58
+1	78	-384:silithus*80 -246:silithus*22 -224:feralas*150 -74:desolace*90 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*60 284:darnassus*26 310:teldrassil*58
+1	79	-384:silithus*80 -246:silithus*22 -224:feralas*150 -74:desolace*90 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*61 285:darnassus*24 309:teldrassil*59
+1	80	-384:silithus*115 -269:feralas*15 -254:silithus*30 -224:feralas*150 -74:desolace*88 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*61 285:darnassus*23 308:teldrassil*60
+1	81	-384:silithus*115 -269:feralas*15 -254:silithus*30 -224:feralas*150 -74:desolace*88 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*62 286:darnassus*22 308:teldrassil*60
+1	82	-384:silithus*112 -272:feralas*19 -253:silithus*29 -224:feralas*150 -74:desolace*88 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*64 288:darnassus*19 307:teldrassil*61
+1	83	-384:silithus*112 -272:feralas*19 -253:silithus*29 -224:feralas*150 -74:desolace*88 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*70 294:darnassus*8 302:teldrassil*66
+1	84	-384:silithus*112 -272:feralas*19 -253:silithus*29 -224:feralas*150 -74:desolace*88 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*73 297:darnassus*4 301:teldrassil*67
+1	85	-384:silithus*112 -272:feralas*198 -74:desolace*88 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*73 297:darnassus*4 301:teldrassil*67
+1	86	-384:silithus*112 -272:feralas*198 -74:desolace*88 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	87	-384:silithus*112 -272:feralas*198 -74:desolace*88 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	88	-384:silithus*112 -272:feralas*198 -74:desolace*88 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	89	-384:silithus*112 -272:feralas*198 -74:desolace*88 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	90	-384:silithus*112 -272:feralas*198 -74:desolace*88 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	91	-384:silithus*112 -272:feralas*192 -80:desolace*94 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	92	-384:silithus*112 -272:feralas*192 -80:desolace*94 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	93	-384:silithus*112 -272:feralas*192 -80:desolace*94 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	94	-384:silithus*112 -272:feralas*192 -80:desolace*94 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	95	-384:silithus*112 -272:feralas*192 -80:desolace*94 32:desolace*32 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	96	-384:silithus*112 -272:feralas*193 -79:desolace*143 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	97	-384:silithus*112 -272:feralas*193 -79:desolace*143 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	98	-384:silithus*112 -272:feralas*193 -79:desolace*143 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	99	-384:silithus*112 -272:feralas*194 -78:desolace*142 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	100	-384:silithus*112 -272:feralas*194 -78:desolace*142 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	101	-384:silithus*112 -272:feralas*195 -77:desolace*141 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	102	-384:silithus*112 -272:feralas*195 -77:desolace*141 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	103	-384:silithus*112 -272:feralas*195 -77:desolace*141 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	104	-384:silithus*112 -272:feralas*195 -77:desolace*141 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	105	-384:silithus*112 -272:feralas*195 -77:desolace*141 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	106	-384:silithus*112 -272:feralas*195 -77:desolace*141 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	107	-384:silithus*112 -272:feralas*195 -77:desolace*141 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	108	-384:silithus*112 -272:feralas*195 -77:desolace*141 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	109	-384:silithus*112 -272:feralas*195 -77:desolace*141 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	110	-384:silithus*112 -272:feralas*195 -77:desolace*141 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	111	-320:silithus*48 -272:feralas*195 -77:desolace*141 64:ashenvale*64 128:darkshore*96 224:teldrassil*144
+1	112	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	113	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	114	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	115	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	116	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	117	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	118	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	119	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	120	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	121	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	122	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	123	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	124	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	125	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	126	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	127	-224:feralas*147 -77:desolace*61 208:teldrassil*112
+1	128	-224:feralas*144 208:teldrassil*112
+1	129	-224:feralas*144 208:teldrassil*112
+1	130	-224:feralas*144 208:teldrassil*112
+1	131	-224:feralas*144 208:teldrassil*112
+1	132	-224:feralas*144 208:teldrassil*112
+1	133	-224:feralas*144 208:teldrassil*112
+1	134	-224:feralas*144 208:teldrassil*112
+1	135	-224:feralas*144 208:teldrassil*112
+1	136	-224:feralas*144 208:teldrassil*112
+1	137	-224:feralas*144 208:teldrassil*112
+1	138	-224:feralas*144 208:teldrassil*112
+1	139	-224:feralas*144 208:teldrassil*112
+1	140	-224:feralas*144 208:teldrassil*112
+1	141	-224:feralas*144 208:teldrassil*112
+1	142	-224:feralas*144 208:teldrassil*112
+1	143	-224:feralas*144 208:teldrassil*112
+1	144	208:teldrassil*112
+1	145	208:teldrassil*112
+1	146	208:teldrassil*112
+1	147	208:teldrassil*112
+1	148	208:teldrassil*112
+1	149	208:teldrassil*112
+1	150	208:teldrassil*112
+1	151	208:teldrassil*112
+1	152	208:teldrassil*112
+1	153	208:teldrassil*112
+1	154	208:teldrassil*112
+1	155	208:teldrassil*112
+1	156	208:teldrassil*112
+1	157	208:teldrassil*112
+1	158	208:teldrassil*112
+1	159	208:teldrassil*112
+1	160	240:teldrassil*80
+1	161	240:teldrassil*80
+1	162	240:teldrassil*80
+1	163	240:teldrassil*80
+1	164	240:teldrassil*80
+1	165	240:teldrassil*80
+1	166	240:teldrassil*80
+1	167	240:teldrassil*80
+1	168	240:teldrassil*80
+1	169	240:teldrassil*80
+1	170	240:teldrassil*80
+1	171	240:teldrassil*80
+1	172	240:teldrassil*80
+1	173	240:teldrassil*80
+1	174	240:teldrassil*80
+1	175	240:teldrassil*80
+1	176	240:teldrassil*80
+1	177	240:teldrassil*80
+1	178	240:teldrassil*80
+1	179	240:teldrassil*80
+1	180	240:teldrassil*80
+1	181	240:teldrassil*80
+1	182	240:teldrassil*80
+1	183	240:teldrassil*80
+1	184	240:teldrassil*80
+1	185	240:teldrassil*80
+1	186	240:teldrassil*80
+1	187	240:teldrassil*80
+1	188	240:teldrassil*80
+1	189	240:teldrassil*80
+1	190	240:teldrassil*80
+1	191	240:teldrassil*80
+1	192	240:teldrassil*80
+1	193	240:teldrassil*80
+1	194	240:teldrassil*80
+1	195	240:teldrassil*80
+1	196	240:teldrassil*80
+1	197	240:teldrassil*80
+1	198	240:teldrassil*80
+1	199	240:teldrassil*80
+1	200	240:teldrassil*80
+1	201	240:teldrassil*80
+1	202	240:teldrassil*80
+1	203	240:teldrassil*80
+1	204	240:teldrassil*80
+1	205	240:teldrassil*80
+1	206	240:teldrassil*80
+1	207	240:teldrassil*80
+1	464	464:gmisland*48
+1	465	464:gmisland*48
+1	466	464:gmisland*48
+1	467	464:gmisland*48
+1	468	464:gmisland*48
+1	469	464:gmisland*48
+1	470	464:gmisland*48
+1	471	464:gmisland*48
+1	472	464:gmisland*48
+1	473	464:gmisland*48
+1	474	464:gmisland*48
+1	475	464:gmisland*48
+1	476	464:gmisland*48
+1	477	464:gmisland*48
+1	478	464:gmisland*48
+1	479	464:gmisland*48
+1	480	464:gmisland*48
+1	481	464:gmisland*48
+1	482	464:gmisland*48
+1	483	464:gmisland*48
+1	484	464:gmisland*48
+1	485	464:gmisland*48
+1	486	464:gmisland*48
+1	487	464:gmisland*48
+1	488	464:gmisland*48
+1	489	464:gmisland*48
+1	490	464:gmisland*48
+1	491	464:gmisland*48
+1	492	464:gmisland*48
+1	493	464:gmisland*48
+1	494	464:gmisland*48
+1	495	464:gmisland*48
+1	496	464:gmisland*48
+1	497	464:gmisland*48
+1	498	464:gmisland*48
+1	499	464:gmisland*48
+1	500	464:gmisland*48
+1	501	464:gmisland*48
+1	502	464:gmisland*48
+1	503	464:gmisland*48
+1	504	464:gmisland*48
+1	505	464:gmisland*48
+1	506	464:gmisland*48
+1	507	464:gmisland*48
+1	508	464:gmisland*48
+1	509	464:gmisland*48
+1	510	464:gmisland*48
+1	511	464:gmisland*48

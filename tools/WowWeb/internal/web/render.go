@@ -19,7 +19,7 @@ import (
 	"tortoiseweb/internal/store"
 )
 
-//go:embed templates/*.html assets/* assets/icons assets/maps dbcnames.txt mapzones.txt zonefix.txt
+//go:embed templates/*.html assets/* assets/icons assets/maps dbcnames.txt mapzones.txt zonefix.txt zonegrid.txt
 var templateFS embed.FS
 
 // renderer caches one parsed template set per page.

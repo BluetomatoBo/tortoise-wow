@@ -3,6 +3,7 @@ package web
 import (
 	_ "embed"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -79,9 +80,11 @@ var (
 	zoneFix = map[zoneFixCell]uint32{}
 )
 
-// zoneFixCellSize is the side of a correction cell, in world yards. It has to
-// match gen_zonefix.py.
-const zoneFixCellSize = 128
+// zoneFixCellSize is the side of a correction cell, in world yards. It is the
+// MCNK chunk - the same resolution as the area grid - so a cell that holds both a
+// cave and the ground above it can still be told apart. Has to match
+// gen_zonefix.py.
+const zoneFixCellSize = 533.3333333 / 16
 
 // zoneFixCell names one cell of one map. The coordinates are floored division of
 // the world coordinates, so they can be negative.
@@ -96,6 +99,63 @@ func zoneFixKey(mapID uint16, x, y float64) zoneFixCell {
 		cx:    int32(math.Floor(x / zoneFixCellSize)),
 		cy:    int32(math.Floor(y / zoneFixCellSize)),
 	}
+}
+
+//go:embed zonegrid.txt
+var zoneGridData string
+
+// zoneGridCellSize is one MCNK chunk - the resolution of the client's own area
+// grid. The server reads the same thing out of its .map files
+// (GridMap::getArea, src/game/Maps/GridMap.cpp) and it is what the game itself
+// calls the zone of a position; see gen_zonegrid.py for how the file is built.
+const zoneGridCellSize = 533.3333333 / 16
+
+// nestedBoxLimit is the largest box that can be a nested one: see nestedBox.
+const nestedBoxLimit = 3.0e6
+
+// zoneGridRun is a horizontal run of cells that belong to one zone.
+type zoneGridRun struct {
+	start int32 // first cell, inclusive
+	end   int32 // last cell, exclusive
+	dir   string
+}
+
+// zoneGridKey names one row of the grid: a map and a cell row.
+type zoneGridKey struct {
+	mapID uint16
+	cy    int32
+}
+
+var (
+	// zoneGrid holds the client's own answer per cell row. A point whose row is
+	// not here (ocean, a zone the vanilla tiles do not cover) falls through to
+	// the box rule.
+	zoneGrid = map[zoneGridKey][]zoneGridRun{}
+
+	// boxesByDir finds a zone's box by the directory its map is stored under, so
+	// a grid answer can be turned back into the box the page draws.
+	boxesByDir = map[uint16]map[string]zoneBox{}
+)
+
+func zoneGridKeyOf(mapID uint16, x, y float64) zoneGridKey {
+	return zoneGridKey{mapID: mapID, cy: int32(math.Floor(y / zoneGridCellSize))}
+}
+
+// zoneGridBox answers with the zone the client's area grid puts a point in.
+func zoneGridBox(mapID uint16, x, y float64) (zoneBox, bool) {
+	runs := zoneGrid[zoneGridKeyOf(mapID, x, y)]
+	if len(runs) == 0 {
+		return zoneBox{}, false
+	}
+	cell := int32(math.Floor(x / zoneGridCellSize))
+	// Runs are sorted by start, so the first one that ends after the cell is the
+	// only candidate.
+	at := sort.Search(len(runs), func(i int) bool { return runs[i].end > cell })
+	if at == len(runs) || runs[at].start > cell {
+		return zoneBox{}, false
+	}
+	box, ok := boxesByDir[mapID][runs[at].dir]
+	return box, ok
 }
 
 func init() {
@@ -129,7 +189,54 @@ func init() {
 			continue
 		}
 		boxesByMap[box.mapID] = append(boxesByMap[box.mapID], box)
+		if boxesByDir[box.mapID] == nil {
+			boxesByDir[box.mapID] = map[string]zoneBox{}
+		}
+		// An area can be listed twice on one map (area 0 is the continent row of
+		// each); the grid only ever names a real zone, so the last one wins here
+		// and the counts below stay honest.
+		boxesByDir[box.mapID][box.dir] = box
 		boxCount++
+	}
+
+	for _, line := range strings.Split(zoneGridData, "\n") {
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		field := strings.Split(line, "\t")
+		if len(field) != 3 {
+			continue
+		}
+		mapID, err := strconv.ParseUint(field[0], 10, 16)
+		if err != nil {
+			continue
+		}
+		cy, err := strconv.ParseInt(field[1], 10, 32)
+		if err != nil {
+			continue
+		}
+		var runs []zoneGridRun
+		for _, part := range strings.Fields(field[2]) {
+			spec, length, hasLength := strings.Cut(part, "*")
+			start, dir, ok := strings.Cut(spec, ":")
+			if !ok {
+				continue
+			}
+			from, err := strconv.ParseInt(start, 10, 32)
+			if err != nil {
+				continue
+			}
+			n := int64(1)
+			if hasLength {
+				if n, err = strconv.ParseInt(length, 10, 32); err != nil {
+					continue
+				}
+			}
+			runs = append(runs, zoneGridRun{start: int32(from), end: int32(from + n), dir: dir})
+		}
+		if len(runs) > 0 {
+			zoneGrid[zoneGridKey{mapID: uint16(mapID), cy: int32(cy)}] = runs
+		}
 	}
 
 	for _, line := range strings.Split(zoneFixData, "\n") {
@@ -197,18 +304,88 @@ func (b zoneBox) marker(x, y float64) (float64, float64) {
 	return px, py
 }
 
+// nestedBox answers with the smallest box when it sits inside the others.
+//
+// Some zones are drawn as a box inside another zone's land - a city, a cave, a
+// tunnel - and there the smallest box is right even though the terrain under it
+// belongs to the surrounding zone: the game puts a player in Undercity by the
+// area of the WMO they are standing in, not by the terrain below it, and
+// Undercity's own terrain grid cell says Tirisfal. A partial overlap (two
+// neighbours whose artwork margins cover each other) is not this case and is left
+// to the area grid.
+//
+// The test is generous - a box that is 85% inside another counts as nested -
+// because the client's boxes carry a margin too. An area listed twice on one map
+// (the continent row) is skipped: it contains everything and would swallow cities.
+//
+// Only small boxes count. A whole zone's box can sit 94% inside its neighbour's
+// (Durotar's does, inside the Barrens'), and that is an accident of two artwork
+// extents rather than a place with its own area - there the terrain grid below is
+// the answer, and taking the smaller box would label the Barrens' land Durotar.
+// Every city, cave and dungeon entrance in this realm is under two million square
+// yards; the smallest zone box that is not one of those is over three.
+func nestedBox(mapID uint16, x, y float64) (zoneBox, bool) {
+	var candidates []zoneBox
+	for _, box := range boxesByMap[mapID] {
+		if box.area != 0 && box.contains(x, y) {
+			candidates = append(candidates, box)
+		}
+	}
+	if len(candidates) < 2 {
+		return zoneBox{}, false
+	}
+	smallest := candidates[0]
+	for _, box := range candidates[1:] {
+		if box.extent() < smallest.extent() {
+			smallest = box
+		}
+	}
+	if smallest.extent() > nestedBoxLimit {
+		return zoneBox{}, false
+	}
+	// Inside *one* of them is enough: a city sits inside its own zone, and a
+	// third box can overlap both without containing either (the Plaguelands
+	// border reaches over Undercity's box, which says nothing about the city).
+	for _, box := range candidates {
+		if box == smallest {
+			continue
+		}
+		if overlapFraction(smallest, box) >= 0.85 {
+			return smallest, true
+		}
+	}
+	return zoneBox{}, false
+}
+
+// overlapFraction is how much of small lies inside big.
+func overlapFraction(small, big zoneBox) float64 {
+	width := math.Min(small.xmax, big.xmax) - math.Max(small.xmin, big.xmin)
+	height := math.Min(small.ymax, big.ymax) - math.Max(small.ymin, big.ymin)
+	if width <= 0 || height <= 0 {
+		return 0
+	}
+	return (width * height) / small.extent()
+}
+
 // ZoneAt finds the zone a world point falls into on a map.
 //
-// Several boxes can contain it - a zone and the continent it sits on, or two
-// neighbours that overlap at the edge - and the smallest is the one whose map the
-// client would show for that point. The box is returned rather than its area,
-// because an area id alone does not say which map it was matched on.
+// Four answers are tried in order:
 //
-// The correction table is consulted first: a cell listed there has been checked
-// by hand (see gen_zonefix.py), because the box rule reads a zone's map artwork
-// extent and a small box can cover a neighbour's land as nothing but margin. A
-// corrected area that does not actually contain the point falls through to the
-// box rule, so a stale table can only lose an improvement, never invent a zone.
+//  1. The correction table: cells where the box rule was checked by hand and
+//     found wrong (gen_zonefix.py), verified against the content of those cells.
+//  2. A box that sits inside its neighbours (nestedBox): cities, caves, tunnels -
+//     the places the terrain grid below answers with the surrounding zone.
+//  3. The client's own area grid (gen_zonegrid.py), which is what the game itself
+//     reads for a position in the open world (GridMap::getArea). It is per MCNK
+//     chunk and therefore finer than any box.
+//  4. The box rule: several boxes can contain a point - a zone and the continent
+//     it sits on, or two neighbours that overlap at the edge - and the smallest is
+//     the one whose map the client would show, except where its box only covers a
+//     neighbour's land as the margin of its own artwork.
+//
+// The box is returned rather than its area, because an area id alone does not say
+// which map it was matched on. An answer that does not actually contain the point
+// is dropped, so a stale table costs an improvement rather than inventing a zone.
 func ZoneAt(mapID uint16, x, y float64) (zoneBox, bool) {
 	if area, ok := zoneFix[zoneFixKey(mapID, x, y)]; ok {
 		for _, box := range boxesByMap[mapID] {
@@ -216,6 +393,12 @@ func ZoneAt(mapID uint16, x, y float64) (zoneBox, bool) {
 				return box, true
 			}
 		}
+	}
+	if box, ok := nestedBox(mapID, x, y); ok {
+		return box, true
+	}
+	if box, ok := zoneGridBox(mapID, x, y); ok {
+		return box, true
 	}
 	return zoneBoxAt(mapID, x, y)
 }
