@@ -610,3 +610,36 @@ func TestZoneFixCoversCustomZonesTerrainDoesNotKnow(t *testing.T) {
 		}
 	}
 }
+
+// TestZoneFixSplitsACityFromItsWild covers Alah'Thalas, a custom blood elf city whose
+// box lies entirely inside Thalassian Highlands: the terrain grid does not know the
+// city at all, so the nested-box rule used to hand it every spawn in the box - the
+// treants, boars and Thalassian Sentinels patrolling outside were drawn on the city
+// map. The rule now keeps a cell on the city map only when at least half of what
+// stands in it is the city's own (citizens, bankers, blood elf furniture); the rest
+// goes to the highlands, which is what the client shows out there.
+func TestZoneFixSplitsACityFromItsWild(t *testing.T) {
+	cases := []struct {
+		what  string
+		mapID uint16
+		x, y  float64
+		want  string
+	}{
+		{"萨拉斯哨兵（城外的巡逻）", 0, 4007, -2677, "thalassianhighlands"},
+		{"萨拉斯树人（城西的林子）", 0, 3900, -2400, "thalassianhighlands"},
+		{"拍卖师瑞琳（城里）", 0, 4265, -2848, "alahthalas"},
+		{"银行家莎兰娜（城里）", 0, 4262, -2842, "alahthalas"},
+		{"城区中心", 0, 4300, -2800, "alahthalas"},
+	}
+	for _, tc := range cases {
+		box, ok := ZoneAt(tc.mapID, tc.x, tc.y)
+		if !ok {
+			t.Errorf("%s: no zone for (%.0f, %.0f) on map %d", tc.what, tc.x, tc.y, tc.mapID)
+			continue
+		}
+		if box.dir != tc.want {
+			t.Errorf("%s: (%.0f, %.0f) on map %d is %s, want %s",
+				tc.what, tc.x, tc.y, tc.mapID, box.dir, tc.want)
+		}
+	}
+}

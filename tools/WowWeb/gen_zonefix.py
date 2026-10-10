@@ -51,6 +51,27 @@ NEAR = 2.0          # 证据要「近一倍以上」才覆盖现状
 NESTED = 0.85       # 小框有 85% 落在其它候选框里，就当成包含关系，不动
 
 # 人工核验过的修正：现状区域 -> 应判区域，后附核验依据（这些格子里的内容属于谁）。
+# 「城市嵌在区域里」的区域（NESTED_CITY）：框是**城市地图**的范围，但框内大部分是城外的野地。
+# 这些区域没有专属内容（框完全在父区域内），所以按「专属内容距离」的统计判据看不见它们；
+# 判据：格子里「野外内容」占一半以上就判给外圈区域，否则留在城市图上。
+#
+# alahthalas（阿尔萨拉斯，乌龟服新加的血精灵城）：城里是 WMO，玩家走进城里客户端才显示
+# 城市地图；站在城外（树人、野兽、难民、萨拉斯哨兵）看到的是萨拉斯高地。
+NESTED_CITY = {
+    "alahthalas": (
+        # 城里：Alah'Thalas 的 NPC、血精灵与达拉然的城装饰、传送球、书堆、邮箱
+        ("alah", "bloodelf", "blood elf", "high elf", "highelf", "dalaran", "goober",
+         "arcane", "party supplies", "translocation", "bookstack", "bookshelf",
+         "fancydesk", "doodads", "mailbox"),
+        # 野外：区域生物、矿草、难民、篝火 —— 站在城外，玩家客户端显示的是萨拉斯高地
+        ("thalassian sentinel", "thalassian treant", "thalassian tender", "thalassian fox",
+         "thalassian stag", "autumnal", "hawkstrider", "lynx", "farstride", "boar", "stag",
+         "deer", "refugee", "withering", "moonwell", "stallhorn", "unicorn", "dragonhawk",
+         "crawler", "netter", "coastrunner", "copper vein", "wood tree", "earthroot",
+         "peacebloom", "silverleaf", "soulwraith", "campfire", "spirit healer"),
+    ),
+}
+
 VERIFIED = {
     ("scarletenclave", "easternplaguelands"):
         "Plaguebat / Putrid Gargoyle / Blighted Surge / Carrion Grub —— 东瘟疫之地的怪",
@@ -128,6 +149,9 @@ VERIFIED = {
     ("ashenvale", "stonetalonmountains"):
         "石爪山风险投资公司黑沙矿点的内容：Blacksand Oil / Mechanic / Oilworker / Woodworker，"
         "用户抽查确认",
+    ("alahthalas", "thalassianhighlands"):
+        "阿尔萨拉斯框里的城外格子：格子里没有城市自己的内容（Alah'Thalas 的 NPC、血精灵城装饰、"
+        "传送球），只有树人、野兽、萨拉斯哨兵 → 判给萨拉斯高地；城里的留城市图（见 NESTED_CITY_MARKERS）",
 }
 
 # 判据给得出、但按内容核验**不对**的：保留现状，写在这里免得以后有人又加回来。
@@ -317,6 +341,52 @@ def main():
     fixes = {}          # cell -> area
     pairs = {}          # cell -> (现状区域, 应判区域)
     groups = collections.Counter()
+
+    # 嵌套城市（NESTED_CITY，如阿尔萨拉斯）：框是城市地图的范围，但框内大部分是城外的野地。
+    # 判据是「格子里的内容有一半以上属于野外」—— 城里格实测 0~10%、野外格 50~100%，
+    # 评论区的银行家/拍卖师这类没有地域词的名字靠这一条也能留在城里。
+    nested_city = 0
+    if NESTED_CITY:
+        city_names = {}
+        query = ("SELECT ct.name, c.id, c.map, FLOOR(c.position_x/%.6f), FLOOR(c.position_y/%.6f)"
+                 " FROM creature c JOIN creature_template ct ON ct.entry = c.id"
+                 " UNION ALL SELECT gt.name, g.id, g.map, FLOOR(g.position_x/%.6f), FLOOR(g.position_y/%.6f)"
+                 " FROM gameobject g JOIN gameobject_template gt ON gt.entry = g.id;"
+                 % (CELL, CELL, CELL, CELL))
+        res = subprocess.run(args.mysql.split() + ["-e", query], capture_output=True, text=True)
+        for line in res.stdout.split("\n")[1:]:
+            parts = line.split("\t")
+            if len(parts) < 5 or not parts[0].strip():
+                continue
+            try:
+                city_names.setdefault((int(parts[2]), int(parts[3]), int(parts[4])), []).append(parts[0].lower())
+            except ValueError:
+                continue
+        for cell, areas in cells.items():
+            m, cx, cy = cell
+            x, y = (cx + 0.5) * CELL, (cy + 0.5) * CELL
+            cands = sorted(candidates(m, x, y), key=area_of)
+            if len(cands) < 2:
+                continue
+            inner_dir = name_of.get(cands[0]["area"])
+            outer_dir = name_of.get(cands[1]["area"])
+            spec = NESTED_CITY.get(inner_dir)
+            if not spec or not outer_dir:
+                continue
+            _city_flags, wild_flags = spec
+            names = city_names.get(cell, [])
+            if not names:
+                continue
+            wild = sum(1 for nam in names if any(flag in nam for flag in wild_flags))
+            if wild * 2 < len(names):
+                continue                                     # 野外不到一半 → 留城市
+            if current(m, x, y) != cands[0]["area"]:
+                continue
+            fixes[cell] = cands[1]["area"]
+            pairs[cell] = (inner_dir, outer_dir)
+            groups[(inner_dir, outer_dir)] += 1
+            nested_city += 1
+        print("其中「嵌套城市的城外格子」候选 %d 格" % nested_city)
 
     # 自定义区域（乌龟服新加的，或者原版没启用、被乌龟服启用的）：它们的地形瓦片是老区域的
     # （吉尔尼斯半岛在原版数据里就标成希尔斯布莱德，拉皮迪斯岛标成荆棘谷），所以地形网格会给成
