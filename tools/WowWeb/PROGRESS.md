@@ -399,3 +399,47 @@ wowhead 到底能拿到哪些字段。
    改成带守卫的单条语句。
 
 **结论**：所有 wip 文件现在**全量回放两遍，第二遍 0 改动**。
+
+## 第十轮：DBC 来源核对（1.18.1 vs 1.12.1）与「以客户端为准」定稿
+
+**问题**：前一轮依据「客户端 DBC」改了法术/区域/阵营/飞行点共 2,698 条，用的是哪个客户端？
+答案是 **1.18.1 Turtle 客户端**（仓库清单 `tools/dbc_verification/manifest_formatted.json` →
+`cncdn/eucdn.turtlecraft.gg`，sha256 与清单一致）。本机那份原版 1.12.1 客户端
+（`/Users/bo/Downloads/WoW_Classic`）是 **zhCN 单语份 DBC**（enUS 槽全空，只有 124/133/142/151 有内容），
+字段布局与 Turtle 版完全一致，可按 ID 直接对比。
+
+**对比结果（共有 ID）**
+
+| 表 | 共有 ID | 完全相同 | 官方是英文/空 | 都有中文但不同 |
+|---|---|---|---|---|
+| Spell 名称 | 22,342 | 19,074 | 2,633 | 414 |
+| Spell 说明 | 22,342 | 19,323 | 345 | 1,344 |
+| AreaTable | 1,077 | 1,011 | 35 | 31 |
+| Faction | 190 | 129 | 35 | 26 |
+| TaxiNodes | 84 | 77 | 2 | 5 |
+
+**差异的四种性质**
+
+1. **官方漏译、客户端有中文**（3,000+ 条）：1.12 官方把隐藏/被动法术留在英文 → 客户端更好。
+2. **客户端连英文名一起改了**（129 条）：Turtle 自己的内容改动，库内英文与客户端 100% 一致 → 中文只能跟客户端。
+3. **纯译法分歧**（351 条名称）：官方 1.12 与 wowhead 1.13 一致的有 305 : 1 → 官方是标准写法，但玩家在游戏里看到的是客户端那套。
+4. **说明/光环不是译法问题**：抽查客户端**英文**同样含那些额外句子（Tiger's Fury `…and regenerates $s2 Energy`、
+   Ice Barrier `…increasing your Frost damage`、Exorcism `…generates reduced threat`、
+   Flame Shock `…benefits from your melee Attack Power`、Wand Specialization 命中+回蓝、Taunt「比等级N更有效」）
+   → 是 **Turtle 自己更新的机制文本**，官方 1.12 文本描述的是 1.12 机制，与服务端实际行为不符。
+5. **区域/阵营/飞行点反过来**：官方 1.12 是错译（Trash「绿龙」、Rubbish「红龙」、Venture Company「荆棘谷地精」、
+   Trogg「石腭怪」、Frostwind Camp「冰风岗」、Frostwolf Keep「部落要塞」），客户端是后来的修正译名。
+
+**定稿（用户拍板）**：这四张表一律以**玩家实际运行的客户端 DBC** 为准 —— 游戏里看到什么、站上显示什么，
+不做回退。唯一例外：客户端里 1.12 期遗留的旧职业名「盗贼」，按官方规范写法归一为「潜行者」。
+
+**本轮改动**：`locales_spell` 三列（name/description/auraDescription）共 53 行含「盗贼」，全部归一 ——
+`locales_simplified_cleanup.sql` 补 3 条 REPLACE、`locales_spell.sql` 快照同步 13 行、
+`locales_dbc_official.sql` 改 12 条 SET 值并删掉 5 条会退化成空操作的语句
+（`5169/5269` 迪菲亚潜行者伪装、`9949` 潜行者工具架召唤、`27787/27788` 潜行者护甲充能，wowhead 已确认官方写法）。
+
+**验证**：三列「盗贼」残留 0；REPLACE 重放 0 行改动；`locales_dbc_official.sql` 2,685 条逐条核对
+「库内 == 期望值」全部 ✅；`check_update_file.py` 33/33 通过；`verify_wip_locales.py` 快照 16,466 条全一致。
+
+**对照清单**（会话 `files/dbc_vs_official/`）：`divergence_core.tsv`（核心分歧 2,684 条）、
+`divergence_client_vs_db.tsv`（全部 7,538 条）、`name_divergence_386.tsv` / `text_divergence.tsv`、`REVIEW.md`。

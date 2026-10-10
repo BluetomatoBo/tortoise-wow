@@ -6,6 +6,29 @@
 --
 -- 校验前提：Spell.dbc 的英文名与库内 spell_template.name **27,915 条全部一致**，ID 对齐。
 --
+-- 用的是哪个客户端（2026-10-10 核对）：**1.18.1 Turtle 客户端**。来源是仓库自己的清单
+-- tools/dbc_verification/manifest_formatted.json → cncdn/eucdn.turtlecraft.gg，sha256 与清单一致。
+-- 与本机原版 1.12.1 客户端（/Users/bo/Downloads/WoW_Classic，zhCN 单语份 DBC：enUS 槽全空，
+-- 只有槽名 124/133/142/151 有内容，字段布局与 Turtle 版一致）逐条比过：
+--   Spell 名称   22,342 个共有 ID：19,074 完全相同 / 2,633 官方是英文而客户端有中文 / 414 两边都有中文但不同
+--   Spell 说明   19,323 完全相同 / 345 官方是英文 / 其余措辞不同
+--   AreaTable    1,077 共有：1,011 相同
+--   Faction        190 共有：  129 相同
+--   TaxiNodes       84 共有：   77 相同
+-- 那 414 条名称里，129 条是 Turtle **连英文名一起改**（Demon Skin→Demon Armor、
+-- Blessing of Protection→Hand of Protection、Basic Campfire→Cooking Fire），库内英文与客户端一致，中文只能跟客户端；
+-- 其余 351 条是纯译法分歧（官方+wowhead 多与「剑类武器掌握/树形/劣质炸药」，客户端自成一套）。
+-- 说明/光环的差异**不是译法问题**：抽查客户端英文同样带那些额外句子
+-- （Tiger's Fury「…and regenerates $s2 Energy」、Ice Barrier「…increasing your Frost damage」、
+-- Exorcism「…generates reduced threat」、Flame Shock「…benefits from your melee Attack Power」），
+-- 即 Turtle 自己改过的机制文本；官方 1.12 文本描述的是 1.12 机制，与服务端实际行为不符。
+-- 区域/阵营/飞行点则反过来——官方 1.12 是错译（Trash「绿龙」、Rubbish「红龙」、Venture Company
+-- 「荆棘谷地精」、Trogg「石腭怪」、Frostwolf Keep「部落要塞」），客户端是后来的修正译名。
+--
+-- **口径（2026-10-10 定稿）**：这四张表一律以**玩家实际运行的客户端 DBC** 为准 —— 游戏里看到什么，
+-- 站上就显示什么。唯一例外是客户端里 1.12 期遗留的旧职业名「盗贼」，按官方规范写法归一成
+-- 「潜行者」（见 locales_simplified_cleanup.sql，共 53 行）。
+--
 -- 覆盖四张表：
 --   locales_spell          ← Spell.dbc     name=字段124 / rank=133 / description=142 / aura=151
 --   locales_area           ← AreaTable.dbc name=字段15
