@@ -3516,3 +3516,8 @@ UPDATE `locales_page_text` SET `Text_loc4` = REPLACE(`Text_loc4`, '盗贼训练�
 UPDATE `locales_page_text` SET `Text_loc4` = REPLACE(`Text_loc4`, '盗贼的许多能力', '潜行者的许多能力') WHERE `entry` = 50682 AND `Text_loc4` LIKE '%盗贼的许多能力%';
 -- 开发用「90/63绿色盗贼X」系列物品（乌龟服自定义测试物品）
 UPDATE `locales_item` SET `name_loc4` = REPLACE(`name_loc4`, '盗贼', '潜行者') WHERE `name_loc4` LIKE '%绿色盗贼%';
+-- locales_spell 里 1.12 期文本把职业写成「盗贼」（官方 zhCN 一律用「潜行者」，wowhead 逐条确认：
+--   5169/5269「迪菲亚潜行者伪装」、27787/27788「潜行者护甲充能」、14185「…其它潜行者技能…」）
+UPDATE `locales_spell` SET `name_loc4` = REPLACE(`name_loc4`, '盗贼', '潜行者') WHERE `name_loc4` LIKE '%盗贼%';
+UPDATE `locales_spell` SET `description_loc4` = REPLACE(`description_loc4`, '盗贼', '潜行者') WHERE `description_loc4` LIKE '%盗贼%';
+UPDATE `locales_spell` SET `auraDescription_loc4` = REPLACE(`auraDescription_loc4`, '盗贼', '潜行者') WHERE `auraDescription_loc4` LIKE '%盗贼%';

@@ -2945,9 +2945,9 @@ INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (11242, '使你
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (11273, '终结技，使目标在一段时间内受到持续的伤害。根据连击点数决定持续时间，该伤害会受到攻击强度的加成影响：\n   1点：128伤害，持续8秒\n   2点：185伤害，持续10秒\n   3点：252伤害，持续12秒\n   4点：329伤害，持续14秒\n   5点：416伤害，持续16秒') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (11274, '终结技，使目标在一段时间内受到持续的伤害。根据连击点数决定持续时间，该伤害会受到攻击强度的加成影响：\n   1点：176伤害，持续8秒\n   2点：255伤害，持续10秒\n   3点：348伤害，持续12秒\n   4点：455伤害，持续14秒\n   5点：576伤害，持续16秒') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (11275, '终结技，使目标在一段时间内受到持续的伤害。根据连击点数决定持续时间，该伤害会受到攻击强度的加成影响：\n   1点：272伤害，持续8秒\n   2点：380伤害，持续10秒\n   3点：504伤害，持续12秒\n   4点：644伤害，持续14秒\n   5点：800伤害，持续16秒') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
-INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (11279, '背刺目标，对其造成近战伤害的$s2%再加135点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
-INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (11280, '背刺目标，对其造成近战伤害的$s2%再加165点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
-INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (11281, '背刺目标，对其造成近战伤害的$s2%再加210点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
+INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (11279, '背刺目标，对其造成近战伤害的$s2%再加135点伤害，必须在目标背后发动，潜行者的主手中必须有一把武器。奖励$s3个连击点数。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
+INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (11280, '背刺目标，对其造成近战伤害的$s2%再加165点伤害，必须在目标背后发动，潜行者的主手中必须有一把武器。奖励$s3个连击点数。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
+INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (11281, '背刺目标，对其造成近战伤害的$s2%再加210点伤害，必须在目标背后发动，潜行者的主手中必须有一把武器。奖励$s3个连击点数。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (11289, '猛勒敌人的脖子，在$d内对其造成总计$o1点伤害，该伤害会受到攻击强度的加成影响。必须在潜行状态下从目标背后发动。奖励$s2个连击点数。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (11290, '猛勒敌人的脖子，在$d内对其造成总计$o1点伤害，该伤害会受到攻击强度的加成影响。必须在潜行状态下从目标背后发动。奖励$s2个连击点数。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (11299, '终结技，根据连击点数决定造成的伤害，该伤害会受到攻击强度的加成影响：\n   1点：144-212 伤害\n  2点：254-322 伤害\n  3点：364-432 伤害\n  4点：474-542 伤害\n  5点：584-652 伤害') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
@@ -3776,7 +3776,7 @@ INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (20554, '使攻
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (20555, '生命值回复速度提高$s1%，在战斗中仍可保持$s2%的生命值回复速度。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (20559, '对目标造成$s1点伤害和中量的威胁，并迫使它在$d内一直攻击你。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (20560, '对目标造成$s1点伤害和中量的威胁，并迫使它在$d内一直攻击你。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
-INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (20581, '激活后潜入阴影中，降低敌人侦测到你的几率，效果持续至取消、移动或任一操作后2秒。拥有影遁的暗夜精灵盗贼和德鲁伊在潜行时更难被发现。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
+INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (20581, '激活后潜入阴影中，降低敌人侦测到你的几率，效果持续至取消、移动或任一操作后2秒。拥有影遁的暗夜精灵潜行者和德鲁伊在潜行时更难被发现。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (20635, '将大理石块包裹起来。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- Envelop the Marbled Stone Slab.
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (20636, '精准地切割源血宝钻。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (20639, '将远古神像的顶部、中段和底座组合在一起。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- Combine the top, middle, and bottom pieces of the ancient idol.
@@ -3982,8 +3982,8 @@ INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23560, '使你
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23561, '使破甲攻击所造成的威胁值提高$s1%。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23563, '使战斗怒吼提供的攻击强度加成提高$s1点。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23564, '使光明审判造成治疗效果的几率提高$s1%。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
-INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23581, '使盗贼有一定几率在使用近战武器击中目标后对其造成$23580s1点伤害，并每$23580t2秒回复$23580s2点生命值，持续$23580d。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
-INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23582, '在盗贼使用消失技能后为其回复$23583s1点生命值。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
+INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23581, '使潜行者有一定几率在使用近战武器击中目标后对其造成$23580s1点伤害，并每$23580t2秒回复$23580s2点生命值，持续$23580d。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
+INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23582, '在潜行者使用消失技能后为其回复$23583s1点生命值。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23584, '使你的副手武器所造成的伤害提高$s1%，并且使你的副手武器命中率增加$s2%。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23585, '使你的副手武器所造成的伤害提高$s1%，并且使你的副手武器命中率增加$s2%。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23586, '使你的副手武器所造成的伤害提高$s1%，并且使你的副手武器命中率增加$s2%。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
@@ -4054,7 +4054,7 @@ INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23851, '从蛋
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23947, '使目标的耐力提高$m1点，持续$d。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23948, '使目标的耐力提高$m1点，持续$d。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23954, '治疗盟友。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
-INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23959, '背刺目标，对其造成近战伤害的$s2%再加334点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- Backstab the target, causing $s2% weapon damage plus 334 to the target.  Must be behind th
+INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (23959, '背刺目标，对其造成近战伤害的$s2%再加334点伤害，必须在目标背后发动，潜行者的主手中必须有一把武器。奖励$s3个连击点数。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- Backstab the target, causing $s2% weapon damage plus 334 to the target.  Must be behind th
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (24005, '每秒恢复总生命值的$s1%，持续$d。进食时必须保持坐姿。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (24006, '制造$s1份食物。\n\n如果持有该物品的玩家退出游戏超过15分钟，则该物品就会消失。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (24011, '向目标喷射毒液，对其造成自然伤害，并每$t2秒对其造成一次额外的伤害，持续$d。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
@@ -6289,7 +6289,7 @@ INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (51052, '攻击
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (51053, '招架成功时使你获得$51052s1攻击强度，持续$51052d，此效果最多可叠加2次。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (51054, '立即以震荡之力冲击目标，造成$s1自然伤害。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (51055, '你的伤害法术命中时有7%的几率会招致无眠者的愤怒，造成$51054s1自然伤害，此效果会受到法术伤害加成。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
-INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (51056, '盗贼和德鲁伊的潜行起手技造成的伤害提高5%。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
+INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (51056, '潜行者和德鲁伊的潜行起手技造成的伤害提高5%。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (51061, '你的有害法术命中时，有一定几率使你的法术伤害提高$51060s1点，持续$51060d。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (51062, '使目标的攻击速度降低$s1%，持续$d。每个术士只能对任何一个目标施放一个诅咒，且同类诅咒不能叠加。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- Slows the targets attack speed by $s1% for $d.
 INSERT INTO `locales_spell` (`entry`, `description_loc4`) VALUES (51063, '使你的大地震击造成的伤害提高$s1点，并且可以使目标的攻击速度降低$51062s1%，持续$51062d。') ON DUPLICATE KEY UPDATE `description_loc4` = VALUES(`description_loc4`);  -- Increases the damage done by your Earth Shock by $s1 and causes your Earth Shock to reduce
@@ -14558,7 +14558,7 @@ INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51010, '狂野魔法�
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51011, '圣光冲击') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Renewing Blast
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51012, '狂野魔法宝石') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51013, '快速出血5（德鲁伊）') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Faster Bleeds 5 (Druid)
-INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51014, '快速出血5（盗贼）') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Faster Bleeds 5 (Rogue)
+INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51014, '快速出血5（潜行者）') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Faster Bleeds 5 (Rogue)
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51015, '快速出血5（战士）') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Faster Bleeds 5 (Warrior)
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51016, '撕裂神像') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Idol of Laceration
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51017, '撕裂神像') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Idol of Laceration
@@ -14601,7 +14601,7 @@ INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51053, '国王的命�
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51054, '无眠者的惩罚') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Insomnius’ Retribution
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51055, '无眠者的惩罚（被动）') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Insomnius’ Retribution Passive
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51056, '起手强化（德鲁伊）') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Improved Opening Moves Druid
-INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51057, '起手强化（盗贼）') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Improved Opening Moves Rogue
+INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51057, '起手强化（潜行者）') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Improved Opening Moves Rogue
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51058, '休眠腐化之眼（术士）') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Eye of Dormant Corruption Warlock
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51059, '休眠腐化之眼（牧师）') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Eye of Dormant Corruption Priest
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (51060, '不拘魔法') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Uncontained Magic
@@ -15444,9 +15444,9 @@ INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (52508, '刀锋冲刺'
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (52509, '武器专家（单手锤和单手斧）') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Weapon Expertise (Maces and Axes)
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (52510, '武器专家（单手锤和单手斧）') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Weapon Expertise (Maces and Axes)
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (52511, '突袭') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
-INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (52512, '盗贼的尊严') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Honor Among Thieves
-INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (52513, '盗贼的尊严') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Honor Among Thieves
-INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (52514, '盗贼的尊严') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Honor Among Thieves
+INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (52512, '潜行者的尊严') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Honor Among Thieves
+INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (52513, '潜行者的尊严') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Honor Among Thieves
+INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (52514, '潜行者的尊严') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Honor Among Thieves
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (52515, '冰柱') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (52516, '冰柱') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
 INSERT INTO `locales_spell` (`entry`, `name_loc4`) VALUES (52518, '高效毒药') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Efficient Poisons

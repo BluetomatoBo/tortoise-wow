@@ -252,9 +252,7 @@ UPDATE `locales_spell` SET `name_loc4` = '测试扰动' WHERE `entry` = 5025 AND
 
 UPDATE `locales_spell` SET `name_loc4` = '偷窃' WHERE `entry` = 5167 AND `name_loc4` = '搜索';
 
-UPDATE `locales_spell` SET `name_loc4` = '迪菲亚盗贼伪装' WHERE `entry` = 5169 AND `name_loc4` = '迪菲亚潜行者伪装';
 
-UPDATE `locales_spell` SET `name_loc4` = '迪菲亚盗贼伪装' WHERE `entry` = 5269 AND `name_loc4` = '迪菲亚潜行者伪装';
 
 UPDATE `locales_spell` SET `name_loc4` = '单手斧专精' WHERE `entry` = 5428 AND `name_loc4` = '斧专精';
 
@@ -456,7 +454,6 @@ UPDATE `locales_spell` SET `name_loc4` = '粗制炸药' WHERE `entry` = 9004 AND
 
 UPDATE `locales_spell` SET `name_loc4` = '粗制炸药' WHERE `entry` = 9009 AND `name_loc4` = '劣质炸药';
 
-UPDATE `locales_spell` SET `name_loc4` = '盗贼工具架召唤' WHERE `entry` = 9949 AND `name_loc4` = '潜行者工具架召唤';
 
 UPDATE `locales_spell` SET `name_loc4` = '保护之手' WHERE `entry` = 10278 AND `name_loc4` = '保护祝福';
 
@@ -906,9 +903,7 @@ UPDATE `locales_spell` SET `name_loc4` = '制造铁炉堡酒桶备份' WHERE `en
 
 UPDATE `locales_spell` SET `name_loc4` = '强化专注光环备份' WHERE `entry` = 27736 AND `name_loc4` = 'Copy of Improved Concentration Aura';
 
-UPDATE `locales_spell` SET `name_loc4` = '盗贼护甲充能' WHERE `entry` = 27787 AND `name_loc4` = '潜行者护甲充能';
 
-UPDATE `locales_spell` SET `name_loc4` = '盗贼护甲充能' WHERE `entry` = 27788 AND `name_loc4` = '潜行者护甲充能';
 
 UPDATE `locales_spell` SET `name_loc4` = '坐骑速度+DND' WHERE `entry` = 27879 AND `name_loc4` = 'Mount Speed+ DND';
 
@@ -1058,7 +1053,7 @@ UPDATE `locales_spell` SET `nameSubtext_loc4` = '测试' WHERE `entry` = 52251 A
 
 UPDATE `locales_spell` SET `nameSubtext_loc4` = '测试' WHERE `entry` = 52252 AND `nameSubtext_loc4` = 'Test';
 
-UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加15点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 53 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加15点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
+UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加15点伤害，必须在目标背后发动，潜行者的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 53 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加15点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
 
 UPDATE `locales_spell` SET `description_loc4` = '使用你的盾牌重击目标，对其造成$s2点伤害，并使其无法施放该系的所有法术，持续$d。' WHERE `entry` = 72 AND `description_loc4` = '使用你的盾牌重击目标，对其造成$s2点伤害，并使其无法施放法术，持续$d。';
 
@@ -1234,11 +1229,11 @@ UPDATE `locales_spell` SET `description_loc4` = '教你学会配制初级坚韧�
 
 UPDATE `locales_spell` SET `description_loc4` = '对目标造成神圣伤害，造成$s1点武器伤害加上$s2点 额外伤害，并为你和$51878a1码范围内最多$51878x1名队友恢复$51878s2点生命值和$51878s1点法力值。你自身受到的治疗效果会降低一半。' WHERE `entry` = 2495 AND `description_loc4` = '将圣洁的能量灌入武器，使你的下一次攻击造成$s1点额外伤害，且所有伤害都被计为神圣属性的伤害。';
 
-UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加30点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 2589 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加30点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
+UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加30点伤害，必须在目标背后发动，潜行者的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 2589 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加30点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
 
-UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加48点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 2590 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加48点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
+UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加48点伤害，必须在目标背后发动，潜行者的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 2590 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加48点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
 
-UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加69点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 2591 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加69点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
+UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加69点伤害，必须在目标背后发动，潜行者的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 2591 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加69点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
 
 UPDATE `locales_spell` SET `description_loc4` = '使你受到的远程攻击伤害减少$s1，躲闪几率提高$s2%，持续$d。此效果期间成功躲避近战攻击将恢复法力值，数值等于你的敏捷值。' WHERE `entry` = 2651 AND `description_loc4` = '使你受到的远程攻击伤害减少$s1，躲闪几率提高$s2%，持续$d。';
 
@@ -1644,7 +1639,7 @@ UPDATE `locales_spell` SET `description_loc4` = '对目标造成近战伤害再�
 
 UPDATE `locales_spell` SET `description_loc4` = '伏击目标，对其造成$s2%的近战伤害再加上70点额外伤害。必须在潜行状态下从目标背后发动。奖励$s3个连击点数。' WHERE `entry` = 8676 AND `description_loc4` = '伏击目标，对其造成$s2%的武器伤害再加上70点额外伤害。必须在潜行状态下从目标背后发动。奖励$s3个连击点数。';
 
-UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加90点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 8721 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加90点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
+UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加90点伤害，必须在目标背后发动，潜行者的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 8721 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加90点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
 
 UPDATE `locales_spell` SET `description_loc4` = '伏击目标，对其造成$s2%的近战伤害再加上100点额外伤害。必须在潜行状态下从目标背后发动。奖励$s3个连击点数。' WHERE `entry` = 8724 AND `description_loc4` = '伏击目标，对其造成$s2%的武器伤害再加上100点额外伤害。必须在潜行状态下从目标背后发动。奖励$s3个连击点数。';
 
@@ -1982,11 +1977,11 @@ UPDATE `locales_spell` SET `description_loc4` = '伏击目标，对其造成$s2%
 
 UPDATE `locales_spell` SET `description_loc4` = '伏击目标，对其造成$s2%的近战伤害再加上290点额外伤害。必须在潜行状态下从目标背后发动。奖励$s3个连击点数。' WHERE `entry` = 11269 AND `description_loc4` = '伏击目标，对其造成$s2%的武器伤害再加上290点额外伤害。必须在潜行状态下从目标背后发动。奖励$s3个连击点数。';
 
-UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加135点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 11279 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加135点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
+UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加135点伤害，必须在目标背后发动，潜行者的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 11279 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加135点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
 
-UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加165点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 11280 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加165点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
+UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加165点伤害，必须在目标背后发动，潜行者的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 11280 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加165点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
 
-UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加210点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 11281 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加210点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
+UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加210点伤害，必须在目标背后发动，潜行者的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 11281 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加210点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
 
 UPDATE `locales_spell` SET `description_loc4` = '对目标造成近战伤害再加上$s1点额外伤害，奖励$s2个连击点数。' WHERE `entry` = 11293 AND `description_loc4` = '对目标造成普通武器伤害再加上$s1点额外伤害，奖励$s2个连击点数。';
 
@@ -4352,7 +4347,7 @@ UPDATE `locales_spell` SET `description_loc4` = '受到昏迷效果的持续时�
 
 UPDATE `locales_spell` SET `description_loc4` = '单手斧和双手斧技能提高$s1点。' WHERE `entry` = 20574 AND `description_loc4` = '斧和双手斧技能提高$s1点。';
 
-UPDATE `locales_spell` SET `description_loc4` = '激活后潜入阴影中，降低敌人侦测到你的几率，持续到取消或移动为止，并在进行任何操作后的$20581d内继续保持有效。具有影遁的暗夜精灵盗贼和德鲁伊在潜行时更难被发现。' WHERE `entry` = 20580 AND `description_loc4` = '激活后潜入阴影中，降低敌人侦测到你的几率。一直持续到主动取消或进行移动。影遁可以和暗夜精灵盗贼或德鲁伊的潜行技能叠加，令其更难以侦测。';
+UPDATE `locales_spell` SET `description_loc4` = '激活后潜入阴影中，降低敌人侦测到你的几率，持续到取消或移动为止，并在进行任何操作后的$20581d内继续保持有效。具有影遁的暗夜精灵潜行者和德鲁伊在潜行时更难被发现。' WHERE `entry` = 20580 AND `description_loc4` = '激活后潜入阴影中，降低敌人侦测到你的几率。一直持续到主动取消或进行移动。影遁可以和暗夜精灵盗贼或德鲁伊的潜行技能叠加，令其更难以侦测。';
 
 UPDATE `locales_spell` SET `description_loc4` = '你的攻击速度、施法速度、移动速度和躲闪几率提高$s1%' WHERE `entry` = 20582 AND `description_loc4` = '躲闪几率提高$s1%。';
 
@@ -4760,7 +4755,7 @@ UPDATE `locales_spell` SET `description_loc4` = '教你学会给一件披风永�
 
 UPDATE `locales_spell` SET `description_loc4` = '教你学会给一件披风永久性地附魔，使其获得+1%躲闪几率的效果。' WHERE `entry` = 25097 AND `description_loc4` = '教你学会给一条披风永久性地附魔，使装备它的人物获得躲闪几率提高1%的效果。';
 
-UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加225点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 25300 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加225点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
+UPDATE `locales_spell` SET `description_loc4` = '背刺目标，对其造成近战伤害的$s2%再加225点伤害，必须在目标背后发动，潜行者的主手中必须有一把武器。奖励$s3个连击点数。' WHERE `entry` = 25300 AND `description_loc4` = '背刺目标，对其造成武器伤害的$s2%再加225点伤害，必须在目标背后发动，盗贼的主手中必须有一把武器。奖励$s3个连击点数。';
 
 UPDATE `locales_spell` SET `description_loc4` = '腐蚀目标，在$d内造成累计$*6;s1点伤害。' WHERE `entry` = 25311 AND `description_loc4` = '腐蚀目标，在$d内造成累计$o1点伤害。';
 
