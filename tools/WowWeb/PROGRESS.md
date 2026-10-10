@@ -554,3 +554,30 @@ wowhead 到底能拿到哪些字段。
 测试新增 `TestZoneGridPicksTheClientsOwnZone`（闪金镇、暴风城、奥格瑞玛、逐条瑟银矿）与
 `TestZoneGridTableIsUsable`（网格里每个区域都要有地图、数据行数与解析条数一致），
 `TestZoneFixCorrectsAMarginBox` 继续钉住用户报的那一例与三个城市。
+
+### 第十三轮补：未采纳候选的机械核验（2026-10-10 晚）
+
+上轮留下的「未核验候选」有 111 组。这轮把它们按两条机械判据过了一遍：
+
+1. **内容主场投票**：格子里那些生物/物件在**候选区之外**的刷新点被判给谁（排除候选格本身，
+   否则会自我强化）。全库 154,935 个点里 132,548 个落在候选区外，5,212 个内容条目有明确主场。
+2. **框内位置**：格子落在候选框的什么位置（0.5 = 框正中心，<0.12 = 贴着框边）。
+   一个区域的框是它**地图图片**的范围，所以框边往往是邻区的地界。
+
+结果（`gen_zonefix.py` 的 `VERIFIED`/`REJECTED`）：
+
+* **新采纳 11 组**：
+  - 主场投票 ≥60%：`durotar→blackstoneisland`(94%)、`wetlands→dunmorogh`(95%)、
+    `desolace→stonetalonmountains`(88%)、`stonetalonmountains→desolace`(76%)、
+    `ahnqiraj→ahnqiraj2f`(100%)、`lapidis→gillijim`(100%)。
+  - 框内位置推翻上轮判断：`stormwind→elwynn`(框内 0.02 贴边 → 城外地表)、
+    `undercity→tirisfal`(0.10)、`darnassus→teldrassil`(0.02)、
+    `deadminesentrance→westfall`、`blackrockmountain→burningsteppes`。
+    上轮把前三条按「城市内部要留在城市图上」否掉了 —— 但**城市内部那些格子本来就不在候选里**
+    （它们的内容主场就是城市），候选里的是框边城外地表，判给外圈才对。
+* **其余 96 组保留现状**：判据在这些地方不可靠（自定义区域的地形瓦片是老区域的，
+  统计判据天然看不出新区域），而现状是客户端地形网格的答案，也就是玩家客户端里真实的区域。
+* 表从 1,649 格涨到 **1,970 格 / 26 组**；新增测试 `TestZoneFixFollowsTheBoxMargins`
+  钉住这轮 8 个具体坐标（死亡矿井门口、暴风城南门、幽暗城外、达纳苏斯城外、黑石山塔边、
+  卡兹莫丹机场、黑石岛海面、吉尔尼斯半岛）。
+* 清单归档在会话 `files/zonefix/unresolved.md`（采纳 26 组 + 未采纳 96 组的名字与理由）。

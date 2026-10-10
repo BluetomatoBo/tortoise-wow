@@ -10,55 +10,74 @@
 # 大区域里）时保持现状。判据对边距型错误正确，但对相邻两区内容都在附近的情况
 # 会误判，所以只保留人工按内容核验过的区域对：
 #
+#   ahnqiraj               → ahnqiraj2f             安其拉神庙二层的虫子与箱子（主场投票 9/9）
 #   alterac                → hinterlands            Old Cliff Jumper / Soaring Razorbeak / Wildhammer Sentry —— 辛特兰的怪与 NPC
 #   alterac                → silverpine             Rot Hide Plague Weaver / Snapjaw / Lake Skulker —— 银松森林的怪
 #   arathi                 → hinterlands            Witherbark / Vilebranch 巨魔 —— 辛特兰的怪
 #   badlands               → burningsteppes         Karfang Grunt / Taskmaster Ok'gog / Gazush the Rabid —— 燃烧平原的黑石兽人
 #   blackmorass2f          → blackmorass            Infinite Dragonspawn / Infinite Riftguard —— 时光之穴
+#   blackrockmountain      → burningsteppes         黑石山塔框边的采石场奴隶与黑石兽人（框内位置 0.13 vs 燃烧平原 0.28）
 #   cavernsoftime          → tanaris                Glasshide Gazer / Scorpid Dunestalker / Blisterpaw Hyena —— 塔纳利斯地表的怪（洞穴自己的青铜龙在 z≈-211）
+#   darnassus              → teldrassil             达纳苏斯框贴边的格子（0.02）是城外的泰达希尔地表：Gnarlpine 熊怪
+#   deadminesentrance      → westfall               死亡矿井门口框里的地表迪菲亚工人（框内位置 0.24，与西部荒野框一致）
+#   desolace               → stonetalonmountains    石爪山脉与凄凉之地交界西侧（主场投票 22/25）
+#   durotar                → blackstoneisland       黑石岛（乌龟服自定义）的内容站在杜隆塔尔海面上：主场投票 47/50
 #   easternplaguelands     → westernplaguelands     Plague Lurker / Diseased Grizzly / Elder Meadowrun —— 西瘟疫之地的怪
 #   hilsbrad               → arathi                 Boulderfist Ogre / Highland Thrasher / Hightusk Boar —— 阿拉希高地的怪
 #   hilsbrad               → gilneas                Greymane Preserver —— 吉尔尼斯（乌龟服自定义区）的怪
 #   hilsbrad               → hinterlands            Mangy Silvermane / Old Farwell / Grant Lafford —— 辛特兰的 NPC
 #   hyjal                  → aszhara                Hederine Manastalker / Hederine Slayer / Krampus —— 艾萨拉的怪
+#   lapidis                → gillijim               吉吉利姆岛（乌龟服自定义）的南海海盗（主场投票 18/18）
 #   redridge               → swampofsorrows         Draenethyst Crystals / Lost One Muckdweller —— 悲伤沼泽的物件与怪
 #   scarletenclave         → easternplaguelands     Plaguebat / Putrid Gargoyle / Blighted Surge / Carrion Grub —— 东瘟疫之地的怪
 #   searinggorge           → badlands               Elder Crag Coyote / Ridge Stalker Patriarch —— 荒芜之地的怪
 #   silverpine             → gilneas                同一批 Spitecrest Wavesinger；原版地形把半岛标成了银松/湿地
+#   stonetalonmountains    → desolace               同一条边界的东侧，两边各自析出（主场投票 32/42）
+#   stormwind              → elwynn                 暴风城框贴边的格子（框内位置 0.02）是城外地表：迪菲亚盗贼、野兔（位置 0.36 在艾尔文森林框中部）
 #   stranglethorn          → lapidis                Chieftain Woh'zo / Hazzuri Beastkeeper（乌龟服自定义，x≈-12500 的拉皮迪斯岛）
 #   timbermawentrance      → aszhara                Legashi Satyr / Mosshoof Courser / Storm Bay Warrior —— 艾萨拉的怪
 #   timbermawtunnels       → felwood                木喉要塞隧道口外的费伍德内容
 #   uldaman                → badlands               Stonevault Cave Hunter / Stonesplinter Bonesnapper —— 奥达曼门外的穴居人
+#   undercity              → tirisfal               幽暗城框贴边的格子（0.10）是城外：血色传教士等提瑞斯法的内容
 #   ungorocrater           → tanaris                Sandfury Hideskinner / Glasshide Basilisk —— 塔纳利斯的怪
 #   westernplaguelands     → tirisfal               Deathguard / Spectral Apparition / Undercity Reveler —— 提瑞斯法林地的怪与 NPC
 #   westfall               → stranglethorn          Hemet Nesingwary / Zandalar Headshrinker / Saltwater Crocolisk —— 荆棘谷的 NPC 与怪
+#   wetlands               → dunmorogh              卡兹莫丹机场一带的铁炉堡卫兵与机场工程师（主场投票 39/41 → 丹莫罗）
 #   wetlands               → gilneas                Spitecrest Wavesinger（乌龟服自定义，站在吉尔尼斯半岛西岸 x≈-2620）
 #
 # 判据给得出但**核验为错**、有意保留现状的（别再加回来）：
 #
+#   ashenvale              / stonetalonmountains    地形网格（客户端数据）说是灰谷，内容混两边，保留现状
 #   badlands               / dunmorogh              Dark Iron Spy，位置存疑，先不动
-#   darnassus              / teldrassil             达纳苏斯是独立区域（WMO 城市），城市里就该是它
+#   blastedlands           / swampofsorrows         格子里是奈瑟加德（诅咒之地）的兵，内容支持现状
 #   deadwindpass           / elwynn                 格子里的 Watcher Callahan / Kzixx 不是艾尔文森林的
 #   dunmorogh              / northwind              格子里混着霜鬃巨魔（丹莫罗的），存疑
 #   duskwood               / elwynn                 同上，暮色森林一带
 #   duskwood               / westfall               格子里的 NPC 是暮色森林的（Agent Kearnen / Klaven Mortwake）
+#   easternplaguelands     / thalassianhighlands    格子里混着东瘟疫的 Terrordale 鬼魂，萨拉斯高地边界不明，保守保留现状
 #   elwynn                 / westfall               存疑，先不动
 #   ironforge              / dunmorogh              格子里是铁炉堡的 NPC（Bubulo Acerbus / Fizzlebang Booms）
-#   lapidis                / gillijim               两个都是乌龟服自定义岛，存疑
 #   redridge               / elwynn                 Dead-Tooth Jack / Defias Bandit，存疑
 #   silithus               / ahnqirajentrance       格子里是 Hive'Regal 的虫子 —— 希利苏斯的
-#   stormwind              / elwynn                 同上，暴风城
 #   stormwind              / northwind              格子里的怪是 Stormwind City Guard（暴风城守卫）
 #   thalassianhighlands    / westernplaguelands     血色十字军两种区域都有，存疑
 #   thousandneedles        / feralas                格子里是 Highperch Wyvern —— 千针石林的
 #   thousandneedles        / tanaris                存疑，先不动
 #   undercity              / tirisfal               格子里的 NPC 是幽暗城的（Lordaeron Citizen / Keeper Bel'dugur）
 #   ungorocrater           / thousandneedles        格子里是 A-Me 01 / U'cha —— 安戈洛环形山的
-#   wetlands               / dunmorogh              Airfield Engineer / Ironforge Guard，位置存疑，先不动
 #
 # 格子边长 33 码；只列有刷新点的格子。重算：python3 tools/WowWeb/gen_zonefix.py \
 #     --write --mysql "tools/dbdiff/mysql_local.sh tw_world"
-#0	-387	77	409
+#0	-389	112	408
+0	-388	112	408
+0	-388	113	408
+0	-388	114	408
+0	-388	115	408
+0	-387	77	409
+0	-387	112	408
+0	-387	113	408
+0	-387	114	408
+0	-387	115	408
 0	-385	77	409
 0	-384	92	409
 0	-384	110	409
@@ -483,6 +502,115 @@
 0	-346	115	409
 0	-345	115	409
 0	-344	115	409
+0	-341	45	40
+0	-341	46	40
+0	-341	47	40
+0	-341	53	40
+0	-340	46	40
+0	-340	47	40
+0	-340	49	40
+0	-340	51	40
+0	-340	52	40
+0	-339	41	40
+0	-339	45	40
+0	-339	46	40
+0	-339	47	40
+0	-339	50	40
+0	-339	51	40
+0	-339	52	40
+0	-339	53	40
+0	-338	44	40
+0	-338	46	40
+0	-338	47	40
+0	-338	48	40
+0	-338	49	40
+0	-337	44	40
+0	-337	45	40
+0	-337	46	40
+0	-337	47	40
+0	-337	48	40
+0	-337	49	40
+0	-336	44	40
+0	-336	45	40
+0	-336	46	40
+0	-336	47	40
+0	-336	48	40
+0	-336	49	40
+0	-336	50	40
+0	-336	51	40
+0	-336	52	40
+0	-335	43	40
+0	-335	44	40
+0	-335	45	40
+0	-335	46	40
+0	-335	47	40
+0	-335	48	40
+0	-335	50	40
+0	-335	51	40
+0	-335	52	40
+0	-334	44	40
+0	-334	45	40
+0	-334	49	40
+0	-334	51	40
+0	-334	53	40
+0	-333	42	40
+0	-333	45	40
+0	-333	46	40
+0	-333	49	40
+0	-333	51	40
+0	-333	53	40
+0	-275	0	12
+0	-275	1	12
+0	-275	2	12
+0	-275	3	12
+0	-275	10	12
+0	-275	12	12
+0	-275	13	12
+0	-274	0	12
+0	-274	1	12
+0	-274	6	12
+0	-274	7	12
+0	-274	9	12
+0	-274	10	12
+0	-274	11	12
+0	-274	12	12
+0	-273	0	12
+0	-273	9	12
+0	-273	10	12
+0	-273	11	12
+0	-272	0	12
+0	-272	9	12
+0	-272	10	12
+0	-271	0	12
+0	-271	8	12
+0	-267	0	12
+0	-266	0	12
+0	-265	0	12
+0	-265	9	12
+0	-263	0	12
+0	-234	-43	46
+0	-232	-44	46
+0	-232	-43	46
+0	-231	-44	46
+0	-231	-43	46
+0	-231	-40	46
+0	-230	-44	46
+0	-229	-43	46
+0	-229	-42	46
+0	-228	-44	46
+0	-228	-43	46
+0	-228	-42	46
+0	-228	-26	46
+0	-225	-31	46
+0	-225	-30	46
+0	-225	-28	46
+0	-224	-32	46
+0	-224	-31	46
+0	-224	-30	46
+0	-224	-29	46
+0	-224	-28	46
+0	-224	-27	46
+0	-223	-31	46
 0	-189	-90	3
 0	-189	-88	3
 0	-184	-99	3
@@ -500,6 +628,31 @@
 0	-182	-96	3
 0	-182	-95	3
 0	-181	-97	3
+0	-151	39	1
+0	-143	4	1
+0	-143	5	1
+0	-143	6	1
+0	-143	8	1
+0	-143	9	1
+0	-143	10	1
+0	-143	11	1
+0	-143	12	1
+0	-142	4	1
+0	-142	5	1
+0	-142	6	1
+0	-142	7	1
+0	-142	8	1
+0	-142	9	1
+0	-141	5	1
+0	-141	6	1
+0	-141	7	1
+0	-141	8	1
+0	-141	9	1
+0	-140	6	1
+0	-140	7	1
+0	-140	9	1
+0	-139	7	1
+0	-139	8	1
 0	-84	38	5179
 0	-83	30	5179
 0	-83	33	5179
@@ -1313,6 +1466,60 @@
 0	-13	47	5179
 0	-12	44	5179
 0	-12	48	5179
+0	44	-2	85
+0	44	-1	85
+0	45	-2	85
+0	45	-1	85
+0	45	0	85
+0	46	15	85
+0	47	18	85
+0	47	19	85
+0	48	15	85
+0	48	18	85
+0	49	19	85
+0	49	20	85
+0	50	-2	85
+0	51	14	85
+0	51	17	85
+0	51	20	85
+0	51	21	85
+0	51	22	85
+0	51	23	85
+0	52	14	85
+0	52	19	85
+0	52	20	85
+0	52	21	85
+0	52	23	85
+0	53	5	85
+0	53	8	85
+0	53	9	85
+0	53	10	85
+0	53	18	85
+0	53	20	85
+0	53	21	85
+0	53	22	85
+0	53	25	85
+0	54	5	85
+0	54	6	85
+0	54	7	85
+0	54	8	85
+0	54	9	85
+0	54	10	85
+0	54	17	85
+0	54	18	85
+0	54	19	85
+0	54	20	85
+0	54	21	85
+0	54	22	85
+0	55	5	85
+0	55	6	85
+0	55	7	85
+0	55	8	85
+0	55	10	85
+0	55	17	85
+0	55	18	85
+0	55	20	85
+0	55	21	85
 1	-267	-141	440
 1	-267	-129	440
 1	-267	-126	440
@@ -1525,6 +1732,102 @@
 1	-242	-119	440
 1	-242	-118	440
 1	-242	-114	440
+1	-22	-208	5536
+1	-21	-208	5536
+1	-21	-207	5536
+1	-20	-208	5536
+1	-20	-207	5536
+1	-19	-208	5536
+1	-19	-207	5536
+1	-19	-205	5536
+1	-18	-207	5536
+1	-18	-205	5536
+1	-17	-206	5536
+1	-13	-206	5536
+1	-13	-204	5536
+1	-11	-206	5536
+1	-11	-204	5536
+1	-10	-208	5536
+1	-8	-208	5536
+1	-8	2	405
+1	-6	-208	5536
+1	-6	-8	405
+1	-6	5	405
+1	-5	-208	5536
+1	-5	-7	405
+1	-4	9	405
+1	-3	-208	5536
+1	-3	7	405
+1	-3	8	405
+1	-3	9	405
+1	-2	-207	5536
+1	-2	7	405
+1	-2	8	405
+1	-2	9	405
+1	-1	9	405
+1	0	12	405
+1	0	13	405
+1	4	7	405
+1	5	-7	405
+1	5	-4	405
+1	11	8	405
+1	11	21	405
+1	13	10	405
+1	16	-242	5536
+1	16	-233	5536
+1	16	-228	5536
+1	16	-227	5536
+1	16	-225	5536
+1	16	-217	5536
+1	16	-216	5536
+1	17	-240	5536
+1	17	-236	5536
+1	17	-231	5536
+1	17	-230	5536
+1	17	-227	5536
+1	17	-224	5536
+1	17	-222	5536
+1	17	-221	5536
+1	17	-219	5536
+1	18	-241	5536
+1	18	-235	5536
+1	18	-234	5536
+1	18	-227	5536
+1	18	-223	5536
+1	18	-221	5536
+1	19	-238	5536
+1	19	-230	5536
+1	19	-225	5536
+1	20	-232	5536
+1	40	68	406
+1	55	65	406
+1	55	66	406
+1	55	76	406
+1	56	64	406
+1	56	65	406
+1	56	66	406
+1	56	77	406
+1	56	78	406
+1	57	66	406
+1	57	67	406
+1	57	76	406
+1	57	77	406
+1	57	78	406
+1	58	64	406
+1	58	65	406
+1	58	66	406
+1	58	67	406
+1	59	64	406
+1	59	65	406
+1	59	66	406
+1	60	64	406
+1	60	65	406
+1	60	66	406
+1	60	67	406
+1	62	64	406
+1	62	65	406
+1	63	66	406
+1	63	67	406
 1	126	-178	16
 1	126	-172	16
 1	126	-170	16
@@ -1691,6 +1994,27 @@
 1	149	-178	16
 1	198	-63	361
 1	200	-64	361
+1	286	56	141
+1	286	57	141
+1	287	56	141
+1	287	57	141
+1	291	56	141
+1	291	57	141
+1	295	56	141
+1	296	56	141
+1	297	56	141
+1	297	58	141
+1	298	56	141
+1	298	57	141
+1	298	58	141
+1	299	56	141
+1	299	58	141
+1	299	59	141
+1	302	56	141
+1	302	57	141
+1	303	56	141
+1	305	57	141
+1	306	57	141
 269	-51	208	5204
 269	-51	210	5204
 269	-50	205	5204
@@ -1707,3 +2031,10 @@
 269	-46	209	5204
 269	-46	210	5204
 269	-46	213	5204
+531	-261	47	5147
+531	-259	46	5147
+531	-256	50	5147
+531	-244	47	5147
+531	-243	47	5147
+531	-243	48	5147
+531	-243	49	5147

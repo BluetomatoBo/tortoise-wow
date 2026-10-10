@@ -100,6 +100,28 @@ VERIFIED = {
         "Legashi Satyr / Mosshoof Courser / Storm Bay Warrior —— 艾萨拉的怪",
     ("timbermawtunnels", "felwood"):
         "木喉要塞隧道口外的费伍德内容",
+    ("durotar", "blackstoneisland"):
+        "黑石岛（乌龟服自定义）的内容站在杜隆塔尔海面上：主场投票 47/50",
+    ("wetlands", "dunmorogh"):
+        "卡兹莫丹机场一带的铁炉堡卫兵与机场工程师（主场投票 39/41 → 丹莫罗）",
+    ("desolace", "stonetalonmountains"):
+        "石爪山脉与凄凉之地交界西侧（主场投票 22/25）",
+    ("stonetalonmountains", "desolace"):
+        "同一条边界的东侧，两边各自析出（主场投票 32/42）",
+    ("ahnqiraj", "ahnqiraj2f"):
+        "安其拉神庙二层的虫子与箱子（主场投票 9/9）",
+    ("lapidis", "gillijim"):
+        "吉吉利姆岛（乌龟服自定义）的南海海盗（主场投票 18/18）",
+    ("stormwind", "elwynn"):
+        "暴风城框贴边的格子（框内位置 0.02）是城外地表：迪菲亚盗贼、野兔（位置 0.36 在艾尔文森林框中部）",
+    ("undercity", "tirisfal"):
+        "幽暗城框贴边的格子（0.10）是城外：血色传教士等提瑞斯法的内容",
+    ("darnassus", "teldrassil"):
+        "达纳苏斯框贴边的格子（0.02）是城外的泰达希尔地表：Gnarlpine 熊怪",
+    ("deadminesentrance", "westfall"):
+        "死亡矿井门口框里的地表迪菲亚工人（框内位置 0.24，与西部荒野框一致）",
+    ("blackrockmountain", "burningsteppes"):
+        "黑石山塔框边的采石场奴隶与黑石兽人（框内位置 0.13 vs 燃烧平原 0.28）",
 }
 
 # 判据给得出、但按内容核验**不对**的：保留现状，写在这里免得以后有人又加回来。
@@ -111,17 +133,16 @@ REJECTED = {
     ("ungorocrater", "thousandneedles"): "格子里是 A-Me 01 / U'cha —— 安戈洛环形山的",
     ("thousandneedles", "feralas"): "格子里是 Highperch Wyvern —— 千针石林的",
     ("silithus", "ahnqirajentrance"): "格子里是 Hive'Regal 的虫子 —— 希利苏斯的",
+    ("easternplaguelands", "thalassianhighlands"): "格子里混着东瘟疫的 Terrordale 鬼魂，萨拉斯高地边界不明，保守保留现状",
+    ("ashenvale", "stonetalonmountains"): "地形网格（客户端数据）说是灰谷，内容混两边，保留现状",
+    ("blastedlands", "swampofsorrows"): "格子里是奈瑟加德（诅咒之地）的兵，内容支持现状",
     ("badlands", "dunmorogh"): "Dark Iron Spy，位置存疑，先不动",
     ("deadwindpass", "elwynn"): "格子里的 Watcher Callahan / Kzixx 不是艾尔文森林的",
     ("ironforge", "dunmorogh"): "格子里是铁炉堡的 NPC（Bubulo Acerbus / Fizzlebang Booms）",
-    ("wetlands", "dunmorogh"): "Airfield Engineer / Ironforge Guard，位置存疑，先不动",
     ("thalassianhighlands", "westernplaguelands"): "血色十字军两种区域都有，存疑",
     ("thousandneedles", "tanaris"): "存疑，先不动",
     ("elwynn", "westfall"): "存疑，先不动",
     ("redridge", "elwynn"): "Dead-Tooth Jack / Defias Bandit，存疑",
-    ("lapidis", "gillijim"): "两个都是乌龟服自定义岛，存疑",
-    ("darnassus", "teldrassil"): "达纳苏斯是独立区域（WMO 城市），城市里就该是它",
-    ("stormwind", "elwynn"): "同上，暴风城",
     ("dunmorogh", "northwind"): "格子里混着霜鬃巨魔（丹莫罗的），存疑",
 }
 
@@ -202,7 +223,9 @@ def main():
     ap.add_argument("--report", action="store_true", help="打印核验报告（按区域对分组，附格子里的名字）")
     ap.add_argument("--write", action="store_true", help="写出 zonefix.txt")
     ap.add_argument("--names", action="store_true",
-                    help="报告里附上格子里的生物/物件名（要多查一次库）")
+                    help="报告里按组汇总格子里的生物/物件名与自定义内容数（要多查一次库）")
+    ap.add_argument("--dump", metavar="PATH",
+                    help="把每个候选格写成 TSV（map/cx/cy/现状区域/判据建议），供别的脚本核验")
     args = ap.parse_args()
 
     boxes = load_boxes(args.zones)
@@ -409,30 +432,63 @@ def main():
         print("   %-22s → %-22s %5d 格   %s" % (a, b, n, mark))
 
     if args.report:
-        names = {}
+        cell_names = {}
         if args.names:
-            query = ("SELECT ct.name, c.map, FLOOR(c.position_x/%.6f), FLOOR(c.position_y/%.6f)"
+            query = ("SELECT ct.name, c.id, c.map, FLOOR(c.position_x/%.6f), FLOOR(c.position_y/%.6f)"
                      " FROM creature c JOIN creature_template ct ON ct.entry = c.id"
-                     " UNION ALL SELECT gt.name, g.map, FLOOR(g.position_x/%.6f), FLOOR(g.position_y/%.6f)"
+                     " UNION ALL SELECT gt.name, g.id, g.map, FLOOR(g.position_x/%.6f), FLOOR(g.position_y/%.6f)"
                      " FROM gameobject g JOIN gameobject_template gt ON gt.entry = g.id;"
                      % (CELL, CELL, CELL, CELL))
             out = subprocess.run(args.mysql.split() + ["-e", query], capture_output=True, text=True)
             for line in out.stdout.split("\n")[1:]:
                 parts = line.split("\t")
-                if len(parts) < 4 or not parts[0].strip():
+                if len(parts) < 5 or not parts[0].strip():
                     continue
                 try:
-                    key = (int(parts[1]), int(parts[2]), int(parts[3]))
+                    key = (int(parts[2]), int(parts[3]), int(parts[4]))
+                    entry = int(parts[1])
                 except ValueError:
                     continue
-                names.setdefault(key, set()).add(parts[0])
-        print("\n=== 核验报告（每组两个格子的内容）===")
-        for (a, b), n in groups.most_common():
-            keys = sorted(k for k, v in fixes.items() if name_of.get(v) == b)
-            print("\n[%d 格] %s → %s" % (n, a, b))
-            for key in keys[:2]:
-                text = ", ".join(sorted(names.get(key, {"(未查名字)"}))[:8])
-                print("    %s: %s" % (str(key[1:]), text))
+                cell_names.setdefault(key, []).append((parts[0], entry))
+        # 每组汇总全部格子的内容，而不是只看前两格：判据是否可信，看的就是这些名字属于谁。
+        # 每格里记 (名字, entry)，entry >= 50000 是乌龟服自定义内容。
+        by_pair = collections.defaultdict(list)
+        for cell, pair in pairs.items():
+            by_pair[pair].append(cell)
+        print("\n=== 核验报告（每组汇总全部格子）===")
+        print("列：现状(页面) → 判据建议 | 格数 | 内容数 | 自定义内容数(entry≥50000) | 内容名")
+        print("mark：✅ 已核验采纳 / ❌ 已核验否掉 / ? 未核验；* 标记该区域是乌龟服新增")
+        print()
+        for pair, cells in sorted(by_pair.items(), key=lambda kv: -len(kv[1])):
+            all_names = collections.Counter()
+            total = custom = 0
+            for cell in cells:
+                for name, entry in cell_names.get(cell, ()):
+                    all_names[name] += 1
+                    total += 1
+                    if entry >= 50000:
+                        custom += 1
+            mark = "✅" if pair in VERIFIED else ("❌" if pair in REJECTED else "?")
+            def tag(directory):
+                for b in boxes:
+                    if b["dir"] == directory and b["area"] in custom_areas:
+                        return directory + "*"
+                return directory
+            share = (100.0 * custom / total) if total else 0.0
+            print("%-22s %-22s %6d %8d %7d (%3.0f%%)  %s %s" % (
+                tag(pair[0]), tag(pair[1]), len(cells), total, custom, share, mark,
+                ", ".join(n for n, _ in all_names.most_common(6))))
+
+    if args.dump:
+        with open(args.dump, "w", encoding="utf-8") as fh:
+            fh.write("map\tcx\tcy\tcurrent\tsuggested\tgroup\n")
+            for cell in sorted(fixes):
+                pair = pairs[cell]
+                cur_dir = pair[0]
+                fh.write("%d\t%d\t%d\t%s\t%s\t%s->%s\n"
+                         % (cell[0], cell[1], cell[2], cur_dir, name_of.get(fixes[cell]),
+                            pair[0], pair[1]))
+        print("候选格已导出 %s：%d 格" % (args.dump, len(fixes)))
 
     if args.write:
         kept = {cell: area for cell, area in fixes.items() if pairs[cell] in VERIFIED}

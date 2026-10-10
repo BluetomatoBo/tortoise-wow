@@ -542,3 +542,37 @@ func TestZoneGridTableIsUsable(t *testing.T) {
 		}
 	}
 }
+
+// TestZoneFixFollowsTheBoxMargins pins the second round of corrections: a zone's
+// box is its map artwork, so its *edges* lie over the neighbour's land. The cells
+// a city's or a dungeon's box covers at its margin are the neighbour's ground -
+// Defias diggers outside the Deadmines, Gnarlpine furbolgs outside Darnassus -
+// and the ones a custom zone's box covers are its own content.
+func TestZoneFixFollowsTheBoxMargins(t *testing.T) {
+	cases := []struct {
+		what  string
+		mapID uint16
+		x, y  float64
+		want  string
+	}{
+		{"死亡矿井门口的地表（迪菲亚工人）", 0, -11350, 1517, "westfall"},
+		{"暴风城南门外（迪菲亚盗贼、野兔）", 0, -9150, 50, "elwynn"},
+		{"幽暗城外的提瑞斯法地表", 0, 1483, -50, "tirisfal"},
+		{"达纳苏斯城外的泰达希尔地表（Gnarlpine 熊怪）", 1, 9550, 1883, "teldrassil"},
+		{"黑石山塔边的采石场", 0, -7783, -1417, "burningsteppes"},
+		{"卡兹莫丹机场（铁炉堡一侧）", 0, -5017, 1317, "dunmorogh"},
+		{"黑石岛海面（乌龟服自定义）", 1, -683, -6917, "blackstoneisland"},
+		{"吉尔尼斯半岛（乌龟服自定义）", 0, -1661.41, 1100.33, "gilneas"},
+	}
+	for _, tc := range cases {
+		box, ok := ZoneAt(tc.mapID, tc.x, tc.y)
+		if !ok {
+			t.Errorf("%s: no zone for (%.0f, %.0f) on map %d", tc.what, tc.x, tc.y, tc.mapID)
+			continue
+		}
+		if box.dir != tc.want {
+			t.Errorf("%s: (%.0f, %.0f) on map %d is %s, want %s",
+				tc.what, tc.x, tc.y, tc.mapID, box.dir, tc.want)
+		}
+	}
+}
