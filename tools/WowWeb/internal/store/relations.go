@@ -1003,6 +1003,80 @@ func (s *Store) CreatureSpawns(ctx context.Context, entry uint32) ([]CreatureSpa
 	return out, len(out) >= spawnLimit, nil
 }
 
+// GameObjectSpawn is one place a gameobject stands - the same four columns a
+// creature spawn carries, so the same map code draws both.
+type GameObjectSpawn struct {
+	Map     uint16
+	X, Y, Z float64
+}
+
+// gameObjectSpawnsQuery lists where a gameobject is placed.
+//
+// The lookup is an index read: the spawns table has a key on the object id.
+func gameObjectSpawnsQuery() string {
+	return "SELECT map, position_x, position_y, position_z FROM gameobject" +
+		" WHERE id = ? ORDER BY guid LIMIT ?"
+}
+
+// GameObjectSpawns lists where a gameobject is placed, and whether the list was
+// cut.
+func (s *Store) GameObjectSpawns(ctx context.Context, entry uint32) ([]GameObjectSpawn, bool, error) {
+	rows, err := s.World.QueryContext(ctx, gameObjectSpawnsQuery(), entry, spawnLimit)
+	if err != nil {
+		return nil, false, fmt.Errorf("spawns of gameobject %d: %w", entry, err)
+	}
+	defer rows.Close()
+
+	var out []GameObjectSpawn
+	for rows.Next() {
+		var spawn GameObjectSpawn
+		if err := rows.Scan(&spawn.Map, &spawn.X, &spawn.Y, &spawn.Z); err != nil {
+			return nil, false, fmt.Errorf("scan spawn: %w", err)
+		}
+		out = append(out, spawn)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, false, err
+	}
+	return out, len(out) >= spawnLimit, nil
+}
+
+// GameObjectSpawnStats summarizes the placements of one gameobject: how many
+// there are, on how many maps, and the respawn window they were saved with.
+//
+// The window is the stored one - the seconds column the core copies into the
+// object when it respawns, picked at random between the two per placement
+// (GameObject.h, GetRandomRespawnTime) - and it is the same for every placement
+// in practice, so the page prints the min..max range of it. A negative min means
+// the placements are not spawned by default: the core stores the delay with the
+// sign flipped and a script or an event has to create the object.
+type GameObjectSpawnStats struct {
+	Spawns     uint32
+	Maps       uint32
+	RespawnMin int32
+	RespawnMax int32
+}
+
+// GameObjectSpawnSummary reads the stats above.
+func (s *Store) GameObjectSpawnSummary(ctx context.Context, entry uint32) (GameObjectSpawnStats, error) {
+	var st GameObjectSpawnStats
+	err := s.World.QueryRowContext(ctx, gameObjectSpawnSummaryQuery(), entry).
+		Scan(&st.Spawns, &st.Maps, &st.RespawnMin, &st.RespawnMax)
+	if err != nil {
+		return GameObjectSpawnStats{}, fmt.Errorf("spawn summary of gameobject %d: %w", entry, err)
+	}
+	return st, nil
+}
+
+// gameObjectSpawnSummaryQuery is the one-row aggregate behind the stats above.
+// COALESCE keeps the scan plain for a template with no placement at all, where
+// MIN/MAX would come back NULL.
+func gameObjectSpawnSummaryQuery() string {
+	return "SELECT COUNT(*), COUNT(DISTINCT map)," +
+		" COALESCE(MIN(spawntimesecsmin), 0), COALESCE(MAX(spawntimesecsmax), 0)" +
+		" FROM gameobject WHERE id = ?"
+}
+
 // ---------------------------------------------------------------------------
 // Loaders the pages call
 // ---------------------------------------------------------------------------
@@ -1255,6 +1329,104 @@ func (s *Store) creatureLootIDs(ctx context.Context, creature uint32) (creatureL
 		return creatureLootIDs{}, fmt.Errorf("loot ids of creature %d: %w", creature, err)
 	}
 	return ids, nil
+}
+
+// GameObjectRelations is everything the gameobject page hangs off one template:
+// the quests it starts and ends, the quests that make it a target, and the loot
+// a chest or fishing hole holds.
+type GameObjectRelations struct {
+	StartsQuests []ContentQuestRef
+	EndsQuests   []ContentQuestRef
+	// RequiredBy are the quests that name this object among their objectives.
+	// A quest stores those as a negative ReqCreatureOrGOId, which is how the
+	// core tells an object objective from a creature one.
+	RequiredBy []ContentQuestRef
+	Drops      []ContentLootItem
+
+	Truncated []string
+}
+
+// QuestsRequiringAgentQuery finds the quests that name a creature or gameobject
+// among their four objective slots.
+//
+// The slots are selected rather than aggregated so the caller can tell which one
+// matched and what count it asked for. The stored id is signed - negative for an
+// object - and the SELECT takes its absolute value so both kinds compare against
+// the positive entry the caller has.
+func questsRequiringAgentQuery(loc ContentLocale, prefix string, slots int, actor int64) (string, []any) {
+	var cols, where []string
+	args := []any{}
+	count := strings.TrimSuffix(prefix, "Id")
+	for i := 1; i <= slots; i++ {
+		id := fmt.Sprintf("q.%s%d", prefix, i)
+		cols = append(cols, "ABS("+id+")", fmt.Sprintf("q.%sCount%d", count, i))
+		where = append(where, id+" = ?")
+		args = append(args, actor)
+	}
+	q := "SELECT q.entry, " + loc.localized("cl", "q", "Title") + ", " + strings.Join(cols, ", ") +
+		" FROM quest_template q" + loc.join("cl", "locales_quest", "entry", "q") +
+		" WHERE (" + strings.Join(where, " OR ") + ") ORDER BY q.entry LIMIT ?"
+	return q, append(args, relationLimit)
+}
+
+// GameObjectRelations gathers the cross links the gameobject page shows.
+func (s *Store) GameObjectRelations(ctx context.Context, loc ContentLocale, entry uint32, lootID uint32) (*GameObjectRelations, error) {
+	out := &GameObjectRelations{}
+
+	for _, g := range []struct {
+		table string
+		into  *[]ContentQuestRef
+		key   string
+	}{
+		{"gameobject_questrelation", &out.StartsQuests, "db.startsQuests"},
+		{"gameobject_involvedrelation", &out.EndsQuests, "db.endsQuests"},
+	} {
+		q, args := questsOfActorQuery(loc, g.table, entry)
+		rows, err := s.World.QueryContext(ctx, q, args...)
+		if err != nil {
+			return nil, fmt.Errorf("%s for %d: %w", g.table, entry, err)
+		}
+		list, err := scanQuestRefs(rows, nil, 0, 0)
+		rows.Close()
+		if err != nil {
+			return nil, err
+		}
+		if len(list) >= relationLimit {
+			out.Truncated = append(out.Truncated, g.key)
+		}
+		*g.into = list
+	}
+
+	q, args := questsRequiringAgentQuery(loc, "ReqCreatureOrGOId", 4, -int64(entry))
+	rows, err := s.World.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("quests requiring gameobject %d: %w", entry, err)
+	}
+	required, err := scanQuestRefs(rows, []string{"ReqCreatureOrGOId"}, 4, entry)
+	rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	if len(required) >= relationLimit {
+		out.Truncated = append(out.Truncated, "db.requiredBy")
+	}
+	out.RequiredBy = required
+
+	// Only a chest or a fishing hole has loot, and the id comes from the
+	// template's data1 (GameObject.h, GetLootId). For every other type data1
+	// means something else, so there is nothing to look up.
+	if lootID != 0 {
+		list, err := s.scanLootItems(ctx, loc, "gameobject_loot_template", lootID)
+		if err != nil {
+			return nil, err
+		}
+		out.Drops = list
+	}
+
+	if err := s.fillLootNames(ctx, loc, out.Drops); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // QuestRelations gathers who hands a quest out and who takes it back.

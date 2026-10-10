@@ -191,6 +191,21 @@ func (p PageData) SpawnMaps(spawns []store.CreatureSpawn) []MapView {
 	return p.mapViews(points)
 }
 
+// ObjectSpawnMaps groups a gameobject's placements by the zone they are in. It
+// works the same way the creature list does, and for the same reason: a zone's
+// points belong on that zone's artwork.
+func (p PageData) ObjectSpawnMaps(spawns []store.GameObjectSpawn) []MapView {
+	points := make([]mapPoint, 0, len(spawns))
+	for _, spawn := range spawns {
+		points = append(points, mapPoint{
+			Map: spawn.Map, X: spawn.X, Y: spawn.Y,
+			Label: strconv.FormatFloat(spawn.X, 'f', 1, 64) + ", " +
+				strconv.FormatFloat(spawn.Y, 'f', 1, 64),
+		})
+	}
+	return p.mapViews(points)
+}
+
 // TargetMaps groups where a quest's targets live, one map per zone, with each dot
 // labelled by the creature or object it is.
 func (p PageData) TargetMaps(targets []store.QuestTargetSpawn) []MapView {

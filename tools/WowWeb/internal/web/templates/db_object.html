@@ -1,0 +1,113 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.Object.Name}}</h1>
+  <a class="btn btn-ghost" href="/db/objects">{{.T "db.objects.title"}}</a>
+</div>
+
+{{template "dbsearch" .}}
+
+<section class="card">
+  <table class="kv">
+    <tr><th>{{.T "db.entry"}}</th><td><code>{{.Object.Entry}}</code></td></tr>
+    <tr><th>{{.T "db.type"}}</th><td>{{.GameObjectTypeName .Object.Type}} <span class="muted">(#{{.Object.Type}})</span></td></tr>
+    <tr><th>{{.T "db.displayID"}}</th><td>{{.Object.DisplayID}}</td></tr>
+    <tr><th>{{.T "db.faction"}}</th><td>
+      {{with .FactionName .Object.Faction}}{{.}} <span class="muted">(#{{$.Object.Faction}})</span>{{else}}#{{.Object.Faction}}{{end}}
+    </td></tr>
+    {{if .Object.Size}}<tr><th>{{.T "db.size"}}</th><td>{{printf "%.2f" .Object.Size}}</td></tr>{{end}}
+    {{if .Object.Flags}}<tr><th>{{.T "db.flags"}}</th><td><code>{{.Object.Flags}}</code> <span class="muted">(0x{{printf "%x" .Object.Flags}})</span></td></tr>{{end}}
+    {{if .LootID}}<tr><th>{{.T "db.lootID"}}</th><td><code>{{.LootID}}</code> <span class="muted">(data1)</span></td></tr>{{end}}
+    {{if .MoneyRange .Object.MinGold .Object.MaxGold}}<tr><th>{{.T "db.money"}}</th><td>{{.MoneyRange .Object.MinGold .Object.MaxGold}}</td></tr>{{end}}
+    {{if .Object.PhaseQuestID}}<tr><th>{{.T "db.phaseQuest"}}</th><td><a href="/db/quests/{{.Object.PhaseQuestID}}">#{{.Object.PhaseQuestID}}</a></td></tr>{{end}}
+    {{if .Object.ScriptName}}<tr><th>{{.T "db.scriptName"}}</th><td><code>{{.Object.ScriptName}}</code></td></tr>{{end}}
+    <tr><th>{{.T "db.spawns"}}</th><td>
+      {{.Stats.Spawns}}
+      {{if gt .Stats.Maps 1}}<span class="muted">· {{printf ($.T "db.mapCount") .Stats.Maps}}</span>{{end}}
+      {{with $.RespawnWindow .Stats}}<span class="muted">· {{$.T "db.respawn"}} {{.}}</span>{{end}}
+    </td></tr>
+  </table>
+  <p class="hint">{{.T "db.objectHint"}}</p>
+</section>
+
+{{with .Spawns}}
+<section class="card">
+  <h2>{{$.T "db.spawns"}}</h2>
+  <div class="maprow">
+    {{range .}}{{template "zonemap" .}}{{end}}
+  </div>
+  {{if $.SpawnListTruncated}}<p class="hint">{{$.T "db.spawnsTruncated"}}</p>{{end}}
+</section>
+{{end}}
+
+{{with .Relations}}
+{{if .Truncated}}
+<section class="card">
+  <p class="hint">{{$.T "db.listTruncated"}}{{range $i, $k := .Truncated}}{{if $i}}{{$.T "common.listSep"}}{{end}}{{$.T $k}}{{end}}</p>
+</section>
+{{end}}
+
+{{if .StartsQuests}}
+<section class="card">
+  <h2>{{$.T "db.startsQuests"}}</h2>
+  <table class="kv">
+    {{range .StartsQuests}}
+      <tr><th><a href="/db/quests/{{.Entry}}">{{if .Title}}{{.Title}}{{else}}#{{.Entry}}{{end}}</a></th><td></td></tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .EndsQuests}}
+<section class="card">
+  <h2>{{$.T "db.endsQuests"}}</h2>
+  <table class="kv">
+    {{range .EndsQuests}}
+      <tr><th><a href="/db/quests/{{.Entry}}">{{if .Title}}{{.Title}}{{else}}#{{.Entry}}{{end}}</a></th><td></td></tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .RequiredBy}}
+<section class="card">
+  <h2>{{$.T "db.requiredBy"}}</h2>
+  <table class="kv">
+    {{range .RequiredBy}}
+      <tr>
+        <th><a href="/db/quests/{{.Entry}}">{{if .Title}}{{.Title}}{{else}}#{{.Entry}}{{end}}</a></th>
+        <td class="right">{{if gt .Count 1}}<span class="muted">×{{.Count}}</span>{{end}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .Drops}}
+<section class="card">
+  <h2>{{$.T "db.drops"}}</h2>
+  <table class="kv">
+    {{template "lootlist" dict "page" $ "items" .Drops}}
+  </table>
+</section>
+{{end}}
+{{end}}
+
+{{if .DataFields}}
+<section class="card">
+  <h2>{{.T "db.dataFields"}}</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        {{range .DataFields}}<th class="right">data{{.Index}}</th>{{end}}
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        {{range .DataFields}}<td class="right">{{.Value}}</td>{{end}}
+      </tr>
+    </tbody>
+  </table>
+  <p class="hint">{{.T "db.dataFieldsHint"}}</p>
+</section>
+{{end}}
+{{end}}

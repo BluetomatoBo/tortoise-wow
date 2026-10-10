@@ -114,6 +114,11 @@ func (p PageData) CreatureTypeName(t uint8) string { return p.named("ctype", int
 // CreatureRankName renders CreatureEliteType (SharedDefines.h).
 func (p PageData) CreatureRankName(r uint8) string { return p.named("crank", int(r)) }
 
+// GameObjectTypeName renders GameobjectTypes (SharedDefines.h). The enum covers
+// 0..30 and several values are placeholders the core never instantiates, so the
+// names come from the enum itself rather than from what the data uses.
+func (p PageData) GameObjectTypeName(t uint8) string { return p.named("gotype", int(t)) }
+
 // SchoolName renders SpellSchools (SpellDefines.h). The column holds a single
 // school index, not the mask the core derives from it.
 func (p PageData) SchoolName(s uint32) string {
@@ -152,6 +157,10 @@ func (p PageData) ItemClassOptions() []dbOption { return dbOptions(p, "itemclass
 
 // CreatureTypeOptions lists CREATURE_TYPE_BEAST..TOTEM.
 func (p PageData) CreatureTypeOptions() []dbOption { return dbOptions(p, "ctype", 1, 11) }
+
+// GameObjectTypeOptions lists GAMEOBJECT_TYPE_DOOR..AURA_GENERATOR. 0 is a real
+// type (a door), which is why the filter carries a pointer.
+func (p PageData) GameObjectTypeOptions() []dbOption { return dbOptions(p, "gotype", 0, 30) }
 
 // SpellSchoolOptions lists SPELL_SCHOOL_NORMAL..ARCANE.
 func (p PageData) SpellSchoolOptions() []dbOption { return dbOptions(p, "school", 0, 6) }
@@ -194,6 +203,30 @@ func (p PageData) MoneyRange(min, max uint32) string {
 		return store.CoinsFromCopper(min)
 	}
 	return store.CoinsFromCopper(min) + " - " + store.CoinsFromCopper(max)
+}
+
+// RespawnWindow renders how long a gameobject takes to come back, or "" when it
+// never does. The two numbers are the min/max the placements were saved with -
+// the seconds column the core picks a respawn delay out of - and they are equal
+// in practice, so the common case reads as one number.
+//
+// A negative value is not a delay: the core flips the sign of the column for a
+// placement it does not spawn by default, so those read as what they are.
+func (p PageData) RespawnWindow(st store.GameObjectSpawnStats) string {
+	switch {
+	case st.Spawns == 0:
+		return ""
+	case st.RespawnMin < 0 || st.RespawnMax < 0:
+		return p.T("db.notSpawnedByDefault")
+	case st.RespawnMin == 0 && st.RespawnMax == 0:
+		// No delay stored and no placement that waits: printing "0 s" would
+		// read as "instantly", which is not what the row says.
+		return ""
+	case st.RespawnMin == st.RespawnMax:
+		return fmt.Sprintf(p.T("db.respawnSeconds"), st.RespawnMin)
+	default:
+		return fmt.Sprintf(p.T("db.respawnRange"), st.RespawnMin, st.RespawnMax)
+	}
 }
 
 // dbMoney is a labelled amount of coin.
@@ -259,7 +292,7 @@ type dbSearchView struct {
 	Results []store.ContentSearchResult
 }
 
-// dbKindNames maps a result kind to the label and path the page uses.
+// dbKindPath maps a result kind to the path the page uses.
 func dbKindPath(kind string) string {
 	switch kind {
 	case "item":
@@ -268,6 +301,8 @@ func dbKindPath(kind string) string {
 		return "/db/spells"
 	case "quest":
 		return "/db/quests"
+	case "gameobject":
+		return "/db/objects"
 	default:
 		return "/db/npcs"
 	}
@@ -897,5 +932,143 @@ func (s *Server) handleDBCreature(w http.ResponseWriter, r *http.Request, page *
 		Relations:          relations,
 		Spawns:             page.SpawnMaps(spawns),
 		SpawnListTruncated: truncated,
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Gameobjects
+// ---------------------------------------------------------------------------
+
+type dbObjectsView struct {
+	PageData
+	Objects []store.ContentGameObject
+
+	Search     string
+	FilterType *uint8
+	Spawned    bool
+
+	Total       int
+	Page        int
+	Pages       int
+	QueryString template.URL
+}
+
+func (s *Server) handleDBObjects(w http.ResponseWriter, r *http.Request, page *PageData) {
+	q := r.URL.Query()
+	filter := store.ContentGameObjectFilter{
+		Search:  strings.TrimSpace(q.Get("q")),
+		Type:    optUint8(q, "type"),
+		Spawned: q.Get("spawned") != "",
+		Limit:   store.ContentPageSize,
+	}
+	pageNum := dbPageNum(q)
+	filter.Offset = (pageNum - 1) * store.ContentPageSize
+
+	objects, total, err := s.store.ContentGameObjects(r.Context(), dbLocale(page), filter)
+	if err != nil {
+		s.serverError(w, r, "list gameobjects", err)
+		return
+	}
+
+	page.Title = page.T("db.objects.title")
+	page.Active = "db"
+	s.rend.Render(w, http.StatusOK, "db_objects", dbObjectsView{
+		PageData:    *page,
+		Objects:     objects,
+		Search:      filter.Search,
+		FilterType:  filter.Type,
+		Spawned:     filter.Spawned,
+		Total:       total,
+		Page:        pageNum,
+		Pages:       pages(total, store.ContentPageSize),
+		QueryString: baseQuery(r),
+	})
+}
+
+type dbObjectView struct {
+	PageData
+	Object store.ContentGameObject
+	// Relations are the quests it starts, ends and is a target of, plus its loot.
+	Relations *store.GameObjectRelations
+	// Spawns are the zone maps its placements fall on, one map per zone.
+	Spawns             []MapView
+	SpawnListTruncated bool
+	Stats              store.GameObjectSpawnStats
+	LootID             uint32
+	// DataFields are the non-zero data0..data23 columns, in index order.
+	DataFields []dbDataField
+	Query      string
+}
+
+// dbDataField is one non-zero data column of a gameobject template.
+type dbDataField struct {
+	Index uint8
+	Value uint32
+}
+
+// nonZeroDataFields are the data0..data23 columns worth printing. An object
+// template has twenty-four of them and the ones left at zero say nothing, while
+// the index has to stay visible: which data column a number came from is what
+// makes it readable against the core's per-type struct.
+func nonZeroDataFields(object store.ContentGameObject) []dbDataField {
+	var out []dbDataField
+	for i, v := range object.Data {
+		if v != 0 {
+			out = append(out, dbDataField{Index: uint8(i), Value: v})
+		}
+	}
+	return out
+}
+
+func (s *Server) handleDBObject(w http.ResponseWriter, r *http.Request, page *PageData) {
+	entry, ok := s.parseUintPath(r, "entry")
+	if !ok {
+		s.notFound(w, r)
+		return
+	}
+
+	loc := dbLocale(page)
+	object, err := s.store.ContentGameObject(r.Context(), loc, entry)
+	if err != nil {
+		if err == store.ErrNotFound {
+			s.notFound(w, r)
+			return
+		}
+		s.serverError(w, r, "load gameobject", err)
+		return
+	}
+
+	lootID := object.LootID()
+	relations, err := s.store.GameObjectRelations(r.Context(), loc, entry, lootID)
+	if err != nil {
+		s.serverError(w, r, "load gameobject relations", err)
+		return
+	}
+
+	// Where it stands. An object that is only a template - spawned by a script,
+	// or left behind by an old patch - has no map to draw.
+	spawns, truncated, err := s.store.GameObjectSpawns(r.Context(), entry)
+	if err != nil {
+		s.serverError(w, r, "load gameobject spawns", err)
+		return
+	}
+
+	stats, err := s.store.GameObjectSpawnSummary(r.Context(), entry)
+	if err != nil {
+		s.serverError(w, r, "load gameobject spawn summary", err)
+		return
+	}
+
+	page.Title = object.Name
+	page.Active = "db"
+	s.rend.Render(w, http.StatusOK, "db_object", dbObjectView{
+		PageData:           *page,
+		Object:             *object,
+		Relations:          relations,
+		Spawns:             page.ObjectSpawnMaps(spawns),
+		SpawnListTruncated: truncated,
+		Stats:              stats,
+		LootID:             lootID,
+		DataFields:         nonZeroDataFields(*object),
 	})
 }

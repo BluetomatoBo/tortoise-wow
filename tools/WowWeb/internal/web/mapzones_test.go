@@ -204,6 +204,24 @@ func TestPagesDrawMaps(t *testing.T) {
 	}
 	checkDotsShareTheImage(t, "the creature page", npc)
 
+	object := render("db_object", dbObjectView{PageData: page,
+		Object: store.ContentGameObject{Entry: 1731, Name: "铜矿脉", Type: 3},
+		Spawns: page.ObjectSpawnMaps([]store.GameObjectSpawn{{Map: 0, X: -9466.4, Y: 21.4}})})
+	if !strings.Contains(object, "/assets/maps/elwynn.png") {
+		t.Errorf("the gameobject page draws no map:\n%s", first(object, 1200))
+	}
+	if !strings.Contains(object, "map-dot") {
+		t.Errorf("the gameobject page draws no dot:\n%s", first(object, 1200))
+	}
+	checkDotsShareTheImage(t, "the gameobject page", object)
+
+	// An object that is only a template has no map block at all.
+	unplaced := render("db_object", dbObjectView{PageData: page,
+		Object: store.ContentGameObject{Entry: 2, Name: "没有放置的物件"}})
+	if strings.Contains(unplaced, "/assets/maps/") {
+		t.Errorf("an unplaced gameobject drew a map:\n%s", first(unplaced, 1200))
+	}
+
 	point, ok := page.MapPoint(0, -9466.4, 21.4)
 	if !ok {
 		t.Fatal("no map for the quest point")

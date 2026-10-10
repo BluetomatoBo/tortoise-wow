@@ -38,7 +38,7 @@ already uses**, so nothing has to be patched or rebuilt on the server side.
 | `/notice` | 公告的**网页版** —— 客户端公告里那个链接落到的页面，匿名可访问 |
 | `/account/{banned,suspended,no-time,verify}` | 登录失败对话框的**说明页**，匿名可访问 |
 | `/api/status` | 给监控或 Discord 机器人用的 JSON 状态。**不含任何地址与端口** |
-| `/db`、`/db/items`、`/db/spells`、`/db/quests`、`/db/npcs` | **数据库浏览器**：物品/法术/任务/生物的搜索、列表与详情，匿名可访问 |
+| `/db`、`/db/items`、`/db/spells`、`/db/quests`、`/db/npcs`、`/db/objects` | **数据库浏览器**：物品/法术/任务/生物/物件的搜索、列表与详情，匿名可访问 |
 | `/healthz` | 存活探针，含数据库连通性 |
 | `/lang/{en\|zh}` | 中英切换 |
 
@@ -451,19 +451,20 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 
 ### 数据库浏览器（`/db`）
 
-把服务端自己的内容表直接做成可浏览的页面：**物品、法术、任务、生物**。不复制 AoWoW 那套
+把服务端自己的内容表直接做成可浏览的页面：**物品、法术、任务、生物、物件**。不复制 AoWoW 那套
 `aowow_*` 库，也不跑导入器 —— 页面读的就是客户端正在被服务的那份数据，所以不会和游戏不一致。
 
 | 路径 | 作用 |
 |---|---|
-| `/db` | 首页：四类内容的数量与搜索框 |
-| `/db/search?q=` | 一次搜四类（每类最多 10 条），名称或条目编号都可以 |
+| `/db` | 首页：五类内容的数量与搜索框 |
+| `/db/search?q=` | 一次搜五类（每类最多 10 条），名称或条目编号都可以 |
 | `/db/items` | 物品列表，可按品质、类别、物品等级区间筛选 |
 | `/db/items/{entry}` | 物品详情：属性、抗性、物品上的法术、售价、绑定、起始任务 |
 | `/db/items/{entry}/tooltip` | 悬停用的片段（不是页面）：物品页那块内容的最小版本 |
 | `/db/spells`、`/db/spells/{id}` | 法术列表（按学派、等级筛选）与详情（含三个效果槽） |
 | `/db/quests`、`/db/quests/{entry}` | 任务列表与详情（需求物品/生物、奖励、任务文本、任务链与前置/后续、互斥组、给予者与交付者） |
 | `/db/npcs`、`/db/npcs/{entry}` | 生物列表（按类型、等级筛选）与详情（含它开/交的任务、掉落、剥皮、偷窃、售货） |
+| `/db/objects`、`/db/objects/{entry}` | 物件列表（按类型筛选、可只看已刷出的）与详情（含刷新位置地图、宝箱掉落、它开/交的任务、把它当目标的任务、原始 data 字段） |
 
 **交叉链接**（都在上面这些页面里，不需要额外的路由）：
 
@@ -473,6 +474,7 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 | 物品 | 任务需求 / 任务奖励 | `quest_template` 的 `ReqItemId1-4`、`RewItemId1-4`、`RewChoiceItemId1-6` |
 | 生物 | 开始的任务 / 交付的任务 | `creature_questrelation`、`creature_involvedrelation` |
 | 任务 | 任务给予者 / 任务交付者 | 上面两张表，加上 `gameobject_questrelation`、`gameobject_involvedrelation` |
+| 物件 | 开始的任务 / 交付的任务 / 作为任务目标 / 掉落 | 前两张表；任务目标取 `quest_template.ReqCreatureOrGOId1-4` 的**负数**项；掉落取 `data1`（仅宝箱与鱼群）指向的 `gameobject_loot_template` |
 
 > **战利品表的外键是 loot id，不是生物 entry。** 核心读的是 `creature_template.loot_id`、
 > `skinning_loot_id`、`pickpocket_loot_id`（`ObjectMgr.cpp`），而 gameobject 只有**宝箱与鱼群**类型
@@ -911,7 +913,7 @@ has to be patched or rebuilt on the server side:
 | `/notice` | The notice as a **web page** - where the link inside the client's panel lands |
 | `/account/{banned,suspended,no-time,verify}` | What a sign-in failure dialog's link opens |
 | `/api/status` | JSON status for monitoring or a Discord bot. Carries counts and load, but **never an address or port** |
-| `/db`, `/db/items`, `/db/spells`, `/db/quests`, `/db/npcs` | The **database browser**: search, lists and detail pages for items, spells, quests and creatures; public |
+| `/db`, `/db/items`, `/db/spells`, `/db/quests`, `/db/npcs`, `/db/objects` | The **database browser**: search, lists and detail pages for items, spells, quests, creatures and objects; public |
 | `/healthz` | Liveness/readiness probe including database connectivity |
 | `/lang/{en\|zh}` | Language switcher (also sets the `tw_lang` cookie) |
 
@@ -1655,19 +1657,20 @@ is what makes it a test of the live privileges rather than of `root`'s.
 
 ### The database browser (`/db`)
 
-The server's own content tables, browsable: **items, spells, quests and creatures**.
+The server's own content tables, browsable: **items, spells, quests, creatures and objects**.
 It does not copy AoWoW's `aowow_*` schema and runs no importer - the pages read the
 same rows the client is being served from, so they cannot disagree with the game.
 
 | Page | What it does |
 | --- | --- |
 | `/db` | Landing page: how much of each kind the database holds, plus a search box |
-| `/db/search?q=` | Searches all four kinds at once (up to 10 hits each), by name or entry |
+| `/db/search?q=` | Searches all five kinds at once (up to 10 hits each), by name or entry |
 | `/db/items` | Item list, filterable by quality, class and item-level range |
 | `/db/items/{entry}` | One item: stats, resistances, its spells, prices, binding, the quest it starts |
 | `/db/spells`, `/db/spells/{id}` | Spell list (by school and level) and one spell, including its effect slots |
 | `/db/quests`, `/db/quests/{entry}` | Quest list and one quest: required items and creatures, rewards, quest text, the chain and its requirements, exclusive groups |
 | `/db/npcs`, `/db/npcs/{entry}` | Creature list (by type and level) and one creature |
+| `/db/objects`, `/db/objects/{entry}` | Object list (by type, optionally only the placed ones) and one object: where it stands on the map, a chest's loot, the quests it starts and ends, the quests that target it, and its raw data columns |
 
 Worth knowing:
 

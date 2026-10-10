@@ -41,6 +41,7 @@ func TestTemplatesParse(t *testing.T) {
 	quality, class := uint8(4), uint8(2)
 	minLevel, maxLevel := uint8(30), uint8(60)
 	school, ctype := uint8(2), uint8(7)
+	objectType := uint8(3)
 	char := store.Character{
 		GUID: 42, AccountID: 7, AccountName: "TESTER", Name: "Thrall",
 		Race: 2, Class: 1, Gender: 0, Level: 60, Money: 1234567,
@@ -381,6 +382,40 @@ func TestTemplatesParse(t *testing.T) {
 		{"db_npc", dbCreatureView{PageData: page, Creature: store.ContentCreature{
 			Entry: 2, Name: "Spawn Point", LevelMin: 60, LevelMax: 60, Type: 7, Scale: 1,
 		}}},
+		{"db_objects", dbObjectsView{
+			PageData: page, Search: "矿", Total: 2, Page: 1, Pages: 1,
+			QueryString: "type=3&spawned=1&", FilterType: &objectType, Spawned: true,
+			Objects: []store.ContentGameObject{
+				{Entry: 1731, Name: "铜矿脉", Type: 3, DisplayID: 31, Faction: 0, Size: 1,
+					Data: [24]uint32{1: 1731}, SpawnCount: 42, ScriptName: "go_copper"},
+				{Entry: 2, Name: "Spawn Point", Type: 5},
+			}}},
+		{"db_objects", dbObjectsView{PageData: page, Total: 0, Page: 1, Pages: 1}},
+		{"db_object", dbObjectView{
+			PageData: page, LootID: 1731,
+			Stats:      store.GameObjectSpawnStats{Spawns: 42, Maps: 3, RespawnMin: 300, RespawnMax: 900},
+			DataFields: []dbDataField{{Index: 1, Value: 1731}, {Index: 3, Value: 1}},
+			Object: store.ContentGameObject{
+				Entry: 1731, Name: "铜矿脉", Type: 3, DisplayID: 31, Faction: 35, Flags: 0,
+				Size: 1.25, Data: [24]uint32{1: 1731, 3: 1}, PhaseQuestID: 80104,
+				ScriptName: "go_copper", SpawnCount: 42,
+			},
+			Spawns: page.ObjectSpawnMaps([]store.GameObjectSpawn{{Map: 0, X: -9466.4, Y: 21.4}}),
+			Relations: &store.GameObjectRelations{
+				StartsQuests: []store.ContentQuestRef{{Entry: 80104, Title: "The Other White Mech"}},
+				EndsQuests:   []store.ContentQuestRef{{Entry: 5, Title: "A Quest"}},
+				RequiredBy:   []store.ContentQuestRef{{Entry: 80105, Title: "Ore Enough", Count: 5}},
+				Drops: []store.ContentLootItem{
+					{Entry: 2770, Name: "Copper Ore", Chance: 100, MinCount: 1, MaxCount: 2},
+					{Entry: 80119, Name: "Mechanical Drumstick", Chance: 60, MinCount: 1, MaxCount: 1,
+						Group: 4, GroupChance: 100, GroupEqual: 1,
+						Condition: &store.LootCondition{Kind: store.CondQuestDone,
+							Args: []store.CondArg{{Value: "80104", Name: "The Other White Mech"}}}},
+				},
+				Truncated: []string{"db.requiredBy"},
+			}}},
+		// The same page with nothing filled in at all.
+		{"db_object", dbObjectView{PageData: page, Object: store.ContentGameObject{Entry: 2, Name: "Spawn Point"}}},
 		{"error", page},
 	}
 
@@ -590,5 +625,96 @@ func withPageData(view any, pd PageData) any {
 		return pd
 	default:
 		return nil
+	}
+}
+
+// TestGameObjectPageRendersItsRelations renders the object page and checks the
+// pieces that make it worth having: a chest's loot with its group and condition,
+// the quests that ask for the object, and the raw data columns named by the index
+// each came from (a zero column is left out).
+func TestGameObjectPageRendersItsRelations(t *testing.T) {
+	rend, err := newRenderer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := namePage(t, i18n.ZH)
+
+	view := dbObjectView{
+		PageData: page, LootID: 1731,
+		Stats:      store.GameObjectSpawnStats{Spawns: 42, Maps: 3, RespawnMin: 300, RespawnMax: 300},
+		DataFields: nonZeroDataFields(store.ContentGameObject{Data: [24]uint32{1: 1731}}),
+		Object: store.ContentGameObject{
+			Entry: 1731, Name: "铜矿脉", Type: 3, DisplayID: 31, SpawnCount: 42,
+		},
+		Spawns: page.ObjectSpawnMaps([]store.GameObjectSpawn{{Map: 0, X: -9466.4, Y: 21.4}}),
+		Relations: &store.GameObjectRelations{
+			RequiredBy: []store.ContentQuestRef{{Entry: 80105, Title: "Ore Enough", Count: 5}},
+			Drops: []store.ContentLootItem{
+				{Entry: 2770, Name: "Copper Ore", Chance: 100, MinCount: 1, MaxCount: 2},
+				{Entry: 80119, Name: "Mechanical Drumstick", Chance: 60, MinCount: 1, MaxCount: 1,
+					Group: 4, GroupChance: 100, GroupEqual: 1,
+					Condition: &store.LootCondition{Kind: store.CondQuestDone,
+						Args: []store.CondArg{{Value: "80104", Name: "The Other White Mech"}}}},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	if err := rend.cache["db_object"].ExecuteTemplate(&buf, "layout", view); err != nil {
+		t.Fatalf("db_object: %v", err)
+	}
+	html := buf.String()
+
+	for _, want := range []string{
+		"铜矿脉",
+		"Copper Ore",                   // the loot row, with its item name
+		`class="lootgroup"`,            // the group header for the grouped row
+		`class="lootcond"`,             // the condition line under it
+		"/db/quests/80105",             // the quest that asks for the object
+		`<th class="right">data1</th>`, // the raw field and the column it came from
+		"300 秒",                        // the respawn window
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("the object page does not show %q:\n%s", want, first(html, 2000))
+		}
+	}
+	if strings.Contains(html, `<th class="right">data0</th>`) {
+		t.Errorf("a zero data column was printed:\n%s", first(html, 2000))
+	}
+}
+
+// TestGameObjectListShowsTypeSpawnsAndLoot covers the object list's columns: the
+// type in the reader's language, how often the template is placed, and the loot
+// table a chest points at.
+func TestGameObjectListShowsTypeSpawnsAndLoot(t *testing.T) {
+	rend, err := newRenderer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := namePage(t, i18n.ZH)
+
+	view := dbObjectsView{PageData: page, Total: 1, Page: 1, Pages: 1,
+		Objects: []store.ContentGameObject{
+			{Entry: 1731, Name: "铜矿", Type: 3, Data: [24]uint32{1: 5000052}, SpawnCount: 1197},
+			// A template that stands nowhere: the spawn column has to stay empty
+			// rather than print a zero the reader would read as a place.
+			{Entry: 2, Name: "Spawn Point", Type: 5},
+		}}
+
+	var buf bytes.Buffer
+	if err := rend.cache["db_objects"].ExecuteTemplate(&buf, "layout", view); err != nil {
+		t.Fatalf("db_objects: %v", err)
+	}
+	html := buf.String()
+
+	for _, want := range []string{
+		`<a href="/db/objects/1731">铜矿</a>`,
+		"宝箱",      // the type label, from gotype.3
+		">1197<",  // how often it is placed
+		"5000052", // the loot table a chest's data1 points at
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("the object list does not show %q:\n%s", want, first(html, 2000))
+		}
 	}
 }

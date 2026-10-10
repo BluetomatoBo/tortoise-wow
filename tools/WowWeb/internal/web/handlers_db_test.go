@@ -179,6 +179,27 @@ func TestQuestMoneyHandlesBothDirections(t *testing.T) {
 	}
 }
 
+// TestGameObjectDataFieldsSkipZeros covers the filter behind the raw-fields
+// table: an object template has twenty-four data columns and the zero ones say
+// nothing, while the index each value came from has to survive.
+func TestGameObjectDataFieldsSkipZeros(t *testing.T) {
+	object := store.ContentGameObject{Data: [24]uint32{1: 1731, 3: 1}}
+	got := nonZeroDataFields(object)
+	want := []dbDataField{{Index: 1, Value: 1731}, {Index: 3, Value: 1}}
+	if len(got) != len(want) {
+		t.Fatalf("fields = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("field %d = %+v, want %+v", i, got[i], want[i])
+		}
+	}
+
+	if fields := nonZeroDataFields(store.ContentGameObject{}); len(fields) != 0 {
+		t.Errorf("an all-zero template produced %v", fields)
+	}
+}
+
 func TestDBResultPath(t *testing.T) {
 	cases := []struct {
 		kind  string
@@ -189,6 +210,7 @@ func TestDBResultPath(t *testing.T) {
 		{"spell", 133, "/db/spells/133"},
 		{"quest", 5, "/db/quests/5"},
 		{"creature", 80117, "/db/npcs/80117"},
+		{"gameobject", 1731, "/db/objects/1731"},
 	}
 	for _, tc := range cases {
 		if got := dbKindPath(tc.kind) + "/" + itoa(int(tc.entry)); got != tc.want {

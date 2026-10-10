@@ -122,6 +122,10 @@ func relationQueries() map[string]string {
 		}
 		q, _ = questsOfActorQuery(loc, "creature_questrelation", 3)
 		out[string(loc)+" actor quests"] = q
+		q, _ = questsRequiringAgentQuery(loc, "ReqCreatureOrGOId", 4, -16063)
+		out[string(loc)+" quests requiring gameobject"] = q
+		out["gameobject spawns"] = gameObjectSpawnsQuery()
+		out["gameobject spawn summary"] = gameObjectSpawnSummaryQuery()
 		out[string(loc)+" chain next"] = questChainNextQuery()
 		out[string(loc)+" chain prev"] = questChainPrevQuery(loc)
 		out[string(loc)+" own links"] = questOwnLinksQuery()

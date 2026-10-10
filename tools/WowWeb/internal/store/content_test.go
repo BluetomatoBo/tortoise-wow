@@ -51,6 +51,7 @@ func TestContentScanTargetsMatchColumns(t *testing.T) {
 		var spell ContentSpell
 		var quest ContentQuest
 		var creature ContentCreature
+		var object ContentGameObject
 
 		cases := []struct {
 			name    string
@@ -61,6 +62,7 @@ func TestContentScanTargetsMatchColumns(t *testing.T) {
 			{"spell_template", spellColumns(loc), spell.scanTargets()},
 			{"quest_template", questColumns(loc), quest.scanTargets()},
 			{"creature_template", creatureColumns(loc), creature.scanTargets()},
+			{"gameobject_template", gameObjectColumns(loc), object.scanTargets()},
 		}
 
 		for _, tc := range cases {
@@ -237,6 +239,88 @@ func TestItemFilterWhere(t *testing.T) {
 	zero := uint8(0)
 	if where, args := itemWhere(ContentLocaleBase, ContentItemFilter{Quality: &zero}); len(args) != 1 {
 		t.Errorf("quality 0 produced %q / %v, want one filter", where, args)
+	}
+}
+
+// TestGameObjectFilterWhere covers the object list's filters: the type box (0 is
+// a real type, a door) and the "spawned only" box.
+func TestGameObjectFilterWhere(t *testing.T) {
+	door := uint8(0)
+	chest := uint8(3)
+
+	cases := []struct {
+		name      string
+		locale    ContentLocale
+		filter    ContentGameObjectFilter
+		wantWhere string
+		wantArgs  int
+	}{
+		{
+			name: "no filter",
+		},
+		{
+			name:      "search only",
+			locale:    ContentLocaleZH,
+			filter:    ContentGameObjectFilter{Search: "矿"},
+			wantWhere: " WHERE (g.name LIKE ? OR lg.name_loc4 LIKE ?)",
+			wantArgs:  2,
+		},
+		{
+			name:      "type zero is a filter, not an absent one",
+			locale:    ContentLocaleBase,
+			filter:    ContentGameObjectFilter{Type: &door},
+			wantWhere: " WHERE g.type = ?",
+			wantArgs:  1,
+		},
+		{
+			name:      "spawned only",
+			locale:    ContentLocaleBase,
+			filter:    ContentGameObjectFilter{Spawned: true},
+			wantWhere: " WHERE EXISTS (SELECT 1 FROM gameobject gsp WHERE gsp.id = g.entry)",
+		},
+		{
+			name:   "everything at once",
+			locale: ContentLocaleZH,
+			filter: ContentGameObjectFilter{Search: "1731", Type: &chest, Spawned: true},
+			wantWhere: " WHERE (g.name LIKE ? OR lg.name_loc4 LIKE ? OR g.entry = ?) AND g.type = ?" +
+				" AND EXISTS (SELECT 1 FROM gameobject gsp WHERE gsp.id = g.entry)",
+			wantArgs: 4,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			where, args := gameObjectWhere(tc.locale, tc.filter)
+			if where != tc.wantWhere {
+				t.Errorf("where = %q, want %q", where, tc.wantWhere)
+			}
+			if len(args) != tc.wantArgs {
+				t.Errorf("args = %v, want %d of them", args, tc.wantArgs)
+			}
+		})
+	}
+}
+
+// TestGameObjectLootIDOnlyForLootTypes pins the rule the loot section depends on:
+// data1 is a loot table id for a chest and a fishing hole, and for every other
+// type it means something else, so reading it as loot would invent drops
+// (GameObject.h, GetLootId).
+func TestGameObjectLootIDOnlyForLootTypes(t *testing.T) {
+	withData1 := func(kind uint8) ContentGameObject {
+		return ContentGameObject{Entry: 100, Type: kind, Data: [24]uint32{0: 5, 1: 1731}}
+	}
+
+	if got := withData1(3).LootID(); got != 1731 {
+		t.Errorf("a chest's loot id = %d, want 1731 (data1)", got)
+	}
+	if got := withData1(25).LootID(); got != 1731 {
+		t.Errorf("a fishing hole's loot id = %d, want 1731 (data1)", got)
+	}
+	// A door stores its lock id in data1; a chair stores its slot count.
+	for _, kind := range []uint8{0, 1, 2, 5, 7, 8, 10} {
+		if got := withData1(kind).LootID(); got != 0 {
+			t.Errorf("type %d read data1 as a loot id: %d", kind, got)
+		}
 	}
 }
 

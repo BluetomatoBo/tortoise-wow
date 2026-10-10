@@ -64,6 +64,8 @@ func TestRoutesAreRegistered(t *testing.T) {
 		{"GET", "/db/quests/80104"},
 		{"GET", "/db/npcs"},
 		{"GET", "/db/npcs/80117"},
+		{"GET", "/db/objects"},
+		{"GET", "/db/objects/1731"},
 
 		// player area
 		{"GET", "/panel"},

@@ -215,16 +215,19 @@ func templateFuncs() template.FuncMap {
 			return out, nil
 		},
 
-		// Gameobjects have no browser yet, so they come back empty and the
-		// template renders them as plain text. The kind is taken as any
-		// because a template passes the literal "item" as a string while the
-		// store hands over a typed DropKind.
+		// Gameobjects have their own browser now (/db/objects); an entry with
+		// no page of its own comes back empty and the template renders it as
+		// plain text. The kind is taken as any because a template passes the
+		// literal "item" as a string while the store hands over a typed
+		// DropKind.
 		"dbpath": func(kind any, entry uint32) string {
 			switch store.DropKind(fmt.Sprint(kind)) {
 			case store.DropCreature:
 				return "/db/npcs/" + strconv.FormatUint(uint64(entry), 10)
 			case store.DropItem:
 				return "/db/items/" + strconv.FormatUint(uint64(entry), 10)
+			case store.DropGameObject:
+				return "/db/objects/" + strconv.FormatUint(uint64(entry), 10)
 			default:
 				return ""
 			}

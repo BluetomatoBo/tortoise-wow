@@ -1,0 +1,52 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.T "db.objects.title"}} <span class="muted">({{.Total}})</span></h1>
+  <a class="btn btn-ghost" href="/db">{{.T "db.back"}}</a>
+</div>
+
+<section class="card">
+  <form method="get" action="/db/objects" class="filters">
+    <input name="q" value="{{.Search}}" placeholder="{{.T "db.search.placeholder"}}">
+    <select name="type">
+      <option value="">{{.T "db.anyType"}}</option>
+      {{range .GameObjectTypeOptions}}
+        <option value="{{.Value}}" {{if and (isSet $.FilterType) (eq (deref $.FilterType) .Value)}}selected{{end}}>{{.Name}}</option>
+      {{end}}
+    </select>
+    <label><input type="checkbox" name="spawned" value="1" {{if .Spawned}}checked{{end}}> {{.T "db.spawnedOnly"}}</label>
+    <button class="btn" type="submit">{{.T "common.filter"}}</button>
+    <a class="btn btn-ghost" href="/db/objects">{{.T "common.reset"}}</a>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "db.entry"}}</th>
+        <th>{{.T "db.name"}}</th>
+        <th>{{.T "db.type"}}</th>
+        <th class="right">{{.T "db.spawns"}}</th>
+        <th class="right">{{.T "db.lootID"}}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Objects}}
+      <tr>
+        <td><code>{{.Entry}}</code></td>
+        <td><a href="/db/objects/{{.Entry}}">{{.Name}}</a></td>
+        <td>{{$.GameObjectTypeName .Type}}</td>
+        <td class="right">{{if .SpawnCount}}{{.SpawnCount}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        <td class="right">{{with .LootID}}<code>{{.}}</code>{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        <td class="right"><a class="btn btn-ghost btn-sm" href="/db/objects/{{.Entry}}">{{$.T "common.open"}}</a></td>
+      </tr>
+    {{else}}
+      <tr><td colspan="6" class="muted center">{{$.T "db.none"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+
+  {{template "pagination" .}}
+
+  <p class="hint">{{.T "db.objects.listHint"}}</p>
+</section>
+{{end}}

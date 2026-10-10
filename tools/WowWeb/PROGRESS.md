@@ -28,6 +28,7 @@ README 里的明确限制。最后几条改动**还没部署**，见下面的「
 | 功能 | 说明 | 提交 |
 |---|---|---|
 | 四类内容 | `/db/items`、`/db/spells`、`/db/quests`、`/db/npcs`，列表带筛选、详情、一次搜四类 | 更早 |
+| **物件页** | `/db/objects`、`/db/objects/{entry}`：类型筛选/只看已刷出的、刷新位置地图、宝箱掉落、开/交/作为目标的任务、原始 data 字段 | 本次 |
 | 图标 | 物品/法术/生物图标：映射改用客户端 DBC，缺图从客户端 BLP 解；覆盖率 **99.6% / 99.7%** | `c5410ba` `fc45a38` |
 | 数字变名字 | 区域、任务排序、阵营、地图、物品类别/子类、套装，取自客户端 DBC；同时保留原始 id | `6063e3a` |
 | 交叉链接 | 掉落来源/剥皮/偷窃/售货、任务需求与奖励、生物开/交的任务 | 更早 |
@@ -94,7 +95,9 @@ Web 显示的正文就是 `locales_*` 表里的列，所以汉化进度直接决
 
 `/db` 这边：
 
-- 只有**四类**内容（物品、法术、任务、生物）——没有物件（gameobject）、区域、阵营等页面。
+- 内容类目：物品、法术、任务、生物、**物件**；还没有区域页、阵营页与物品套装独立页。
+- 物件页不解释 `data0`–`data23` 的含义：内核 `GameObject.h` 每种类型各有自己的结构体字段名，
+  页面只列非零项与列下标（按类型命名是下一步，不是不做）。
 - 掉落表的 `groupid` 与 `condition_id` **已解释**（见上表最后一行）：组头给出「每组至多 1 件」与
   组内总概率，条件译成句子。两个已知边界：① 组内总概率只在该组各行来自**同一个**引用表时打印
   （跨引用表的同名组，那个和内核根本不会算）；② 条件的操作数名字里，`game_event` 只有英文描述
@@ -109,7 +112,8 @@ Web 显示的正文就是 `locales_*` 表里的列，所以汉化进度直接决
 
 1. **部署并复验**：地图点定位修复，以及本次的掉落组与条件（挑一个有组又有条件的生物页，
    例如 `/db/npcs/13556`、`/db/npcs/7153`）。
-2. 想继续扩 `/db` 的话：物件（gameobject）页、区域页、物品套装独立页。
+2. 想继续扩 `/db` 的话：区域页、阵营页、物品套装独立页；物件页可以再补「按类型解释 data 字段」
+   与池/游戏事件（`pool_gameobject`、`game_event_gameobject`）关联。
 3. 条件显示还能再进一步：法术范围/施法时间那类「客户端清单里没有的 DBC」仍是原始数字，
    条件和掉落都还没用到；`conditions` 里剩下的类型（约 40 种，掉落表没用到）目前显示原始
    type + 操作数，用到时再补词条即可。
@@ -443,3 +447,36 @@ wowhead 到底能拿到哪些字段。
 
 **对照清单**（会话 `files/dbc_vs_official/`）：`divergence_core.tsv`（核心分歧 2,684 条）、
 `divergence_client_vs_db.tsv`（全部 7,538 条）、`name_divergence_386.tsv` / `text_divergence.tsv`、`REVIEW.md`。
+
+## 第十一轮：/db 物件（gameobject）页
+
+`/db/objects` 列表 + `/db/objects/{entry}` 详情，跟已有四类同一套写法（store 取数 → handler 组装 →
+模板渲染，模板嵌进二进制）。
+
+**做了什么**
+
+| 位置 | 内容 |
+|---|---|
+| `store.ContentGameObject(s)` | `gameobject_template` 一行：类型、`displayId`、阵营、`flags`、尺寸、`data0..data23`、`mingold/maxgold`、`phase_quest_id`、`script_name`，外加 `SpawnCount`（子查询，`gameobject.id` 上有索引） |
+| 列表筛选 | 名称/条目号搜索、类型下拉（0–30，含「门」这种 0 值）、「只看已刷出的」（`EXISTS` 子查询） |
+| `LootID()` | 只有宝箱(3)与鱼群(25)的 `data1` 是 loot id，其余类型读它是别的意思（`GameObject.h` 的 `GetLootId`）→ 单测钉住 |
+| `GameObjectRelations` | 开/交任务（`gameobject_questrelation`/`gameobject_involvedrelation`）、**作为任务目标**（`ReqCreatureOrGOId1-4` 的负数项，`ABS()` 后比对）、掉落（`gameobject_loot_template`，走既有 `scanLootItems`：引用表展开 + 分组 + 条件） |
+| `GameObjectSpawns` / `GameObjectSpawnSummary` | 刷新点（上限 200，与生物页一致）与一行汇总：总数、地图数、`spawntimesecs` 区间 |
+| 地图 | `page.ObjectSpawnMaps` 按区域分组，复用 `zonemap` 局部模板（点仍挂在 `.map-frame` 里） |
+| 重生时间 | 负值不是秒数而是「不默认刷出」（内核把不默认刷出的放置写成负延时，`GameObject.cpp:928`）→ 页面照此显示 |
+| 原始字段 | 只列非零的 `data0..data23` 并保留列下标（每种类型含义不同，不猜语义） |
+| 接线 | 路由、首页第五张卡、一次搜五类、`dbpath` 的 gameobject 分支、任务页的物件目标改成链接到物件页、`ContentCounts` 加 `GameObjects` |
+
+**验证**
+
+- 单测：`TestGameObjectFilterWhere`、`TestGameObjectLootIDOnlyForLootTypes`、`TestGameObjectDataFieldsSkipZeros`、
+  `TestGameObjectPageRendersItsRelations`、地图渲染（含「没有放置的物件不画地图」）、路由与链接表、
+  列名校验（`gameObjectColumns` 进 DDL 检查；故意写错 `g.displayIdX` 会失败）、别名绑定、i18n 键集一致（943 键）。
+- 端到端：本地起服务连线上 `tw_world`，`/db/objects`（21,196 条）、`?type=3&spawned=1`、`?q=Copper`、
+  `/db/objects/1731`（铜矿：1197 个刷新点/5 张地图、掉落 5000052 展开成 6 件含条件行、`data0,1,3,4,5`）、
+  `/db/objects/34`（旧罐子：开/交任务）、`/db/objects/2020226`（作为任务目标 2 条）、
+  `/db/objects/20920`（重生显示「不默认刷出」）、`/db/objects/1`（未放置：无地图）、`/db/search?q=铜矿`（含「游戏对象」组）。
+  页面 0.12–0.29 s，最重的（1197 个点裁到 200）30 KB。
+
+**下一步候选**：物件页按类型解释 `data` 字段（`GameObject.h` 每类型结构体）；池与游戏事件关联；
+区域页 / 阵营页 / 物品套装独立页。

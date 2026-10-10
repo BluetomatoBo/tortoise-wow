@@ -1054,19 +1054,172 @@ func (s *Store) ContentCreature(ctx context.Context, loc ContentLocale, entry ui
 }
 
 // ---------------------------------------------------------------------------
+// Gameobjects
+// ---------------------------------------------------------------------------
+
+// ContentGameObject is one gameobject_template row.
+//
+// Data is the twenty-four data0..data23 columns, which hold different fields per
+// type: the core reads them through a union of per-type structs (GameObject.h),
+// so the page prints the numbers and leaves the naming to the reader. The ones
+// that matter for what the page shows are read where the core reads them -
+// data1 is the loot table of a chest or fishing hole (GetLootId).
+type ContentGameObject struct {
+	Entry     uint32
+	Name      string
+	Type      uint8
+	DisplayID uint32
+	Faction   uint16
+	Flags     uint32
+	Size      float64
+	Data      [24]uint32
+
+	MinGold      uint32
+	MaxGold      uint32
+	PhaseQuestID uint32
+	ScriptName   string
+
+	// SpawnCount is how many times this object is placed in the world. A
+	// template that is never spawned is usually a leftover, and whether a chest
+	// stands anywhere is the first thing the page is asked.
+	SpawnCount uint32
+}
+
+// ContentGameObjectFilter narrows a gameobject list.
+type ContentGameObjectFilter struct {
+	Search  string
+	Type    *uint8
+	Spawned bool
+	Limit   int
+	Offset  int
+}
+
+func gameObjectWhere(loc ContentLocale, f ContentGameObjectFilter) (string, []any) {
+	var where []string
+	var args []any
+	if clause, a := contentSearch(loc, "lg", "g", "name", f.Search); clause != "" {
+		where = append(where, clause)
+		args = append(args, a...)
+	}
+	if f.Type != nil {
+		where = append(where, "g.type = ?")
+		args = append(args, *f.Type)
+	}
+	if f.Spawned {
+		where = append(where, "EXISTS (SELECT 1 FROM gameobject gsp WHERE gsp.id = g.entry)")
+	}
+	return contentWhere(where), args
+}
+
+// spawnCount reads how many placements a gameobject has. It is a subquery rather
+// than a join so the list still returns one row per template, and it is cheap:
+// gameobject has an index on id.
+const gameObjectSpawnCount = "(SELECT COUNT(*) FROM gameobject gsp WHERE gsp.id = g.entry)"
+
+func gameObjectColumns(loc ContentLocale) string {
+	return "g.entry, " + loc.localized("lg", "g", "name") + `,
+		g.type, g.displayId, g.faction, g.flags, g.size,
+		g.data0, g.data1, g.data2, g.data3, g.data4, g.data5, g.data6, g.data7,
+		g.data8, g.data9, g.data10, g.data11, g.data12, g.data13, g.data14, g.data15,
+		g.data16, g.data17, g.data18, g.data19, g.data20, g.data21, g.data22, g.data23,
+		g.mingold, g.maxgold, g.phase_quest_id, g.script_name, ` + gameObjectSpawnCount
+}
+
+func gameObjectListQuery(loc ContentLocale, f ContentGameObjectFilter) (string, []any) {
+	where, args := gameObjectWhere(loc, f)
+	order := loc.localized("lg", "g", "name")
+	limit, limitArgs := contentLimit(f.Limit, f.Offset)
+	q := "SELECT " + gameObjectColumns(loc) +
+		" FROM gameobject_template g" + loc.join("lg", "locales_gameobject", "entry", "g") +
+		where + " ORDER BY " + order + ", g.entry" + limit
+	return q, append(args, limitArgs...)
+}
+
+func gameObjectCountQuery(loc ContentLocale, f ContentGameObjectFilter) (string, []any) {
+	where, args := gameObjectWhere(loc, f)
+	return "SELECT COUNT(*) FROM gameobject_template g" +
+		loc.join("lg", "locales_gameobject", "entry", "g") + where, args
+}
+
+func gameObjectDetailQuery(loc ContentLocale) string {
+	return "SELECT " + gameObjectColumns(loc) +
+		" FROM gameobject_template g" + loc.join("lg", "locales_gameobject", "entry", "g") +
+		" WHERE g.entry = ?"
+}
+
+func (g *ContentGameObject) scanTargets() []any {
+	out := []any{&g.Entry, &g.Name, &g.Type, &g.DisplayID, &g.Faction, &g.Flags, &g.Size}
+	for i := range g.Data {
+		out = append(out, &g.Data[i])
+	}
+	return append(out, &g.MinGold, &g.MaxGold, &g.PhaseQuestID, &g.ScriptName, &g.SpawnCount)
+}
+
+// ContentGameObjects lists gameobjects matching the filter.
+func (s *Store) ContentGameObjects(ctx context.Context, loc ContentLocale, f ContentGameObjectFilter) ([]ContentGameObject, int, error) {
+	countQ, countArgs := gameObjectCountQuery(loc, f)
+	var total int
+	if err := s.World.QueryRowContext(ctx, countQ, countArgs...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count gameobjects: %w", err)
+	}
+
+	listQ, listArgs := gameObjectListQuery(loc, f)
+	rows, err := s.World.QueryContext(ctx, listQ, listArgs...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list gameobjects: %w", err)
+	}
+	defer rows.Close()
+
+	var out []ContentGameObject
+	for rows.Next() {
+		var g ContentGameObject
+		if err := rows.Scan(g.scanTargets()...); err != nil {
+			return nil, 0, fmt.Errorf("scan gameobject: %w", err)
+		}
+		out = append(out, g)
+	}
+	return out, total, rows.Err()
+}
+
+// ContentGameObject loads one gameobject.
+func (s *Store) ContentGameObject(ctx context.Context, loc ContentLocale, entry uint32) (*ContentGameObject, error) {
+	q := gameObjectDetailQuery(loc)
+	var g ContentGameObject
+	if err := s.World.QueryRowContext(ctx, q, entry).Scan(g.scanTargets()...); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("gameobject %d: %w", entry, err)
+	}
+	return &g, nil
+}
+
+// LootID is the loot table the core would read for this object: data1, and only
+// for the two types GetLootId answers for (GameObject.h). Zero means the object
+// has no loot of its own - a door, a chair or a quest object drops nothing.
+func (g ContentGameObject) LootID() uint32 {
+	switch g.Type {
+	case 3, 25: // chest, fishing hole
+		return g.Data[1]
+	}
+	return 0
+}
+
+// ---------------------------------------------------------------------------
 // Counts and unified search
 // ---------------------------------------------------------------------------
 
 // ContentCounts is how much of each kind of content the database holds, shown on
 // the browser's landing page.
 type ContentCounts struct {
-	Items     int
-	Spells    int
-	Quests    int
-	Creatures int
+	Items       int
+	Spells      int
+	Quests      int
+	Creatures   int
+	GameObjects int
 }
 
-// ContentCountsFor counts the four tables. A table that is missing (an older
+// ContentCountsFor counts the content tables. A table that is missing (an older
 // world database) reports zero rather than failing the page.
 func (s *Store) ContentCountsFor(ctx context.Context) ContentCounts {
 	var c ContentCounts
@@ -1078,6 +1231,7 @@ func (s *Store) ContentCountsFor(ctx context.Context) ContentCounts {
 		{"spell_template", &c.Spells},
 		{"quest_template", &c.Quests},
 		{"creature_template", &c.Creatures},
+		{"gameobject_template", &c.GameObjects},
 	} {
 		if err := s.World.QueryRowContext(ctx, "SELECT COUNT(*) FROM "+t.table).Scan(t.into); err != nil {
 			*t.into = 0
@@ -1088,13 +1242,13 @@ func (s *Store) ContentCountsFor(ctx context.Context) ContentCounts {
 
 // ContentSearchResult is one hit of the unified search.
 type ContentSearchResult struct {
-	Kind     string // "item" | "spell" | "quest" | "creature"
+	Kind     string // "item" | "spell" | "quest" | "creature" | "gameobject"
 	Entry    uint32
 	Name     string
 	Subtitle string // level / quality, whatever the kind shows under the name
 }
 
-// The four searches behind the unified search box. Each returns the SQL and its
+// The searches behind the unified search box. Each returns the SQL and its
 // arguments, so the same builders can be exercised by the tests without a
 // database.
 
@@ -1130,10 +1284,18 @@ func creatureSearchQuery(loc ContentLocale, term string) (string, []any) {
 		" ORDER BY " + name + " LIMIT " + strconv.Itoa(contentSearchLimit), args
 }
 
-// ContentSearch looks in all four tables and returns up to contentSearchLimit
-// hits per kind. One kind failing to answer degrades the page to the other
-// three rather than turning the search into an error - the individual queries
-// are what the store's own tests exercise.
+func gameObjectSearchQuery(loc ContentLocale, term string) (string, []any) {
+	where, args := gameObjectWhere(loc, ContentGameObjectFilter{Search: term})
+	name := loc.localized("lg", "g", "name")
+	return "SELECT g.entry, " + name + ", '' FROM gameobject_template g" +
+		loc.join("lg", "locales_gameobject", "entry", "g") + where +
+		" ORDER BY " + name + " LIMIT " + strconv.Itoa(contentSearchLimit), args
+}
+
+// ContentSearch looks in every content table and returns up to
+// contentSearchLimit hits per kind. One kind failing to answer degrades the page
+// to the others rather than turning the search into an error - the individual
+// queries are what the store's own tests exercise.
 func (s *Store) ContentSearch(ctx context.Context, loc ContentLocale, term string) []ContentSearchResult {
 	term = strings.TrimSpace(term)
 	if term == "" {
@@ -1158,7 +1320,7 @@ func (s *Store) ContentSearch(ctx context.Context, loc ContentLocale, term strin
 	}
 
 	// Each kind is asked separately, so a query that fails degrades the page to
-	// the other three instead of failing the whole search.
+	// the other kinds instead of failing the whole search.
 	queries := []struct {
 		kind  string
 		build func(ContentLocale, string) (string, []any)
@@ -1167,6 +1329,7 @@ func (s *Store) ContentSearch(ctx context.Context, loc ContentLocale, term strin
 		{"spell", spellSearchQuery},
 		{"quest", questSearchQuery},
 		{"creature", creatureSearchQuery},
+		{"gameobject", gameObjectSearchQuery},
 	}
 	for _, q := range queries {
 		sql, args := q.build(loc, term)

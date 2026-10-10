@@ -137,7 +137,7 @@
     {{range .Quest.RequiredMobs}}
       <tr>
         {{if .IsGameObject}}
-          <th>{{$.T "db.gameObject"}} #{{.Entry}}</th>
+          <th><a href="/db/objects/{{.Entry}}">{{$.T "db.gameObject"}} #{{.Entry}}</a></th>
         {{else}}
           <th><a href="/db/npcs/{{.Entry}}">#{{.Entry}}</a></th>
         {{end}}

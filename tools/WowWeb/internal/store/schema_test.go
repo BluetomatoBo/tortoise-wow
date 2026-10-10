@@ -23,14 +23,17 @@ import (
 // ddlDir is where the dumps live, relative to this package.
 var ddlDir = filepath.Join("..", "..", "..", "..", "sql", "base")
 
-// contentTables maps the aliases the four content column lists use to the table
-// they read. The column lists are SELECT lists without a FROM clause, so unlike
-// the statements below there is nothing to read the mapping from.
+// contentTables maps the aliases the content column lists use to the table they
+// read. The column lists are SELECT lists without a FROM clause, so unlike the
+// statements below there is nothing to read the mapping from. gsp is the
+// gameobject list's spawn-count subquery.
 var contentTables = map[string]string{
-	"i": "item_template",
-	"s": "spell_template",
-	"q": "quest_template",
-	"c": "creature_template",
+	"i":   "item_template",
+	"s":   "spell_template",
+	"q":   "quest_template",
+	"c":   "creature_template",
+	"g":   "gameobject_template",
+	"gsp": "gameobject",
 }
 
 func TestQueriesNameRealColumns(t *testing.T) {
@@ -59,6 +62,7 @@ func TestQueriesNameRealColumns(t *testing.T) {
 			{"spell_template", spellColumns(loc)},
 			{"quest_template", questColumns(loc)},
 			{"creature_template", creatureColumns(loc)},
+			{"gameobject_template", gameObjectColumns(loc)},
 		} {
 			aliases := map[string]string{}
 			for alias, table := range contentTables {
