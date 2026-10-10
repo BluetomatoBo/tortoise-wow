@@ -402,3 +402,71 @@ func TestQuestTargetsSplit(t *testing.T) {
 		t.Errorf("objects = %v", objects)
 	}
 }
+
+// TestZoneFixCorrectsAMarginBox pins the reported bug and the two cases that must
+// not change.
+//
+// The boxes come from WorldMapArea.dbc, which is the extent of a zone's map
+// *artwork* - it carries a margin of the neighbours - so a small box can cover a
+// neighbour's land as nothing but margin. Scarlet Enclave (a custom zone) does
+// exactly that to Eastern Plaguelands, and the smallest box used to win: a
+// Gibbering Ghoul at Tyr's Hand was drawn on the Scarlet Enclave map.
+func TestZoneFixCorrectsAMarginBox(t *testing.T) {
+	cases := []struct {
+		what  string
+		mapID uint16
+		x, y  float64
+		want  string
+	}{
+		{"呢喃食尸鬼（提尔之手，东瘟疫之地）", 0, 2020.03, -4481.07, "easternplaguelands"},
+		{"提尔之手一带", 0, 2300, -4300, "easternplaguelands"},
+		{"迷失船员（血色领地自己的内容）", 0, 2269.49, -6149.63, "scarletenclave"},
+		{"暴风城守卫（城市套在艾尔文森林里，不动）", 0, -8800, 600, "stormwind"},
+		{"奥格瑞玛（套在杜隆塔尔里，不动）", 1, 1700, -4400, "orgrimmar"},
+		{"幽暗城（套在提瑞斯法林地里，不动）", 0, 1600, 240, "undercity"},
+	}
+	for _, tc := range cases {
+		box, ok := ZoneAt(tc.mapID, tc.x, tc.y)
+		if !ok {
+			t.Errorf("%s: no zone for (%.0f, %.0f) on map %d", tc.what, tc.x, tc.y, tc.mapID)
+			continue
+		}
+		if box.dir != tc.want {
+			t.Errorf("%s: (%.0f, %.0f) on map %d is %s, want %s",
+				tc.what, tc.x, tc.y, tc.mapID, box.dir, tc.want)
+		}
+	}
+}
+
+// TestZoneFixTableIsUsable checks the embedded correction table against the box
+// table: every entry has to name a zone that exists on that map, or a lookup
+// would fall through and the file would be dead weight nobody noticed.
+func TestZoneFixTableIsUsable(t *testing.T) {
+	if len(zoneFix) == 0 {
+		t.Fatal("zonefix.txt is empty or was not embedded")
+	}
+	// A row the parser skips is a correction that silently does nothing, so the
+	// table has to hold every data line the file carries.
+	want := 0
+	for _, line := range strings.Split(zoneFixData, "\n") {
+		if line != "" && !strings.HasPrefix(line, "#") {
+			want++
+		}
+	}
+	if len(zoneFix) != want {
+		t.Errorf("zonefix.txt has %d data lines but %d entries were parsed", want, len(zoneFix))
+	}
+	for cell, area := range zoneFix {
+		found := false
+		for _, box := range boxesByMap[cell.mapID] {
+			if box.area == area {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("cell %+v corrects to area %d, which has no box on map %d",
+				cell, area, cell.mapID)
+		}
+	}
+}

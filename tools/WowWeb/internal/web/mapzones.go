@@ -34,6 +34,18 @@ import (
 //go:embed mapzones.txt
 var mapZonesData string
 
+// zoneFixData is the overlap correction table from gen_zonefix.py: cells where
+// the smallest box is known to be the wrong zone.
+//
+// The boxes are the extent of a zone's map *artwork*, which carries a margin of
+// the neighbouring zones, so neighbours overlap and "the smallest box wins" is
+// wrong wherever a small box only covers a neighbour's land as margin. The file
+// holds the cells where that was checked and corrected by hand; everywhere else
+// the box rule stands.
+//
+//go:embed zonefix.txt
+var zoneFixData string
+
 // mapImage is the URL of a zone's map.
 //
 // The version is the same one the stylesheet carries and it matters more here:
@@ -61,7 +73,30 @@ var (
 	// Kalimdor point with Azeroth's box and Azeroth's picture.
 	boxesByMap = map[uint16][]zoneBox{}
 	boxCount   int
+
+	// zoneFix holds the corrected cells: a map + cell -> the area that cell
+	// really belongs to. It is keyed by a struct so a lookup needs no string.
+	zoneFix = map[zoneFixCell]uint32{}
 )
+
+// zoneFixCellSize is the side of a correction cell, in world yards. It has to
+// match gen_zonefix.py.
+const zoneFixCellSize = 128
+
+// zoneFixCell names one cell of one map. The coordinates are floored division of
+// the world coordinates, so they can be negative.
+type zoneFixCell struct {
+	mapID  uint16
+	cx, cy int32
+}
+
+func zoneFixKey(mapID uint16, x, y float64) zoneFixCell {
+	return zoneFixCell{
+		mapID: mapID,
+		cx:    int32(math.Floor(x / zoneFixCellSize)),
+		cy:    int32(math.Floor(y / zoneFixCellSize)),
+	}
+}
 
 func init() {
 	for _, line := range strings.Split(mapZonesData, "\n") {
@@ -95,6 +130,33 @@ func init() {
 		}
 		boxesByMap[box.mapID] = append(boxesByMap[box.mapID], box)
 		boxCount++
+	}
+
+	for _, line := range strings.Split(zoneFixData, "\n") {
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		field := strings.Split(line, "\t")
+		if len(field) != 4 {
+			continue
+		}
+		mapID, err := strconv.ParseUint(field[0], 10, 16)
+		if err != nil {
+			continue
+		}
+		cx, err := strconv.ParseInt(field[1], 10, 32)
+		if err != nil {
+			continue
+		}
+		cy, err := strconv.ParseInt(field[2], 10, 32)
+		if err != nil {
+			continue
+		}
+		area, err := strconv.ParseUint(field[3], 10, 32)
+		if err != nil {
+			continue
+		}
+		zoneFix[zoneFixCell{mapID: uint16(mapID), cx: int32(cx), cy: int32(cy)}] = uint32(area)
 	}
 }
 
@@ -141,7 +203,24 @@ func (b zoneBox) marker(x, y float64) (float64, float64) {
 // neighbours that overlap at the edge - and the smallest is the one whose map the
 // client would show for that point. The box is returned rather than its area,
 // because an area id alone does not say which map it was matched on.
+//
+// The correction table is consulted first: a cell listed there has been checked
+// by hand (see gen_zonefix.py), because the box rule reads a zone's map artwork
+// extent and a small box can cover a neighbour's land as nothing but margin. A
+// corrected area that does not actually contain the point falls through to the
+// box rule, so a stale table can only lose an improvement, never invent a zone.
 func ZoneAt(mapID uint16, x, y float64) (zoneBox, bool) {
+	if area, ok := zoneFix[zoneFixKey(mapID, x, y)]; ok {
+		for _, box := range boxesByMap[mapID] {
+			if box.area == area && box.contains(x, y) {
+				return box, true
+			}
+		}
+	}
+	return zoneBoxAt(mapID, x, y)
+}
+
+func zoneBoxAt(mapID uint16, x, y float64) (zoneBox, bool) {
 	var (
 		best  zoneBox
 		found bool
