@@ -321,3 +321,39 @@ Catapult 投石车）。清单：`tools/dbdiff/review/subname_unify_review.md`�
 `locales_broadcast_text` 55 行（如 `Pat Nagle和Michael Backus`、`Huzzah！`、`PWNED~`）、
 `script_texts` 14 行、`locales_spell.name` 34 行（如 `回春术 (Food)`、`隐形术 Totem`）。
 这些多为**开发/内部名字**（部分玩家看不到），要不要一起清，按你的意见再动。
+
+## 与 wowhead 简中校验原生数据（2026-10-10，第八轮）
+
+起因：玩家发现 `/db/quests/9268` 的标题是「海上之战」，而官方简中是「海上的战争」——
+库里的原生文本沿用了**台湾译法**（繁体文本转成简体后，字是简体、词是台湾的）。
+
+**做法**：把 1.12.1 原生条目（74,597 条）逐条与 wowhead classic 的 zhCN 比对。
+wowhead 接口 `nether.wowhead.com/classic/tooltip/{kind}/{id}?locale=zhCN` 给名称，
+**三方校验**后才采用：① wowhead 有该条目 ② 英文名与库内一致（确认同一条内容）
+③ wowhead 确有中文名（排除它自己没译、只回英文的）。共抓取 74,597 次，0 失败（约 20 条/秒）。
+
+| 表 | 校验 | 修正 | 说明 |
+|---|---|---|---|
+| 任务标题 | 4,312 | **279** | 如 9268「海上之战」→「海上的战争」；战场系列「资源竞赛」→「征服阿拉希盆地」 |
+| 生物名 | 10,203 | **458** | 如 69「染病的森林狼」→「森林狼」、202「腐烂恐魔」→「恐怖骸骨」 |
+| 物件名 | 10,991 | **63** | 如 1621「布瑞尔索恩」→「石南草」、3715「破碎的箱子」→「联盟宝箱」 |
+| 物品名 | 21,226 | **1,257** | 如 2450「布瑞尔索恩」→「石南草」、5060「盗贼工具」→「潜行者工具」 |
+| 法术名 | 27,865 | **74** | 如 1039「拯救祝福」→「拯救圣印」、2098「剔骨」→「刺骨」、921「偷窃」→「搜索」 |
+
+另有 **163 条**刻意跳过（`whskip_*.json`）：wowhead 的中文名已被**另一条不同英文的条目**占用，
+说明它自己那几条数据有错配（例：item 838 `Heavy Weave Pants` wowhead 给「厚布短裤」，
+而那已是 item 201 `Thick Cloth Pants` 的名字，我们原本的「重纹短裤」才对）。这批留待人工判定。
+
+**术语与繁体字清理**（`locales_simplified_cleanup.sql`）
+
+* 台湾用词（字是简体、词是台湾的）：`食人妖`→**巨魔**、`不死族`→**亡灵**、`哥布林`→**地精**、
+  `夜精灵`→**暗夜精灵**；职业 `盗贼`→**潜行者**（wowhead 确认：`Rogue Trainer` 副名是「潜行者训练师」，
+  `Footpad's Shoes` 是「潜行者之鞋」）。清理后全库这四个词**为 0**。
+* 繁体字残留 3,207 行 → 用 OpenCC t2s（词组级，`乾坤`/`瞭望`/`哪吒` 正确保留）转换；
+  3 处 OpenCC 误转已回正（`吒`×2 人名用字、`覆上土`）。
+
+产物：`sql/wip_updates/locales_official_wowhead.sql`（2,131 条名称修正）、
+`sql/wip_updates/locales_simplified_cleanup.sql`（术语 + 繁体，3,485 条）。
+两者都带原值条件、**幂等**（重复导入后各表校验和不变）。
+生效：`.reload locales_quest` / `locales_creature` / `locales_gameobject` / `locales_item` /
+`locales_spell` / `locales_page_text` / `locales_broadcast_text` / `mangos_string`

@@ -1629,7 +1629,7 @@ INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
   SELECT 5638, '你以圣光之名做出的贡献已经成为了冒险者们的榜样。请你接受这个，作为我们对你的感谢。$B$B' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 5647, '你已经具备了成为一个伟大牧师的条件，$N。继续加油!$B$B既然你已经做好了作战的准备，那麽也许我们应该再教你一些东西了。$B$B' FROM DUAL
+  SELECT 5647, '你已经具备了成为一个伟大牧师的条件，$N。继续加油!$B$B既然你已经做好了作战的准备，那么也许我们应该再教你一些东西了。$B$B' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
   SELECT 5659, '啊，好极了，又来了一个。时间对我来说不成问题，但是对你而言就至关重要了。你要学习的东西还很多，而我想传授给你的也很多。你必须证明自己的价值，以此来赢得丰厚的回报。' FROM DUAL
@@ -1638,7 +1638,7 @@ INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
   SELECT 7462, '你打开了箱子，发现了……' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
-  SELECT 8101, '$C，这块坠饰上镶嵌的卡亚罗之石来自南海的卡亚罗山脉。卡亚罗山脉地带分布着许多活火山，那里的地质地形不断发生剧烈的变动。$B$B随着你与赞达拉食人妖的关系日益密切，卡亚罗之石的力量也会增强。利用这块石头的力量打败我们的敌人吧。就像卡亚罗山脉那样:迅速、致命、富有爆炸力……' FROM DUAL
+  SELECT 8101, '$C，这块坠饰上镶嵌的卡亚罗之石来自南海的卡亚罗山脉。卡亚罗山脉地带分布着许多活火山，那里的地质地形不断发生剧烈的变动。$B$B随着你与赞达拉巨魔的关系日益密切，卡亚罗之石的力量也会增强。利用这块石头的力量打败我们的敌人吧。就像卡亚罗山脉那样:迅速、致命、富有爆炸力……' FROM DUAL
   ON DUPLICATE KEY UPDATE `OfferRewardText_loc4` = VALUES(`OfferRewardText_loc4`);
 INSERT INTO `locales_quest` (`entry`, `OfferRewardText_loc4`)
   SELECT 8110, '看到这些海藻了吗?它们产自南海。我们往其中添加了一点魔精和魔法，它就成为一件非常有用的饰品。$B$B你是个德鲁伊，这对你来说相当容易。把它戴在你的脖子上，想像一下大自然、松鼠或是所有你们会喜欢的东西。' FROM DUAL
