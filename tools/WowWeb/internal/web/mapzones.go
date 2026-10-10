@@ -142,6 +142,14 @@ func zoneGridKeyOf(mapID uint16, x, y float64) zoneGridKey {
 }
 
 // zoneGridBox answers with the zone the client's area grid puts a point in.
+//
+// The grid is coarser than the boxes (a cell is a whole MCNK chunk) and it comes
+// from the tiles' areaid, so at a zone's edge the grid can name a zone whose own
+// map box does not reach this far - a Thalassian Highlands cell that the vanilla
+// tiles still call Tirisfal, say. Answering with that box would put the point
+// outside the artwork, which is worse than no map at all, so a box that does not
+// contain the point is refused and the caller falls back to the box rule (which
+// either finds a box that does contain it or draws nothing - see mapViews).
 func zoneGridBox(mapID uint16, x, y float64) (zoneBox, bool) {
 	runs := zoneGrid[zoneGridKeyOf(mapID, x, y)]
 	if len(runs) == 0 {
@@ -155,7 +163,10 @@ func zoneGridBox(mapID uint16, x, y float64) (zoneBox, bool) {
 		return zoneBox{}, false
 	}
 	box, ok := boxesByDir[mapID][runs[at].dir]
-	return box, ok
+	if !ok || !box.contains(x, y) {
+		return zoneBox{}, false
+	}
+	return box, true
 }
 
 func init() {

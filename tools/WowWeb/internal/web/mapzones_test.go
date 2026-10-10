@@ -643,3 +643,47 @@ func TestZoneFixSplitsACityFromItsWild(t *testing.T) {
 		}
 	}
 }
+
+// TestZoneAtNeverHandsBackABoxThatMissesThePoint covers the invariant every branch
+// of ZoneAt has to keep: the box it answers with must contain the point. A dot is
+// placed at a percentage of its zone's artwork, so a box that does not cover the
+// point draws the dot outside the picture - the map gets a marker floating past its
+// own edge, which is what the Thalassian Sentinels north-east of Alah'Thalas did.
+//
+// The coordinates are real spawns that used to break it: the area grid names the
+// vanilla zone there (Tirisfal, Eastern Plaguelands) while the point lies beyond
+// that zone's map box.
+func TestZoneAtNeverHandsBackABoxThatMissesThePoint(t *testing.T) {
+	points := []struct {
+		what  string
+		mapID uint16
+		x, y  float64
+	}{
+		{"萨拉斯哨兵（阿尔萨拉斯东北，网格说东瘟疫）", 0, 4960, -3236},
+		{"萨拉斯哨兵（同一带，x 更东）", 0, 5113, -3182},
+		{"萨拉斯哨兵（同一带，最东）", 0, 5125, -3170},
+		{"萨拉斯树人（网格说提瑞斯法）", 0, 3919, -2037},
+		{"萨拉斯树人（同一带）", 0, 3991, -2141},
+		// 正常点：这些必须继续有地图
+		{"提尔之手", 0, 2020.03, -4481.07},
+		{"闪金镇旅店", 0, -9466.4, 21.4},
+		{"奥格瑞玛", 1, 1700, -4400},
+	}
+	for _, pt := range points {
+		box, ok := ZoneAt(pt.mapID, pt.x, pt.y)
+		if !ok {
+			continue // 不画是允许的答案（见 mapViews 的设计）
+		}
+		if !box.contains(pt.x, pt.y) {
+			t.Errorf("%s: (%.0f, %.0f) on map %d answered %s, whose box is x %.0f..%.0f y %.0f..%.0f and does not contain it",
+				pt.what, pt.x, pt.y, pt.mapID, box.dir, box.xmin, box.xmax, box.ymin, box.ymax)
+		}
+	}
+
+	// 那几个「网格说东瘟疫、点在框外」的点现在应落到「不画」，而不是画在图外。
+	for _, pt := range []struct{ x, y float64 }{{4960, -3236}, {5113, -3182}, {3919, -2037}} {
+		if box, ok := ZoneAt(0, pt.x, pt.y); ok && !box.contains(pt.x, pt.y) {
+			t.Errorf("(%.0f, %.0f) still answers a box that misses it: %s", pt.x, pt.y, box.dir)
+		}
+	}
+}
