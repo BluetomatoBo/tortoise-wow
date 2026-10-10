@@ -416,6 +416,24 @@ func TestTemplatesParse(t *testing.T) {
 			}}},
 		// The same page with nothing filled in at all.
 		{"db_object", dbObjectView{PageData: page, Object: store.ContentGameObject{Entry: 2, Name: "Spawn Point"}}},
+		{"db_zones", dbZonesView{
+			PageData: page, Total: 2, Page: 1, Pages: 1,
+			Zones: []dbZoneRow{
+				{Dir: "stormwind", Area: 1519, Name: "暴风城",
+					Stats: zoneContent{Dir: "stormwind", Creatures: 777, Objects: 2335, Quests: 114}},
+				{Dir: "elwynn", Area: 12, Name: "艾尔文森林",
+					Stats: zoneContent{Dir: "elwynn", Creatures: 900, Objects: 400}},
+			}}},
+		{"db_zones", dbZonesView{PageData: page, Total: 0, Page: 1, Pages: 1}},
+		{"db_zone", dbZoneView{
+			PageData: page, Area: 1519, Name: "暴风城", Image: "/assets/maps/stormwind.png",
+			Stats:      zoneContent{Dir: "stormwind", Creatures: 777, CreatureKinds: 435, Objects: 2335, ObjectKinds: 780, Quests: 114},
+			Creatures:  []dbZoneItem{{Entry: 68, Name: "暴风城卫兵", Dots: 64}},
+			Objects:    []dbZoneItem{{Entry: 20101, Name: "信箱", Dots: 32}},
+			Quests:     []store.ContentQuestRef{{Entry: 1, Title: "任务"}},
+			HasContent: true, QuestLimitReached: true,
+		}},
+		{"db_zone", dbZoneView{PageData: page, Area: 12, Name: "艾尔文森林"}},
 		{"error", page},
 	}
 

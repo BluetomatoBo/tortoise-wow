@@ -1337,3 +1337,77 @@ func (s *Store) ContentSearch(ctx context.Context, loc ContentLocale, term strin
 	}
 	return out
 }
+
+// ---------------------------------------------------------------------------
+// Zone content
+// ---------------------------------------------------------------------------
+
+// ZoneNames looks up the display names of a set of creatures or gameobjects.
+// The zone page's top lists carry entries only - the generator writes numbers,
+// not text - so the names are fetched here, in one query.
+func (s *Store) ZoneNames(ctx context.Context, loc ContentLocale, kind string, entries []uint32) (map[uint32]string, error) {
+	if len(entries) == 0 {
+		return nil, nil
+	}
+	var table, locale, alias string
+	switch kind {
+	case "creature":
+		table, locale, alias = "creature_template", "locales_creature", "lc"
+	case "gameobject":
+		table, locale, alias = "gameobject_template", "locales_gameobject", "lg"
+	default:
+		return nil, fmt.Errorf("zone names: unknown kind %q", kind)
+	}
+	q := "SELECT t.entry, " + loc.localized(alias, "t", "name") +
+		" FROM " + table + " t" + loc.join(alias, locale, "entry", "t") +
+		" WHERE t.entry IN (" + placeholders(len(entries)) + ")"
+	args := make([]any, 0, len(entries))
+	for _, entry := range entries {
+		args = append(args, entry)
+	}
+
+	rows, err := s.World.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("zone names (%s): %w", kind, err)
+	}
+	defer rows.Close()
+
+	out := make(map[uint32]string, len(entries))
+	for rows.Next() {
+		var entry uint32
+		var name string
+		if err := rows.Scan(&entry, &name); err != nil {
+			return nil, fmt.Errorf("scan zone name: %w", err)
+		}
+		out[entry] = name
+	}
+	return out, rows.Err()
+}
+
+// ZoneQuests lists the quests the core files under one zone: a positive
+// ZoneOrSort is an area id (ObjectMgr.cpp reads it that way), which is what the
+// zone page asks for.
+func (s *Store) ZoneQuests(ctx context.Context, loc ContentLocale, area uint32, limit int) ([]ContentQuestRef, error) {
+	if limit <= 0 || limit > relationLimit {
+		limit = relationLimit
+	}
+	title := loc.localized("lq", "q", "Title")
+	q := "SELECT q.entry, " + title +
+		" FROM quest_template q" + loc.join("lq", "locales_quest", "entry", "q") +
+		" WHERE q.ZoneOrSort = ? ORDER BY q.entry LIMIT ?"
+	rows, err := s.World.QueryContext(ctx, q, area, limit)
+	if err != nil {
+		return nil, fmt.Errorf("zone quests of %d: %w", area, err)
+	}
+	defer rows.Close()
+
+	var out []ContentQuestRef
+	for rows.Next() {
+		var ref ContentQuestRef
+		if err := rows.Scan(&ref.Entry, &ref.Title); err != nil {
+			return nil, fmt.Errorf("scan zone quest: %w", err)
+		}
+		out = append(out, ref)
+	}
+	return out, rows.Err()
+}

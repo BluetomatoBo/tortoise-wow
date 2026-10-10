@@ -1,0 +1,77 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.Name}} <span class="muted">#{{.Area}}</span></h1>
+  <a class="btn btn-ghost" href="/db/zones">{{.T "db.zones.title"}}</a>
+</div>
+
+{{template "dbsearch" .}}
+
+{{if .Image}}
+<section class="card">
+  <figure class="map">
+    <span class="map-frame">
+      <img src="{{.Image}}" alt="{{.Name}}" width="501" height="334" loading="lazy">
+    </span>
+    {{if .Name}}<figcaption>{{.Name}}</figcaption>{{end}}
+  </figure>
+</section>
+{{end}}
+
+<section class="card">
+  <table class="kv">
+    <tr><th>{{.T "db.zone.creatures"}}</th><td>
+      {{.Stats.Creatures}} <span class="muted">&middot; {{.Stats.CreatureKinds}} {{.T "db.zone.kinds"}}</span>
+    </td></tr>
+    <tr><th>{{.T "db.zone.objects"}}</th><td>
+      {{.Stats.Objects}} <span class="muted">&middot; {{.Stats.ObjectKinds}} {{.T "db.zone.kinds"}}</span>
+    </td></tr>
+    <tr><th>{{.T "db.zone.quests"}}</th><td>{{.Stats.Quests}}</td></tr>
+  </table>
+  {{if not .HasContent}}<p class="hint">{{.T "db.zone.none"}}</p>{{end}}
+  <p class="hint">{{.T "db.zone.hint"}}</p>
+</section>
+
+{{if .Creatures}}
+<section class="card">
+  <h2>{{.T "db.zone.topCreatures"}}</h2>
+  <table class="kv">
+    {{range .Creatures}}
+      <tr>
+        <th><a href="/db/npcs/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}#{{.Entry}}{{end}}</a></th>
+        <td class="right">{{.Dots}}</td>
+      </tr>
+    {{end}}
+  </table>
+  <p class="hint">{{.T "db.zone.topHint"}}</p>
+</section>
+{{end}}
+
+{{if .Objects}}
+<section class="card">
+  <h2>{{.T "db.zone.topObjects"}}</h2>
+  <table class="kv">
+    {{range .Objects}}
+      <tr>
+        <th><a href="/db/objects/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}#{{.Entry}}{{end}}</a></th>
+        <td class="right">{{.Dots}}</td>
+      </tr>
+    {{end}}
+  </table>
+</section>
+{{end}}
+
+{{if .Quests}}
+<section class="card">
+  <h2>{{.T "db.zone.quests"}}</h2>
+  <table class="kv">
+    {{range .Quests}}
+      <tr>
+        <th><a href="/db/quests/{{.Entry}}">{{if .Title}}{{.Title}}{{else}}#{{.Entry}}{{end}}</a></th>
+        <td></td>
+      </tr>
+    {{end}}
+  </table>
+  {{if .QuestLimitReached}}<p class="hint">{{.T "db.listTruncated"}}</p>{{end}}
+</section>
+{{end}}
+{{end}}

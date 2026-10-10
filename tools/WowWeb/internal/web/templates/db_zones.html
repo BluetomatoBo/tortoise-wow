@@ -1,0 +1,37 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.T "db.zones.title"}} <span class="muted">({{.Total}})</span></h1>
+  <a class="btn btn-ghost" href="/db">{{.T "db.back"}}</a>
+</div>
+
+<section class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "db.zone"}}</th>
+        <th class="right">{{.T "db.zone.creatures"}}</th>
+        <th class="right">{{.T "db.zone.objects"}}</th>
+        <th class="right">{{.T "db.zone.quests"}}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Zones}}
+      <tr>
+        <td><a href="/db/zones/{{.Area}}">{{if .Name}}{{.Name}}{{else}}{{.Dir}}{{end}}</a></td>
+        <td class="right">{{.Stats.Creatures}}</td>
+        <td class="right">{{.Stats.Objects}}</td>
+        <td class="right">{{if .Stats.Quests}}{{.Stats.Quests}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        <td class="right"><a class="btn btn-ghost btn-sm" href="/db/zones/{{.Area}}">{{$.T "common.open"}}</a></td>
+      </tr>
+    {{else}}
+      <tr><td colspan="5" class="muted center">{{$.T "db.none"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+
+  {{template "pagination" .}}
+
+  <p class="hint">{{.T "db.zones.hint"}}</p>
+</section>
+{{end}}

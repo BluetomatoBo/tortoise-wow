@@ -38,7 +38,7 @@ already uses**, so nothing has to be patched or rebuilt on the server side.
 | `/notice` | 公告的**网页版** —— 客户端公告里那个链接落到的页面，匿名可访问 |
 | `/account/{banned,suspended,no-time,verify}` | 登录失败对话框的**说明页**，匿名可访问 |
 | `/api/status` | 给监控或 Discord 机器人用的 JSON 状态。**不含任何地址与端口** |
-| `/db`、`/db/items`、`/db/spells`、`/db/quests`、`/db/npcs`、`/db/objects` | **数据库浏览器**：物品/法术/任务/生物/物件的搜索、列表与详情，匿名可访问 |
+| `/db`、`/db/items`、`/db/spells`、`/db/quests`、`/db/npcs`、`/db/objects`、`/db/zones` | **数据库浏览器**：物品/法术/任务/生物/物件/区域的搜索、列表与详情，匿名可访问 |
 | `/healthz` | 存活探针，含数据库连通性 |
 | `/lang/{en\|zh}` | 中英切换 |
 
@@ -451,7 +451,7 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 
 ### 数据库浏览器（`/db`）
 
-把服务端自己的内容表直接做成可浏览的页面：**物品、法术、任务、生物、物件**。不复制 AoWoW 那套
+把服务端自己的内容表直接做成可浏览的页面：**物品、法术、任务、生物、物件、区域**。不复制 AoWoW 那套
 `aowow_*` 库，也不跑导入器 —— 页面读的就是客户端正在被服务的那份数据，所以不会和游戏不一致。
 
 | 路径 | 作用 |
@@ -465,6 +465,13 @@ mysql -u wowweb -p tw_world < deploy/verify_shop.sql
 | `/db/quests`、`/db/quests/{entry}` | 任务列表与详情（需求物品/生物、奖励、任务文本、任务链与前置/后续、互斥组、给予者与交付者） |
 | `/db/npcs`、`/db/npcs/{entry}` | 生物列表（按类型、等级筛选）与详情（含它开/交的任务、掉落、剥皮、偷窃、售货） |
 | `/db/objects`、`/db/objects/{entry}` | 物件列表（按类型筛选、可只看已刷出的）与详情（含刷新位置地图、宝箱掉落、它开/交的任务、把它当目标的任务、原始 data 字段） |
+| `/db/zones`、`/db/zones/{area}` | 区域列表（按内容多少排序）与详情：该区域的地图、刷出点统计、这里最多的生物/物件、核心归在它名下的任务 |
+
+**区域页的数字从哪来**：某个刷出点属于哪个区域，答案不在任何一张表里 —— 得走客户端地形网格
+（`zonegrid.txt`）、人工核验过的修正（`zonefix.txt`）与地图框（`mapzones.txt`）三步，也就是页面上的
+`ZoneAt`。全库 15 万个刷新点每次请求都算一遍不现实，所以 `tools/WowWeb/gen_zonecontent.py` 在生成时
+算好每个区域的刷出点数、种类数与「这里最多的 25 种内容」，写进 `internal/web/zonecontent.txt`
+（130 个区域、51 KB、跑一次 1.2 秒），页面只读结果。任务按核心的 `ZoneOrSort`（正数即区域 id）归类。
 
 **交叉链接**（都在上面这些页面里，不需要额外的路由）：
 
@@ -933,7 +940,7 @@ has to be patched or rebuilt on the server side:
 | `/notice` | The notice as a **web page** - where the link inside the client's panel lands |
 | `/account/{banned,suspended,no-time,verify}` | What a sign-in failure dialog's link opens |
 | `/api/status` | JSON status for monitoring or a Discord bot. Carries counts and load, but **never an address or port** |
-| `/db`, `/db/items`, `/db/spells`, `/db/quests`, `/db/npcs`, `/db/objects` | The **database browser**: search, lists and detail pages for items, spells, quests, creatures and objects; public |
+| `/db`, `/db/items`, `/db/spells`, `/db/quests`, `/db/npcs`, `/db/objects`, `/db/zones` | The **database browser**: search, lists and detail pages for items, spells, quests, creatures, objects and zones; public |
 | `/healthz` | Liveness/readiness probe including database connectivity |
 | `/lang/{en\|zh}` | Language switcher (also sets the `tw_lang` cookie) |
 
@@ -1677,7 +1684,7 @@ is what makes it a test of the live privileges rather than of `root`'s.
 
 ### The database browser (`/db`)
 
-The server's own content tables, browsable: **items, spells, quests, creatures and objects**.
+The server's own content tables, browsable: **items, spells, quests, creatures, objects and zones**.
 It does not copy AoWoW's `aowow_*` schema and runs no importer - the pages read the
 same rows the client is being served from, so they cannot disagree with the game.
 
@@ -1691,6 +1698,7 @@ same rows the client is being served from, so they cannot disagree with the game
 | `/db/quests`, `/db/quests/{entry}` | Quest list and one quest: required items and creatures, rewards, quest text, the chain and its requirements, exclusive groups |
 | `/db/npcs`, `/db/npcs/{entry}` | Creature list (by type and level) and one creature |
 | `/db/objects`, `/db/objects/{entry}` | Object list (by type, optionally only the placed ones) and one object: where it stands on the map, a chest's loot, the quests it starts and ends, the quests that target it, and its raw data columns |
+| `/db/zones`, `/db/zones/{area}` | Zone list, busiest first, and one zone: its map, how many spawn points stand there, the creatures and objects it holds most of, and the quests the core files under it |
 
 Worth knowing:
 

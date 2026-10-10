@@ -269,6 +269,8 @@ func (p PageData) SpellRange(e store.ContentSpellEffect) string {
 type dbHomeView struct {
 	PageData
 	Counts store.ContentCounts
+	// ZoneCount is how many zones have a map of their own with something on it.
+	ZoneCount int
 	// Query is what the shared search box shows in its input.
 	Query string
 }
@@ -277,8 +279,9 @@ func (s *Server) handleDBHome(w http.ResponseWriter, r *http.Request, page *Page
 	page.Title = page.T("db.title")
 	page.Active = "db"
 	s.rend.Render(w, http.StatusOK, "db_home", dbHomeView{
-		PageData: *page,
-		Counts:   s.store.ContentCountsFor(r.Context()),
+		PageData:  *page,
+		Counts:    s.store.ContentCountsFor(r.Context()),
+		ZoneCount: len(ZoneDirs()),
 	})
 }
 
@@ -1070,5 +1073,160 @@ func (s *Server) handleDBObject(w http.ResponseWriter, r *http.Request, page *Pa
 		Stats:              stats,
 		LootID:             lootID,
 		DataFields:         nonZeroDataFields(*object),
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Zones
+// ---------------------------------------------------------------------------
+
+type dbZonesView struct {
+	PageData
+	Zones []dbZoneRow
+
+	Total       int
+	Page        int
+	Pages       int
+	QueryString template.URL
+}
+
+// dbZoneRow is one line of the zone list: what the zone holds, and the link.
+type dbZoneRow struct {
+	Dir   string
+	Area  uint32
+	Name  string
+	Stats zoneContent
+}
+
+func (s *Server) handleDBZones(w http.ResponseWriter, r *http.Request, page *PageData) {
+	dirs := ZoneDirs()
+	total := len(dirs)
+	pageNum := dbPageNum(r.URL.Query())
+	start := (pageNum - 1) * store.ContentPageSize
+	if start >= total {
+		pageNum = 1
+		start = 0
+	}
+	end := start + store.ContentPageSize
+	if end > total {
+		end = total
+	}
+
+	rows := make([]dbZoneRow, 0, end-start)
+	for _, dir := range dirs[start:end] {
+		content, _ := ZoneContent(dir)
+		area, _ := ZoneArea(dir)
+		rows = append(rows, dbZoneRow{Dir: dir, Area: area, Name: page.AreaName(area), Stats: content})
+	}
+
+	page.Title = page.T("db.zones.title")
+	page.Active = "db"
+	s.rend.Render(w, http.StatusOK, "db_zones", dbZonesView{
+		PageData:    *page,
+		Zones:       rows,
+		Total:       total,
+		Page:        pageNum,
+		Pages:       pages(total, store.ContentPageSize),
+		QueryString: baseQuery(r),
+	})
+}
+
+type dbZoneView struct {
+	PageData
+	Area  uint32
+	Name  string
+	Image string
+	Stats zoneContent
+
+	// The top lists, with the names filled in and the entries in link order.
+	Creatures []dbZoneItem
+	Objects   []dbZoneItem
+	Quests    []store.ContentQuestRef
+	// QuestLimitReached says the quest list was cut at the store's cap.
+	QuestLimitReached bool
+	// HasContent is false for a zone with a map but nothing counted in it.
+	HasContent bool
+	// Query is what the shared search box shows in its input.
+	Query string
+}
+
+// dbZoneItem is one creature or object in a zone's top list.
+type dbZoneItem struct {
+	Entry uint32
+	Name  string
+	Dots  int
+}
+
+func (s *Server) handleDBZone(w http.ResponseWriter, r *http.Request, page *PageData) {
+	area, ok := s.parseUintPath(r, "entry")
+	if !ok {
+		s.notFound(w, r)
+		return
+	}
+	dir, hasContent := ZoneDirForArea(area)
+	if dir == "" {
+		s.notFound(w, r)
+		return
+	}
+	content, _ := ZoneContent(dir)
+
+	// The top lists carry entries only; fetch their names in one query each.
+	type listSpec struct {
+		kind string
+		top  []zoneEntry
+		into *[]dbZoneItem
+	}
+	creatures := make([]dbZoneItem, 0, len(content.TopCreatures))
+	objects := make([]dbZoneItem, 0, len(content.TopObjects))
+	lists := []listSpec{
+		{kind: "creature", top: content.TopCreatures, into: &creatures},
+		{kind: "gameobject", top: content.TopObjects, into: &objects},
+	}
+	loc := dbLocale(page)
+	for _, spec := range lists {
+		entries := make([]uint32, 0, len(spec.top))
+		for _, item := range spec.top {
+			entries = append(entries, item.Entry)
+		}
+		names, err := s.store.ZoneNames(r.Context(), loc, spec.kind, entries)
+		if err != nil {
+			s.serverError(w, r, "load zone names", err)
+			return
+		}
+		out := make([]dbZoneItem, 0, len(spec.top))
+		for _, item := range spec.top {
+			out = append(out, dbZoneItem{Entry: item.Entry, Name: names[item.Entry], Dots: item.Dots})
+		}
+		*spec.into = out
+	}
+
+	quests, err := s.store.ZoneQuests(r.Context(), loc, area, 100)
+	if err != nil {
+		s.serverError(w, r, "load zone quests", err)
+		return
+	}
+
+	// The zone's map, for the picture at the top of the page.
+	image := ""
+	for _, boxes := range boxesByDir {
+		if box, ok := boxes[dir]; ok {
+			image = mapImage(box.dir)
+			break
+		}
+	}
+
+	page.Title = page.AreaName(area)
+	page.Active = "db"
+	s.rend.Render(w, http.StatusOK, "db_zone", dbZoneView{
+		PageData:          *page,
+		Area:              area,
+		Name:              page.AreaName(area),
+		Image:             image,
+		Stats:             content,
+		Creatures:         creatures,
+		Objects:           objects,
+		Quests:            quests,
+		QuestLimitReached: len(quests) >= 100,
+		HasContent:        hasContent,
 	})
 }
