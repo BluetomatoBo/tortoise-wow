@@ -3548,3 +3548,11 @@ UPDATE `locales_broadcast_text` SET `male_text_loc4` = '$N，我已经查明魔�
 UPDATE `locales_creature` SET `name_loc4` = '吒雷斯·恐怖利刃' WHERE `entry` = 49009 AND `name_loc4` = '咤雷斯·恐怖利刃';
 UPDATE `locales_creature` SET `name_loc4` = '吒祖' WHERE `entry` = 51654 AND `name_loc4` = '咤祖';
 UPDATE `locales_quest` SET `OfferRewardText_loc4` = REPLACE(`OfferRewardText_loc4`, '复上土', '覆上土') WHERE `entry` = 41859 AND `OfferRewardText_loc4` LIKE '%复上土%';
+
+-- ---- 职业指代残留（wowhead 确认 Rogue=潜行者）----
+-- quest 3088/3109/3113/3118 与 page_text 2432-2438 是盗贼训练师的来信；50682 讲潜行者能力
+UPDATE `locales_quest` SET `Details_loc4` = REPLACE(`Details_loc4`, '盗贼训练师', '潜行者训练师') WHERE `Details_loc4` LIKE '%盗贼训练师%';
+UPDATE `locales_page_text` SET `Text_loc4` = REPLACE(`Text_loc4`, '盗贼训练师', '潜行者训练师') WHERE `Text_loc4` LIKE '%盗贼训练师%';
+UPDATE `locales_page_text` SET `Text_loc4` = REPLACE(`Text_loc4`, '盗贼的许多能力', '潜行者的许多能力') WHERE `entry` = 50682 AND `Text_loc4` LIKE '%盗贼的许多能力%';
+-- 开发用「90/63绿色盗贼X」系列物品（乌龟服自定义测试物品）
+UPDATE `locales_item` SET `name_loc4` = REPLACE(`name_loc4`, '盗贼', '潜行者') WHERE `name_loc4` LIKE '%绿色盗贼%';

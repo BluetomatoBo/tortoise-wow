@@ -2095,7 +2095,7 @@ INSERT INTO `locales_item` (`entry`, `name_loc4`) VALUES (19950, '赞达拉英�
 INSERT INTO `locales_item` (`entry`, `name_loc4`) VALUES (19985, '高地板甲束带') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Highlander’s Plate Girdle
 INSERT INTO `locales_item` (`entry`, `name_loc4`) VALUES (20133, '天怒护手') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Skyfury Gauntlets
 INSERT INTO `locales_item` (`entry`, `name_loc4`) VALUES (20221, '福罗尔的传说坐骑') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- Foror’s Fabled Steed
-INSERT INTO `locales_item` (`entry`, `name_loc4`) VALUES (20294, '90绿色盗贼靴') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 90 Green Rogue Boots
+INSERT INTO `locales_item` (`entry`, `name_loc4`) VALUES (20294, '90绿色潜行者靴') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 90 Green Rogue Boots
 INSERT INTO `locales_item` (`entry`, `name_loc4`) VALUES (20352, '“63绿色霜冻绑定') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
 INSERT INTO `locales_item` (`entry`, `name_loc4`) VALUES (20353, '63绿色霜靴') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
 INSERT INTO `locales_item` (`entry`, `name_loc4`) VALUES (20354, '63绿色霜冠') ON DUPLICATE KEY UPDATE `name_loc4` = VALUES(`name_loc4`);  -- 
