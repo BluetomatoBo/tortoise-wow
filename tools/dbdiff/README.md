@@ -467,6 +467,24 @@ python3 tools/dbdiff/check_delete_ids.py --dir 'sql/database_updates/world/20261
 `Player::RecallPvPGear()` 同时加了空指针保护（列表缺失只记日志并跳过，不再崩）。
 
 
+## 十七、`dbfix.log` 剩余报错的分类（2026-10-11 复核）
+
+崩溃修复后逐类核对了 `dbfix.log` 里的报错，确认**没有一条来自那次清理**，并给出各自的来历：
+
+| 报错 | 数量 | 来历与处置 |
+|---|---|---|
+| `Table npc_vendor_template has vendor template 1277702/1279202 not used by any vendors` | 2 | **设计如此**：这两个模板只给代码用（`Player::RecallPvPGear`）。**永远不要删**（第十五节的事故）——留着这条日志即可。 |
+| `Item (Entry: N) has wrong (not existing) spell category in spellcategory_K (M)` | 174 个物品 | **服务器 DBC 旧**：`DataDir/dbc/SpellCategory.dbc` 只到 1011，而数据用到 1091+（乌龟服新增类别）。修法：把当前乌龟服客户端的 `DBFilesClient/*.dbc` 刷新到 `DataDir/dbc/`。 |
+| `Creature (Entry: N) has nonexistent spell list id / pet_spell_list_id (M)` | 14 | 引用的 id 在 **`creature_spells`** 里没有（base dump 里也没有，共 2648 条）→ 上游数据缺口，与本仓库无关。 |
+| `Spell N (…) misses spell_affect for effect M` | 38 个法术 | 上游缺口（需要一个 `spell_affect` 行而没有）。**核对过：20261008154500 删掉的 8 个法术一个都不在这 38 个里** —— 删掉的那些都是 mask 与 `EffectItemType` 相同的 redundant 行，内核本来就跳过（见 SpelMgr 的加载检查）。 |
+| `Table 'pickpocketing_loot_template' entry 1183 … not exist but used as loot id` / `skinning_loot_template` 61393 | 4 | base dump 里从来没有这些行 → 上游缺口。 |
+| `BattleGroundEvent: missing db-data for map:30 …` | 2 | 上游缺口（战场事件的 DB 数据没配）。 |
+
+**核对方法**（可复现）：把内核的校验条件抄成 SQL 再跑一遍，例如 spell_affect 的 misses 判据是
+`Effect==6 && aura IN (107,108,109) && EffectItemType==0 && 没有对应行`；用这个精确条件算出的 38 条
+与日志逐条对得上，我删的 8 个一个不在其中。
+
+
 ## 十六、两条运维铁律（2026-10-11 事故后补）
 
 ### 1. 已应用过的迁移文件**不要改**
