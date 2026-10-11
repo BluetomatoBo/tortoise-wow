@@ -105,8 +105,16 @@ UPDATE `pool_gameobject` SET `chance` = ROUND(`chance` * 100 / @sum, 4)
 
 ## 六、写完更新文件之后：先过一遍更新器兼容性检查
 
-内核的自动更新器切分语句时**只跟踪引号作用域、不剥注释**，所以 SQL 文件里有两个坑
-（我自己就踩了第一个：注释里的 `doesn't` 让整份更新被拒）：
+内核的自动更新器切分语句时**会剥 `--` 与 `/* */` 注释**（注释里的引号不参与状态机）。
+真正要防的只有两件事：
+
+1. **正文里的引号不闭合** → 整份更新被拒（`mid-string query at the end of SQL`），一条都不执行；
+2. **用 `#` 当注释** → 内核**不认 `#`**（只认 `--` 和 `/* */`），那一行的引号/分号会让状态机错位。
+
+> 2026-10-11 修正：本节早先写的是「内核不剥注释，注释里的 `doesn't` 会让整份更新被拒」，
+> 与 `src/shared/Database/AutoUpdater.cpp` 的源码不符，也已用线上库反证 —— 仓库里
+> **11 个注释含单引号的迁移文件全部被内核成功执行**（`migrations` 表有记录，含当天新写的
+> `20261011130000_world`）。`check_update_file.py` 当时没模拟注释作用域，属**误报**，已修。
 
 ```bash
 python3 tools/dbdiff/check_update_file.py sql/database_updates/world/20261008164000_world.sql
@@ -269,9 +277,10 @@ UPDATE creature_loot_template SET ChanceOrQuestChance=ChanceOrQuestChance*0.5 WH
 
 ### 数据侧的 5 个坑（按建议顺序阅读）
 
-1. **内核自动更新器不剥注释**（`AutoUpdater.cpp`）：注释里的单数英文单引号会让整份更新被拒
-   （`mid-string query at the end of SQL`）；最后一个 `;` 之后的纯注释会被当语句执行。
-   写迁移后**必跑** `check_update_file.py`；
+1. **内核自动更新器会剥注释**（`AutoUpdater.cpp` 只认 `--` 与 `/* */`）：注释里的引号无害；
+   要防的是**正文里引号不闭合**（整份更新被拒：`mid-string query at the end of SQL`）
+   与**用 `#` 当注释**（内核不认 `#`，那一行会被当正文）。写迁移后**必跑**
+   `check_update_file.py`；
 2. **`\'` 转义**：任何「导出 → 回写」都要做往返验证（见第九节）；
 3. **多行 `INSERT` 撞主键会整条失败**，而更新器不看返回值 → 几千行静默丢失
    （本次 `reference_loot_template`/`skill_line_ability`/`npc_trainer` 的缺口就是这么来的）；
@@ -396,11 +405,12 @@ python3 tools/dbdiff/verify_wip_locales.py --dir sql/wip_updates --mysql "$M"
 1. `mysql --batch` 输出会把 `\n` / `\t` / `\\` 转义。**回写文件前必须先解密再按 MySQL 规则转义**
    （`sync_wip_from_db.py` 原来漏了这一步）：否则 `\r\n` 会被写成真换行外加一个字面 `\n`，
    看似只是排版变化，重导后值就变了。
-2. 内核更新器**只数引号、不剥注释**，所以注释里的 `'` / `"` 也会破坏状态机；值里的半角 `"`
-   同理（`"` 在更新器眼里是字符串定界符，MySQL 默认不是）。`sql/wip_updates/` 里 29 份文件
-   已统一把注释中的引号换成 `’` `“` `”`，值里的半角双引号也换成全角（中文正文本来就该用全角）。
-   改完 `check_update_file.py` 29/29 通过，且逐条确认值语义未变。
-   **例外**：`locales_page_text.sql` 的值里含 HTML（`<a href="…">`），必须保留半角引号，勿套用此规则。
+2. 更新器的引号状态机**只作用于正文**（`--`/`/* */` 注释会被剥掉，注释里的引号无害）：
+   正文里的 `'` 必须成对，`"` 与 `'` 一样被当字符串定界符（MySQL 默认模式也是，二者一致），
+   而 `#` 开头的注释内核**不认**（会被当正文，见第六节）。
+   `sql/wip_updates/` 里 29 份文件统一把注释与中文正文里的半角引号换成全角 ——
+   这**不是**解析要求（注释里其实无害），而是中文排版风格上的统一；
+   **例外**：`locales_page_text.sql` 的值里含 HTML（`<a href="…">`），必须保留半角引号。
 
 ## 十四、仓库里有什么 / 一次性产物放哪
 

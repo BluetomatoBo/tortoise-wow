@@ -1,70 +1,110 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-check_update_file.py —— 检查 sql/database_updates/world/*.sql 里的文件能不能被内核的自动更新器吃下去。
+check_update_file.py —— 检查 sql/database_updates/world/*.sql 能不能被内核的自动更新器吃下去。
 
-内核的自动更新器（src/shared/Database/AutoUpdater.cpp）切分语句的做法是：**只跟踪引号作用域**，
-遇到不在引号里的 `;` 就切成一条语句 —— 它**不剥注释**。由此有两个坑：
+内核的切分实现在 `src/shared/Database/AutoUpdater.cpp`（ApplyFile → 逐字符扫描）。按源码，
+它**会剥注释**：`--` 行注释与 `/* */` 块注释里的字符根本不进 query 缓冲，注释里的引号
+也不参与字符串判定。所以「注释里写了个 it's」是安全的。
 
-  1. 注释里出现落单的英文单引号（例如 doesn't / it's / 人名里的 '），解析器会以为进了字符串，
-     一直到最后都没闭合 → `[FAIL] mid-string query at the end of SQL`，整份更新都不会执行；
-  2. 文件末尾如果还有一段只有注释的内容（最后一个 `;` 之后），它会被当成一条语句执行
-     → MySQL 报 Query was empty。
+> 2026-10-11 用线上库复核过这条：仓库里 **11 个注释含单引号的迁移文件，全部被内核成功执行**
+> （`migrations` 表里都有记录，含当天新写的 `20261011130000_world`）——
+> 之前本工具把它判成「mid-string query at the end of SQL」是**误报**（旧版没模拟注释作用域）。
+
+真正会出事的只有两类：
+
+  1. **正文里的引号不闭合**：`'` / `"` 落单（注释之外）→ 作用域一直开着 →
+     内核报 `[FAIL] mid-string query at the end of SQL`，**整份更新都不执行**。
+  2. **`#` 行注释里出现引号**：MySQL 认 `#` 是注释，但内核**不认**（它只认 `--` 和 `/* */`），
+     会把这行当正文 → 里面的引号让作用域错位，甚至把后面的 `;` 吞掉。
+     这一类本工具会点出来（改写成 `--` 即可）。
+
+其余情况（纯注释的语句块、最后一个 `;` 之后的注释尾）内核都会跳过，只作提示。
 
 用法：
     python3 tools/dbdiff/check_update_file.py sql/database_updates/world/*.sql
 """
+import re
 import sys
 
 
-def split_like_autoupdater(text):
-    None_, Single, Double = 0, 1, 2
-    scope, queries, q = None_, [], ""
+def split_like_autoupdater(text, hash_comments=False):
+    """逐字符模拟 AutoUpdater.cpp 的切分：跟踪注释作用域 + 引号作用域，不在字符串里的 ; 切句。
+
+    hash_comments=True 时额外把 `#` 当行注释（MySQL 的行为，用来对比内核少认一种注释的后果）。
+    """
+    NONE, SINGLE, DOUBLE = 0, 1, 2
+    C_NONE, C_LINE, C_BLOCK = 0, 1, 2
+    scope, cscope = NONE, C_NONE
+    queries, q = [], ""
+    n = len(text)
     for i, ch in enumerate(text):
+        if ch in "\r\n":
+            if ch == "\n":
+                q += " "
+            if cscope == C_LINE:
+                cscope = C_NONE
+            continue
+
+        if ch == "/":
+            if cscope == C_BLOCK and i > 0 and text[i - 1] == "*":
+                cscope = C_NONE
+                continue
+            if i < n - 1 and scope == NONE and text[i + 1] == "*":
+                cscope = C_BLOCK
+                continue
+
+        if cscope != C_NONE:
+            continue
+
+        if ch == "-" and i < n - 1 and scope == NONE and text[i + 1] == "-":
+            cscope = C_LINE
+            continue
+
+        if hash_comments and ch == "#" and scope == NONE:
+            cscope = C_LINE
+            continue
+
         if ch == "'":
-            if scope == None_:
-                scope = Single
-            elif scope == Single and text[i - 1] != "\\":
-                scope = None_
+            if scope == NONE:
+                scope = SINGLE
+            elif scope == SINGLE and (i == 0 or text[i - 1] != "\\"):
+                scope = NONE
         elif ch == '"':
-            if scope == None_:
-                scope = Double
-            elif scope == Double and text[i - 1] != "\\":
-                scope = None_
+            if scope == NONE:
+                scope = DOUBLE
+            elif scope == DOUBLE and (i == 0 or text[i - 1] != "\\"):
+                scope = NONE
+
         q += ch
-        if ch == ";" and scope == None_:
+        if ch == ";" and scope == NONE:
             queries.append(q)
             q = ""
     return queries, q, scope
 
 
+def _norm(queries):
+    return [q.replace(" ", "").replace("\n", "").strip(";") for q in queries if q.replace(" ", "").replace("\n", "").strip(";")]
+
+
 def check(path):
-    # 只有内核会自动执行的文件（sql/database_updates/**）才需要严格按更新器规则检查；
-    # 手工执行的脚本（如 verify_refs.sql、prune_imported_cruft.sql）里「分号后的纯注释」无害。
-    auto = ("database_updates" in path) or ("/updates/" in path)
     text = open(path, encoding="utf-8", errors="replace").read()
     queries, tail, scope = split_like_autoupdater(text)
     problems, notes = [], []
+
     if scope != 0:
-        problems.append("结尾仍处于字符串中 → 更新器会报 mid-string query at the end of SQL")
-    if tail.strip("\t\r\n ;"):
-        if all(l.strip().startswith("--") or not l.strip() for l in tail.split("\n")):
-            msg = "最后一个 ; 之后还有纯注释内容 → 更新器会把它当语句执行（Query was empty）"
-            (problems if auto else notes).append(msg if auto else "(仅自动更新文件需要注意) " + msg)
-    # 纯注释的语句块
-    for i, q in enumerate(queries):
-        body = [l for l in q.split("\n") if l.strip() and not l.lstrip().startswith("--")]
-        if not body:
-            msg = "第 %d 块是纯注释（更新器仍会执行）" % (i + 1)
-            (problems if auto else notes).append(msg)
-    n_real = len([q for q in queries if any(l.strip() and not l.lstrip().startswith("--") for l in q.split("\n"))])
-    if problems:
-        verdict = "!! " + "；".join(problems)
-    elif notes:
-        verdict = "OK（非自动更新文件，注释块提示略过）"
-    else:
-        verdict = "OK"
-    print("%-46s 语句 %3d 条，单引号 %4d 个 %s" % (path.split("/")[-1], n_real, text.count("'"), verdict))
+        problems.append("正文里的引号没闭合 → 内核报 mid-string query at the end of SQL，整份不执行")
+
+    # 内核不认 `#`：只有当文件真的依赖 `#` 注释时才有害（`#` 出现在字符串里无害）
+    if _norm(split_like_autoupdater(text, hash_comments=True)[0]) != _norm(queries):
+        problems.append("`#` 注释影响了切分 —— 内核不认 `#`（只认 `--`/`/* */`），请改成 `--`")
+
+    if tail.strip():
+        notes.append("最后一个 `;` 之后还有内容（内核会尝试执行，纯注释无妨）")
+
+    n_real = len(_norm(queries))
+    verdict = ("!! " + "；".join(problems)) if problems else ("OK" + ("（提示：%s）" % "；".join(notes) if notes else ""))
+    print("%-46s 语句 %3d 条  %s" % (path.split("/")[-1], n_real, verdict))
     return not problems
 
 
