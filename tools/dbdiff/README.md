@@ -517,3 +517,81 @@ python3 tools/dbdiff/check_delete_ids.py --dir 'sql/database_updates/world/20261
 **核对方法**（可复现）：把内核的校验条件抄成 SQL 再跑一遍，例如 spell_affect 的 misses 判据是
 `Effect==6 && aura IN (107,108,109) && EffectItemType==0 && 没有对应行`；用这个精确条件算出的 38 条
 与日志逐条对得上，我删的 8 个一个不在其中。
+
+## 十八、38 条 `misses spell_affect` 与宠物法术表缺口的出处核查（2026-10-12）
+
+「能不能从官方 1.12 库里把这 38 条补出来」——**查证结论：官方库没有，客户端也没有，四个来源都空**。
+明细与可执行的分级方案落在 `sql/wip_updates/spell_affect_missing38.sql`（不会被内核自动执行）。
+
+### 1. 掩码到底存在哪（决定「有没有得抄」）
+
+光环 107/108/109 的作用范围是一个 64 位掩码，只有两个存放处：
+
+| 存放处 | 说明 |
+|---|---|
+| 客户端 Spell.dbc 的 `EffectItemType[effect]` | 库内就是 `spell_template.effectItemType1/2/3`（DB 列 106/107/108 ↔ DBC 索引 103/104/105，这段固定差 3，用 `#11070`=32、`#421 Chain Lightning` 的链目标 3 校验过） |
+| 数据库表 `spell_affect` | 内核 `SpellMgr::LoadSpellAffects` 读；若掩码与 `EffectItemType` 相同则判 redundant 并**跳过** |
+
+`misses spell_affect` 的判据是「该效果 `EffectItemType == 0` **且** `spell_affect` 里没有行」——
+也就是说这 38 条的效果，**客户端自己没写掩码**，只能在数据库里补。反过来说：
+官方 250 行里有 **186 行**的掩码恰好等于客户端同法术的 `EffectItemType` 字段
+（135 行在第 1 槽、39 行第 2 槽、12 行第 3 槽）→ 官方那张表本质是**客户端字段的镜像**，
+客户端没写的，官方表里必然也没有。
+
+### 2. 四个来源逐个查（复现命令）
+
+```bash
+# ① 官方 1.12.1：205 法术 / 250 行，这 38 个 entry 一个都没有；按法术名交叉也没有
+grep -cE "\((19491|51341|58238)," /tmp/ref12/off_spell_affect.sql          # → 0
+
+# ② 乌龟服自己的 base dump + 增量：只有 8 个法术的部分槽
+grep -oE "\((5134[1-5]|5823[89]|58241),[^)]*\)" sql/base/tw_world_spell_affect.sql
+grep -rn "spell_affect" sql/database_updates/world/20260504214035_world.sql | head
+
+# ③ 镜像仓库 TuringKi/turtle-wow-custom：文件字节数/内容与官方一致，无额外信息
+
+# ④ 客户端 Spell.dbc 的掩码槽：这 38 个效果全是 0（= 内核报 misses 的原因）
+python3 tools/WowWeb/... # 见 sql/wip_updates/spell_affect_missing38.sql 第二节
+```
+
+顺带得到一条**可复用的核对法**：掩码语义 = 「命中哪些法术的 familyFlags」。
+乌龟服自己写的 `(58241, 0, 9007199254740992)` 正好等于 Totemic Slam `#45500` 的 familyFlags，
+官方 250 行也全部满足该语义。所以「补一条掩码」可以这样自查：
+
+```sql
+-- 掩码反查命中清单，必须与天赋描述点名的法术吻合
+SELECT name, COUNT(*) FROM spell_template
+ WHERE spellFamilyName = <家族> AND (spellFamilyFlags & <掩码>) <> 0 GROUP BY name;
+```
+
+### 3. 38 条的三级分类（详见 wip 文件）
+
+| 级 | 条数 | 内容 | 处置 |
+|---|---|---|---|
+| A | 17 | 描述点名的法术能被掩码**精确**选中（19491/19493 的 32768、29082-29088 的 Stormstrike+Lightning Strike、51486-51488/51798/52977 的 Lightwell 位、51859 的 Lightning Strike、52326 的 Owlkin Frenzy、52364 的两种熊形态、52546 的三个诅咒） | 可直接用，取消注释即可生成迁移 |
+| B | 12 | 客户端里这些法术**共用 bit**，掩码会多带出描述之外的法术（51341-51345 会带上 Judgement of the Crusader；51888 会带上 Molten Blast/Rekindled Flame；52701 会带上 Bloodlust/Calm Elements；58238/58239 是「全部伤害法术」的范围问题；58241-58243 三个 Ancient Rites 互相带出） | 掩码已给出，建议上游戏验证后再定 |
+| C | 9 | 推不出来：点名的法术 `familyFlags = 0`（Swift Aspects #19552-56、Conjure Mana Gem #3724）、家族是 GENERIC（Counterattack）、描述为空（Faster Bleeds (Hunter)）、废弃法术（45405）、操作数语义未知（Improved Water Shield 的回蓝） | 要么先给目标法术补 familyFlags（另一类改动），要么写 0 掩码行只消日志 |
+
+### 4. 宠物法术表的缺口（同一批 dbfix 报错）
+
+| 报错 | 数量 | 核查结论 |
+|---|---|---|
+| `Creature (Entry: N) has nonexistent pet_spell_list_id (M)` | 34 个 id / **101 只生物** | 引用的 id 在 `pet_spell_data` 里没有。34 个 id 里 **33 个是连续段 9486–9518（缺 9514）**，另有 503、627600 —— 一整段连号说明是上游**从未生成**这批行，不是被谁删掉。内核 `ObjectMgr.cpp:1375` 查不到就报错、宠物拿不到法术表。官方 1.12 的 `pet_spell_data` 里也没有这个号段。 |
+| `Creature (Entry: N) has nonexistent spell list id / pet_spell_list_id (M)` | 5 只生物 | 61244 Brol'ok Mauler、62321 Rotting Resident、62335 Blistering Remains、62341 Slavering Crag Coyote、62361 Stormreaver Drone：`spell_list_id` 指向的 `creature_spells` 行**8 个槽全 0**，内核视为未配置。这三张表都是上游缺口，不是本地清理造成的。 |
+
+```sql
+-- 复现：缺失的 pet_spell_list_id（34 个 id，其中 9486-9518 是连续段）
+SELECT c.pet_spell_list_id, COUNT(*) FROM creature_template c
+ LEFT JOIN (SELECT DISTINCT entry AS id FROM pet_spell_data) p ON p.id = c.pet_spell_list_id
+ WHERE c.pet_spell_list_id <> 0 AND p.id IS NULL GROUP BY c.pet_spell_list_id ORDER BY 1;
+
+-- 复现：指向空 creature_spells 行的生物（5 只）
+SELECT c.entry, c.name, c.spell_list_id FROM creature_template c
+ JOIN creature_spells s ON s.entry = c.spell_list_id
+ WHERE c.spell_list_id <> 0 AND s.spellId_1 = 0 AND s.spellId_2 = 0 AND s.spellId_3 = 0 AND s.spellId_4 = 0
+   AND s.spellId_5 = 0 AND s.spellId_6 = 0 AND s.spellId_7 = 0 AND s.spellId_8 = 0;
+```
+
+**处置建议**：这两类都是「上游没给数据」，本地能做的只有——① 接受现状（日志留着，如第十七节的
+PvP 模板那样「设计如此」）；② 由我们按生物类型补 `pet_spell_data`（需要策划决定每只野兽会什么技能）；
+③ 写 0 掩码行/空行把日志消掉（会掩盖真实缺口，不建议）。**目前不做任何改动。**

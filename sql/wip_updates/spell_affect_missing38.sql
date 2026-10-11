@@ -1,0 +1,153 @@
+-- ============================================================================
+--  dbfix 报错「Spell N (...) misses spell_affect for effect M」的 38 条：出处核查
+--  2026-10-12 整理 · **本文件不会被内核自动执行**（自动更新器只扫 sql/database_updates/）
+-- ============================================================================
+--
+-- 一、内核为什么要这张表（SpellMgr::LoadSpellAffects）
+--
+--   光环 107 (ADD_FLAT_MODIFIER) / 108 (ADD_PCT_MODIFIER) / 109 (ADD_TARGET_TRIGGER)
+--   的「作用法术范围」= 64 位掩码，来源只有两处：
+--     ① 客户端 Spell.dbc 的 EffectItemType[effect]（= 库内 spell_template.effectItemType1/2/3）；
+--     ② 数据库表 spell_affect。
+--   加载时：若 ① 非 0 且与 ② 相同 → 报 "redundant ... skipped" 并**不加载**（① 就够用了）；
+--   若 ① == 0 且 ② 也没有对应行 → 掩码 = 0 → `Aura::isAffectedOnSpell` /
+--   `SpellModifier::isAffectedOnSpell` 恒为 false → **该效果对所有法术都不生效**，
+--   同时打一条 `misses spell_affect`。所以：① == 0 的那 38 个效果，数据只在 ② 里，而 ② 是空的。
+--
+-- 二、四个来源都查过（2026-10-12）
+--
+--   1) 官方 1.12.1 的 spell_affect（205 法术 / 250 行，/tmp/ref12/off_spell_affect.sql）
+--      → 这 38 个 entry 一个都没有；按**法术名**交叉也没有（官方 205 个名字里没有同名法术）。
+--   2) 乌龟服自己：sql/base/tw_world_spell_affect.sql（2026-05-03 dump）+ 增量
+--      → 只有 8 个法术的**部分槽**有行：
+--          (51341..51345, effectId 1/2) = 4294967296
+--          (58238, 58239, effectId 0)   = 1099511627776
+--          (58241, effectId 0)          = 9007199254740992
+--        即：**乌龟服自己也没填满**（它们不是「设计上不需要」，因为没有哪条被写成显式 0 ——
+--        乌龟服需要「就是不要掩码」时会写 0 行，如 (17904,0,0)、(18271,2,0)、(45550,0,0)）。
+--   3) 镜像仓库 TuringKi/turtle-wow-custom → 文件字节数/内容一致，无额外信息。
+--   4) 客户端 Spell.dbc 的掩码槽（DBC 索引 103/104/105 ↔ 库内 effectItemType1/2/3，
+--      DBC 与 DB 列在这段固定差 3，已用 #11070 Improved Frostbolt = 32、#421 Chain Lightning = 3 校验）
+--      → 这 38 个效果的槽位**全是 0**（这正是内核报 misses 的判据，等于客户端自己也没写）。
+--      交叉验证官方数据：官方 250 行里 186 行的掩码恰好等于客户端同法术的 EffectItemType 字段
+--      → 说明官方那张表本来就是**客户端字段的镜像**，客户端没写的，官方表里也不会有。
+--
+--   结论：**没有可抄的出处**。剩下的路只有「按天赋描述 + 客户端 family flags 推导」，
+--   而掩码语义就是「命中哪些法术的 familyFlags」（官方 250 行全部满足此语义，
+--   例如乌龟服自己的 (58241,0,9007199254740992) 正好等于 Totemic Slam #45500 的 familyFlags）。
+--
+-- 三、推导方法与复核方式
+--
+--   掩码 = 天赋描述**点名**的法术（全部等级）的 spellFamilyFlags 按位或；
+--   复核 = 用掩码反查命中清单，必须与描述吻合：
+--
+--     SELECT name, COUNT(*) FROM spell_template
+--      WHERE spellFamilyName = <天赋家族号> AND (spellFamilyFlags & <掩码>) <> 0 GROUP BY name;
+--
+--   下面 A / B / C 三级就是「反查结果」的分级：
+--     A = 命中清单与描述完全吻合（可直接用）
+--     B = 命中清单里多出描述之外的同家族法术（客户端里这些法术共用 bit，无法再细分）→ 建议上游戏验证
+--     C = 推不出来（点名的法术 familyFlags = 0，掩码永远选不中它；或需要策划决定范围）
+--
+-- ----------------------------------------------------------------------------
+-- A 级：17 行，命中清单与描述吻合
+-- ----------------------------------------------------------------------------
+-- entry  eff  掩码              命中（反查结果）
+-- 19491  1    32768             Scorpid Sting ×5（含 deprecated 与拼写变体 Scorpid Stike）
+-- 19493  1    32768             同上（客户端同法术 effect0 本来就写着 32768，effect1 的
+--                               光环/操作数（107/8）与 effect0 完全相同 → 抄自己兄弟槽）
+-- 29082  1    6597069766656     Stormstrike + Lightning Strike（= 0x20000000000 | 0x40000000000）
+-- 29084  1    6597069766656     描述：Increases the damage you deal with all weapons,
+-- 29086  1    6597069766656           Stormstrike and Lightning Strike abilities
+-- 29087  1    6597069766656
+-- 29088  1    6597069766656
+-- 51486  0    17179869184       Lightwell（= 0x400000000）
+-- 51487  0    17179869184      Reservoir of Light：Increases the effectiveness of Lightwell's
+-- 51488  0    17179869184           Splendor of Light by $s1%
+--                              ※ Splendor of Light #7001 的 familyFlags = 0（选不中），
+--                                真正能选中的只有 Lightwell #724；用它的最高位 0x400000000
+--                                （只命中 Lightwell，见下方反查）而不是 0x440000000（会带上
+--                                Dispel/Resurrection 等 8 种）
+-- 51798  0    17179869184       Lightwell（Improved Lightwell，半径/数量）
+-- 51798  1    17179869184
+-- 51859  0    4398046511104     Lightning Strike ×6（Stormwolf's Frenzy）
+-- 52326  0    549755813888      Owlkin Frenzy ×3（Owlkin Frenzy Increased Regen）
+-- 52364  0    1073741824        Bear Form + Dire Bear Form（描述两者都点名）
+-- 52546  1    1099511627776     Curse of Recklessness + Curse of Shadow + Curse of the Elements
+--                              （Malediction 描述点名的就是这三系诅咒；0x10000000000 不含
+--                                Curse of Doom —— 描述要求「except Curse of Doom」，吻合）
+-- 52977  0    17179869184       Lightwell（Light Infusion Passive：Casting Lightwell grants ...）
+--
+-- REPLACE INTO `spell_affect` (`entry`, `effectId`, `SpellFamilyMask`) VALUES
+-- (19491,1,32768),
+-- (19493,1,32768),
+-- (29082,1,6597069766656),(29084,1,6597069766656),(29086,1,6597069766656),(29087,1,6597069766656),(29088,1,6597069766656),
+-- (51486,0,17179869184),(51487,0,17179869184),(51488,0,17179869184),
+-- (51798,0,17179869184),(51798,1,17179869184),
+-- (51859,0,4398046511104),
+-- (52326,0,549755813888),
+-- (52364,0,1073741824),
+-- (52546,1,1099511627776),
+-- (52977,0,17179869184);
+--
+-- ----------------------------------------------------------------------------
+-- B 级：12 行，客户端数据里这些法术共用 bit，掩码会多带出描述之外的法术 → 需要游戏内确认
+-- ----------------------------------------------------------------------------
+-- entry  eff  掩码                反查命中的（描述之外的部分 ➜ 说明）
+-- 51341  0    34896609280       Crusader Strike ×10 + **Judgement of the Crusader ×9**
+-- 51342  0    34896609280       （Righteous Strikes：描述说 Crusader Strike grants Zealous Defense，
+-- 51343  0    34896609280         触发法术 51336 Zealous Defense；但客户端里 Crusader Strike
+-- 51344  0    34896609280         有两代 bit：0x20000000（#45409-45413）与 0x800000000
+-- 51345  0    34896609280         （#2537/8823/8824/10336/10337），后者会顺带命中
+--                                 Judgement of the Crusader）
+-- 51888  1    2416967680         Earth/Flame/Frost Shock ×25 + **Molten Blast、Rekindled Flame**
+--                                 （Shocks Electrify：描述只说 Shocks；多出的两个多半也是
+--                                  同系触发，但要看游戏里是否会给它们加充能）
+-- 52701  0    140737488355328    Purge ×2 + **Bloodlust、Calm Elements**（共用 0x800000000000）
+-- 58238  1    6599486734339      12 种「伤害法术」（Lightning Bolt/Chain Lightning/三系 Shock/
+-- 58239  1    6599486734339      Lightning Strike/Stormstrike/Lightning Storm/Rampaging Earth/
+--                                 Molten Blast/Rekindled Flame）—— Call of Earth 的第二条是
+--                                 「施放伤害法术时被打断的几率降低 $s2%」，范围本身就是策划决定
+-- 58241  1    9007199254740992   Totemic Slam + **Feral Spirit、Hex**（三个 Ancient Rites 系列
+--                                 共用 0x20000000000000）
+-- 58242  0    9007199254743040   Feral Spirit + **Ghost Wolf、Hex、Totemic Slam**
+-- 58243  0    9007267974217728   Hex + **Feral Spirit、Totemic Slam**
+--
+-- REPLACE INTO `spell_affect` (`entry`, `effectId`, `SpellFamilyMask`) VALUES
+-- (51341,0,34896609280),(51342,0,34896609280),(51343,0,34896609280),(51344,0,34896609280),(51345,0,34896609280),
+-- (51888,1,2416967680),
+-- (52701,0,140737488355328),
+-- (58238,1,6599486734339),(58239,1,6599486734339),
+-- (58241,1,9007199254740992),
+-- (58242,0,9007199254743040),
+-- (58243,0,9007267974217728);
+--
+-- ----------------------------------------------------------------------------
+-- C 级：9 行，推不出来（填了也不会生效 / 需要策划决定）
+-- ----------------------------------------------------------------------------
+-- entry  eff  为什么
+-- 45405  0    [Deprecated] Arcane Potency，废弃法术 → 建议写 0 行只消日志（乌龟服有先例：
+--             (17904,0,0)、(45550,0,0)）
+-- 45985  0    Counterattack：spellFamilyName = 0（GENERIC），掩码只能命中同样家族 0 的法术
+--             → 语义上必然是「全体」，不是「Counterattack」，无从推导
+-- 51369  0    Improved Water Shield：光环 107 + 操作数 31（法力回复），描述里没有点名的法术
+-- 51370  0    （Water Shield 有 bit，但「每 5 秒回蓝」这种效果是否走 spell_affect 掩码要策划定）
+-- 51371  0
+-- 52402  0    Faster Bleeds 5 (Hunter)：0/1 两个槽（108+19、108+1），描述为空，
+-- 52402  1    找不到点名的「流血」法术集合 → 无法确定范围
+-- 52603  0    Improved Swift Aspects：点名的 Swift Aspects #19552-19556 的 familyFlags = 0
+--             → 掩码永远选不中它（要生效得先给 Swift Aspects 补 familyFlags，属另一类改动）
+-- 52690  0    Crystal Infusion：点名的 Mana Gem 系（Conjure Mana Gem #3724）familyFlags = 0，同上
+--
+-- 若要「只消日志」，可对 C 级写 0 掩码行（内核会加载但恒不命中，等价于现状，只是不再报错）：
+-- REPLACE INTO `spell_affect` (`entry`, `effectId`, `SpellFamilyMask`) VALUES
+-- (45405,0,0),(45985,0,0),(51369,0,0),(51370,0,0),(51371,0,0),(52402,0,0),(52402,1,0),(52603,0,0),(52690,0,0);
+--
+-- ----------------------------------------------------------------------------
+-- 四、启用方法（A 级全部 / 或 A+B 一起）
+-- ----------------------------------------------------------------------------
+--   1) 把想要的 REPLACE 行的注释去掉，存成 sql/database_updates/world/2026MMDDHHMMSS_world.sql
+--      （**不要**改本文件里别的时段的行；自动更新器按内容 hash 判重）。
+--   2) 重启服务端（或控制台 `.reload spell_affect`），dbfix.log 里对应的 misses 会消失。
+--   3) 复验：`SELECT entry, effectId, SpellFamilyMask FROM spell_affect WHERE entry IN (...)`，
+--      以及控制台 `SELECT COUNT(*) FROM spell_affect`（当前 263 行）。
