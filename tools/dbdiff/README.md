@@ -402,6 +402,30 @@ python3 tools/dbdiff/verify_wip_locales.py --dir sql/wip_updates --mysql "$M"
    改完 `check_update_file.py` 29/29 通过，且逐条确认值语义未变。
    **例外**：`locales_page_text.sql` 的值里含 HTML（`<a href="…">`），必须保留半角引号，勿套用此规则。
 
+## 十四、仓库里有什么 / 一次性产物放哪
+
+`tools/dbdiff/` 只放**常用工具**，一次性产物不入库：
+
+| 文件 | 用途 |
+|---|---|
+| `dbdiff.py` | 仓库 base+增量 与线上库的对比（找缺失/多余行） |
+| `verify_wip_locales.py` | 汉化落库核对 + 审阅表导出（MD5 逐条，只读） |
+| `sync_wip_from_db.py` | 以线上为准回写 `sql/wip_updates/*.sql`（支持 INSERT 与 UPDATE 两种写法） |
+| `gen_locale_patch.py` | 按审阅表生成定向覆盖补丁 |
+| `check_update_file.py` | 迁移文件体检（引号/分号状态机，内核更新器同款规则） |
+| `gen_group_chance_from_log.py` / `gen_group_chance_fix.sql` | 战利品组概率修正（从内核日志生成） |
+| `prune_imported_cruft.sql` / `verify_refs.sql` | 导入残留清理 / 引用校验 |
+| `mysql_local.sh` / `db_status.sh` | 本机连库通道与自检 |
+| `review/*.md|.tsv` | **决策留档**：人名重译、副名统一、交任务文本审阅表 |
+| `review/official_zhcn_extra.sql` | 官方简体对齐里 wip 文件未覆盖的那部分（重建用） |
+
+* `sql/wip_updates/` 是**导入集**：`locales_*.sql` 为常态文件；`locales_name_fixes.sql` 集中放
+  所有「带原值条件的修正」（生物/物件/物品名、副名、任务译名），可直接重复导入而不覆盖人工修订。
+* 一次性补丁（对官方简体对齐、交任务文本重译、人名重译的正/反 SQL）与一次性分析脚本
+  **不进仓库**：它们在 git 历史里可查，同时归档在本机
+  `~/.copilot/session-state/<session>/files/dbdiff_archive/`（README 里有清单）。
+
+
 ## 十五、删数据前先跑 `check_delete_ids.py`（2026-10-11 事故）
 
 2026-10-11 服务端**每次玩家登录都 SIGSEGV**：
@@ -443,25 +467,37 @@ python3 tools/dbdiff/check_delete_ids.py --dir 'sql/database_updates/world/20261
 `Player::RecallPvPGear()` 同时加了空指针保护（列表缺失只记日志并跳过，不再崩）。
 
 
-## 十四、仓库里有什么 / 一次性产物放哪
+## 十六、两条运维铁律（2026-10-11 事故后补）
 
-`tools/dbdiff/` 只放**常用工具**，一次性产物不入库：
+### 1. 已应用过的迁移文件**不要改**
 
-| 文件 | 用途 |
-|---|---|
-| `dbdiff.py` | 仓库 base+增量 与线上库的对比（找缺失/多余行） |
-| `verify_wip_locales.py` | 汉化落库核对 + 审阅表导出（MD5 逐条，只读） |
-| `sync_wip_from_db.py` | 以线上为准回写 `sql/wip_updates/*.sql`（支持 INSERT 与 UPDATE 两种写法） |
-| `gen_locale_patch.py` | 按审阅表生成定向覆盖补丁 |
-| `check_update_file.py` | 迁移文件体检（引号/分号状态机，内核更新器同款规则） |
-| `gen_group_chance_from_log.py` / `gen_group_chance_fix.sql` | 战利品组概率修正（从内核日志生成） |
-| `prune_imported_cruft.sql` / `verify_refs.sql` | 导入残留清理 / 引用校验 |
-| `mysql_local.sh` / `db_status.sh` | 本机连库通道与自检 |
-| `review/*.md|.tsv` | **决策留档**：人名重译、副名统一、交任务文本审阅表 |
-| `review/official_zhcn_extra.sql` | 官方简体对齐里 wip 文件未覆盖的那部分（重建用） |
+内核的自动更新器按「文件名 + **内容 hash**」判断一个迁移是否执行过
+（`src/shared/Database/AutoUpdater.cpp`，表 `migrations` 里存 hash）。所以：
 
-* `sql/wip_updates/` 是**导入集**：`locales_*.sql` 为常态文件；`locales_name_fixes.sql` 集中放
-  所有「带原值条件的修正」（生物/物件/物品名、副名、任务译名），可直接重复导入而不覆盖人工修订。
-* 一次性补丁（对官方简体对齐、交任务文本重译、人名重译的正/反 SQL）与一次性分析脚本
-  **不进仓库**：它们在 git 历史里可查，同时归档在本机
-  `~/.copilot/session-state/<session>/files/dbdiff_archive/`（README 里有清单）。
+* 改任何一个**已经应用**的 `sql/database_updates/world/*.sql`，它的 hash 就变了 →
+  下次启动内核会把它当作**新迁移重跑**。
+* 重跑 `20261008154500_world.sql` 会把刚恢复的 PvP 商人物品模板**再删一次** → 玩家登录必崩。
+* 要修正历史迁移的后果，**写一个新迁移**（`20261011090000_world.sql` 就是这么做的：重新
+  `REPLACE INTO` 那两个模板）。
+* 同理：**新迁移一旦被内核执行过，也不要再改它**（要改就再写一条新的）。
+
+### 2. 任何「没有数据引用」的删除规则，先排除「代码硬编码引用」
+
+`20261008154500` 的 `npc_vendor_template` 与 `prune_imported_cruft.sql` 里同名规则都写着
+`NOT EXISTS (SELECT 1 FROM creature_template WHERE vendor_id = ...)` —— 数据侧看确实没人用，
+但内核硬编码用它们，删了就崩。
+
+所以：
+
+* 写删除类 SQL 之前跑 `python3 tools/dbdiff/check_delete_ids.py <文件>`（见第十五节）。
+* 子查询式的删除（`DELETE ... WHERE NOT EXISTS (...)`）工具抽不出 id，要**人工逐条对着内核源码过**。
+  `prune_imported_cruft.sql` 就是这么过完的，每条规则都注了内核源码位置：
+  | 规则 | 内核依据 |
+  |---|---|
+  | `creature_loot_template` 等「整条没主人」 | 掉落表按 owner 的 loot_id 查（`ObjectMgr.cpp` / `LootMgr.cpp`） |
+  | `npc_trainer` 无生物 / 教不存在法术 / 教非学习类法术 | `ObjectMgr::LoadTrainers`：`GetCreatureTemplate` 为空跳过、`Effect[0] != SPELL_EFFECT_LEARN_SPELL` 跳过 |
+  | `npc_vendor_template` 没商人使用 | **例外**：1277702/1279202 被 `Player::RecallPvPGear()` 硬编码使用 → 已排除 |
+  | `reference_loot_template` 组 0 零概率 | `LootMgr.cpp`：「Zero chance is allowed for grouped entries only … skipped」 |
+  | `spell_affect` 两条 | `SpellMgr.cpp`：光环类型不符跳过、与 `EffectItemType` 重复内核判定 redundant 跳过 |
+  | `item_loot_template` 非可拾取 | 物品战利品只在物品带 `ITEM_FLAG_LOOTABLE` 时创建 |
+  | `areatrigger_tavern` / `spell_script_target` | 对照客户端 DBC / 内核支持的目标类型 |

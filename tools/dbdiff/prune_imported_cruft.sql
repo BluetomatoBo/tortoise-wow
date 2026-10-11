@@ -1,6 +1,17 @@
 -- ============================================================
 -- prune_imported_cruft.sql
 -- 清掉「刚补进来的、内核明确判定为无用/非法」的行。
+--
+-- ⚠️ 运行前必读（2026-10-11 事故后补）：
+--   1. 先跑 `python3 tools/dbdiff/check_delete_ids.py <本文件>`：「没有**数据**引用」不等于
+--      「没有**代码**引用」——内核里常有硬编码的 id（典型：`npc_vendor_template` 的 1277702/1279202
+--      被 `Player::RecallPvPGear()` 使用）。本脚本的 npc_vendor_template 规则已按此排除它们；
+--      以后再加规则，先过一遍那个工具。
+--   2. 本脚本的每条规则都严格照内核自己的判定写（注释里给了源码位置），只删内核加载时本来就
+--      跳过、永远不会生效的行 → 游戏行为不变。
+--   3. 不要修改 `sql/database_updates/` 里**已经应用**过的迁移文件：内核按「文件名 + 内容 hash」
+--      判断是否已执行，改了 hash 就会被当成新迁移**重跑**（例如重跑 20261008154500 会把恢复好的
+--      PvP 模板再删一次、导致登录崩溃）。要修就写新迁移。
 -- 每条 DELETE 都严格照内核自己的判定条件写（注释里给出源码位置），
 -- 只删内核加载时本来就跳过、永远不会生效的行 → 游戏行为完全不变，只是日志干净。
 -- 全是 DELETE，可重复执行（第二次起影响 0 行）。
@@ -67,7 +78,10 @@ SELECT 'item_loot_template 里不是可拾取物品的条目' AS 项目,
 SELECT 'npc_vendor_template 没商人使用' AS 项目,
        COUNT(DISTINCT entry) AS 条目数, COUNT(*) AS 行数
   FROM npc_vendor_template v
- WHERE NOT EXISTS (SELECT 1 FROM creature_template c WHERE c.vendor_id = v.entry);
+ WHERE NOT EXISTS (SELECT 1 FROM creature_template c WHERE c.vendor_id = v.entry)
+   -- 内核硬编码引用的两个 PvP 模板（Player::RecallPvPGear）绝不可删：
+   -- 删了每次玩家登录都会 SIGSEGV，见 tools/dbdiff/README.md 第十五节
+   AND v.entry NOT IN (1277702, 1279202);
 
 -- ============ 二、清理 ============
 
@@ -114,7 +128,9 @@ DELETE t FROM npc_trainer t
 
 -- 4) 没被任何商人使用的商人物品模板（ObjectMgr.cpp:8281）
 DELETE v FROM npc_vendor_template v
- WHERE NOT EXISTS (SELECT 1 FROM creature_template c WHERE c.vendor_id = v.entry);
+ WHERE NOT EXISTS (SELECT 1 FROM creature_template c WHERE c.vendor_id = v.entry)
+   -- 同上：这两个模板是内核硬编码用的（RecallPvPGear），删掉会崩服
+   AND v.entry NOT IN (1277702, 1279202);
 
 -- 5) 行级：chance=0 但没写 groupid 的组内条目（LootStoreItem::IsValid，LootMgr.cpp:330）
 DELETE l FROM reference_loot_template l

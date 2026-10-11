@@ -28,6 +28,21 @@ python3 tools/dbdiff/check_delete_ids.py --roots src sql/base <file.sql>
 
 输出按「表 → id → 代码位置」列出，人工判断是不是真的能删。退出码：发现可疑引用返回 1，
 干净返回 0（可以挂到写迁移前的检查流程里）。
+
+## 局限（2026-10-11 补）
+
+* **只认字面数字**。写成子查询的删除（`DELETE ... WHERE NOT EXISTS (SELECT 1 FROM ...)`，
+  例如 `prune_imported_cruft.sql`）这里抽不出 id —— 那份脚本按同样思路人工复核过一遍，
+  每条规则都对照了内核源码（结果见该文件头部注释）；工具遇到子查询式删除会打印提示。
+* 只扫 `src/` 与 `sql/base`。别的仓库（比如网站、工具）里的引用要自己加 `--roots`。
+* 4 位以下的 id 不查（噪声太大）。
+
+## 已经踩过的两个坑
+
+1. `npc_vendor_template` 1277702/1279202：内核 `Player::RecallPvPGear()` 硬编码用它们
+   （2026-10-11 登录崩溃事故）。
+2. `area_template` 的整表重建：`GuardMgr.cpp` 里 57 个 `AREA_*` 常量靠这张表，重建时要确认
+   它们都还在（该次重建是把 base dump 灌回去，核对过）。
 """
 
 import argparse
@@ -46,6 +61,20 @@ ID_CONTEXT = re.compile(
     r"(entry|Entry|_id|_ID|Id\b|case\s|==|!=|template|Template|Lookup|"
     r"NPC_|SPELL_|ITEM_|QUEST_|AREA_|GO_|CREATURE_|GAMEOBJECT_|TEXT_|SOUND_|VENDOR_|"
     r"Spell\w*\(|Item\w*\(|Quest\w*\(|Area\w*\(|Vendor\w*\()")
+
+
+SUBQUERY_DELETE = re.compile(r"DELETE\b.*?\bWHERE\b.*?\(\s*SELECT\b", re.S | re.I)
+
+
+def note_subquery_deletes(paths):
+    """子查询式删除抽不出 id，只能提示人工按同样思路过一遍。"""
+    count = 0
+    for path in paths:
+        text = open(path, encoding="utf-8", errors="replace").read()
+        count += len(SUBQUERY_DELETE.findall(text))
+    if count:
+        print("提示：%d 条 DELETE 用的是子查询（不是 id 清单），本工具抽不出它们的 id；" % count)
+        print("      这类规则要人工对照内核源码复核（参考 tools/dbdiff/prune_imported_cruft.sql 的写法）。\n")
 
 
 def deleted_ids(paths):
@@ -112,6 +141,7 @@ def main():
     if not paths:
         ap.error("没有输入文件（给文件名，或用 --dir '...*.sql'）")
 
+    note_subquery_deletes(paths)
     ids = deleted_ids(paths)
     print("检查 %d 个文件：%d 个待删 id，涉及 %d 张表"
           % (len(paths), len(ids), len(set().union(*ids.values())) if ids else 0))
