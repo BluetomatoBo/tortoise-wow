@@ -50,7 +50,10 @@
 --     C = 推不出来（点名的法术 familyFlags = 0，掩码永远选不中它；或需要策划决定范围）
 --
 -- ----------------------------------------------------------------------------
--- A 级：17 行，命中清单与描述吻合
+-- A 级：17 行，命中清单与描述吻合  ★ 2026-10-11 已落库
+--   已写成迁移 sql/database_updates/world/20261011130000_world.sql 并应用到线上库：
+--   spell_affect 263 → 280 行，dbfix 的 misses 由 38 条降为 21 条（= 剩下 B+C）。
+--   本节下面的语句保留作存档，不要再重复执行（REPLACE 幂等，重跑也不会出问题）。
 -- ----------------------------------------------------------------------------
 -- entry  eff  掩码              命中（反查结果）
 -- 19491  1    32768             Scorpid Sting ×5（含 deprecated 与拼写变体 Scorpid Stike）
@@ -146,8 +149,19 @@
 -- ----------------------------------------------------------------------------
 -- 四、启用方法（A 级全部 / 或 A+B 一起）
 -- ----------------------------------------------------------------------------
+--   A 级已于 2026-10-11 这样落库（20261011130000_world.sql），下面留给 B/C 级继续用：
 --   1) 把想要的 REPLACE 行的注释去掉，存成 sql/database_updates/world/2026MMDDHHMMSS_world.sql
 --      （**不要**改本文件里别的时段的行；自动更新器按内容 hash 判重）。
 --   2) 重启服务端（或控制台 `.reload spell_affect`），dbfix.log 里对应的 misses 会消失。
 --   3) 复验：`SELECT entry, effectId, SpellFamilyMask FROM spell_affect WHERE entry IN (...)`，
---      以及控制台 `SELECT COUNT(*) FROM spell_affect`（当前 263 行）。
+--      以及 `SELECT COUNT(*) FROM spell_affect`（补 A 级前 263 行 → 现在 280 行）。
+--   4) 别忘了一步**静态体检**：新行必须满足内核的加载条件，否则会换成另一类报错
+--      （"listed in `spell_affect` have not SPELL_AURA_ADD_FLAT_MODIFIER ..." /
+--        "have redundant (same with EffectItemType) data ... skipped"）：
+--
+--        SELECT COUNT(*) FROM spell_affect a LEFT JOIN spell_template s ON s.entry = a.entry
+--         WHERE s.entry IS NULL OR a.effectId > 2
+--            OR (CASE a.effectId WHEN 0 THEN s.effect1 WHEN 1 THEN s.effect2 ELSE s.effect3 END) <> 6
+--            OR (CASE a.effectId WHEN 0 THEN s.effectApplyAuraName1 WHEN 1 THEN s.effectApplyAuraName2
+--                                ELSE s.effectApplyAuraName3 END) NOT IN (107,108,109,112);
+--        -- 补 A 级后全表 280 行跑出 0。

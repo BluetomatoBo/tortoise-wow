@@ -568,7 +568,7 @@ SELECT name, COUNT(*) FROM spell_template
 
 | 级 | 条数 | 内容 | 处置 |
 |---|---|---|---|
-| A | 17 | 描述点名的法术能被掩码**精确**选中（19491/19493 的 32768、29082-29088 的 Stormstrike+Lightning Strike、51486-51488/51798/52977 的 Lightwell 位、51859 的 Lightning Strike、52326 的 Owlkin Frenzy、52364 的两种熊形态、52546 的三个诅咒） | 可直接用，取消注释即可生成迁移 |
+| A | 17 | 描述点名的法术能被掩码**精确**选中（19491/19493 的 32768、29082-29088 的 Stormstrike+Lightning Strike、51486-51488/51798/52977 的 Lightwell 位、51859 的 Lightning Strike、52326 的 Owlkin Frenzy、52364 的两种熊形态、52546 的三个诅咒） | **已落库**：`sql/database_updates/world/20261011130000_world.sql`（spell_affect 263 → 280 行，misses 38 → 21 条） |
 | B | 12 | 客户端里这些法术**共用 bit**，掩码会多带出描述之外的法术（51341-51345 会带上 Judgement of the Crusader；51888 会带上 Molten Blast/Rekindled Flame；52701 会带上 Bloodlust/Calm Elements；58238/58239 是「全部伤害法术」的范围问题；58241-58243 三个 Ancient Rites 互相带出） | 掩码已给出，建议上游戏验证后再定 |
 | C | 9 | 推不出来：点名的法术 `familyFlags = 0`（Swift Aspects #19552-56、Conjure Mana Gem #3724）、家族是 GENERIC（Counterattack）、描述为空（Faster Bleeds (Hunter)）、废弃法术（45405）、操作数语义未知（Improved Water Shield 的回蓝） | 要么先给目标法术补 familyFlags（另一类改动），要么写 0 掩码行只消日志 |
 
@@ -591,6 +591,18 @@ SELECT c.entry, c.name, c.spell_list_id FROM creature_template c
  WHERE c.spell_list_id <> 0 AND s.spellId_1 = 0 AND s.spellId_2 = 0 AND s.spellId_3 = 0 AND s.spellId_4 = 0
    AND s.spellId_5 = 0 AND s.spellId_6 = 0 AND s.spellId_7 = 0 AND s.spellId_8 = 0;
 ```
+
+### 5. 落库后的复验（2026-10-11）
+
+```sql
+-- ① 条数：应 280（= 原 263 + A 级 17）
+SELECT COUNT(*) FROM spell_affect;
+-- ② 新行是否满足内核加载条件：LEFT JOIN spell_template，检查「法术存在 / effectId ≤ 2 /
+--    该槽 Effect = 6 / 该槽 aura ∈ {107,108,109,112}」→ 全表 280 行跑出 0 行
+--    （语句见 sql/wip_updates/spell_affect_missing38.sql 第四节）
+-- ③ misses 复算：README 第十七节那条判据 SQL 从 38 行降到 21 行（= B 级 12 + C 级 9）
+```
+生效方式：重启服务端，或控制台 `.reload spell_affect`。
 
 **处置建议**：这两类都是「上游没给数据」，本地能做的只有——① 接受现状（日志留着，如第十七节的
 PvP 模板那样「设计如此」）；② 由我们按生物类型补 `pet_spell_data`（需要策划决定每只野兽会什么技能）；
