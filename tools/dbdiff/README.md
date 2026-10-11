@@ -623,3 +623,45 @@ SELECT COUNT(*) FROM spell_affect;
 **处置建议**：这两类都是「上游没给数据」，本地能做的只有——① 接受现状（日志留着，如第十七节的
 PvP 模板那样「设计如此」）；② 由我们按生物类型补 `pet_spell_data`（需要策划决定每只野兽会什么技能）；
 ③ 写 0 掩码行/空行把日志消掉（会掩盖真实缺口，不建议）。**目前不做任何改动。**
+
+## 十九、「被我清理掉的数据要不要恢复」全量复核（2026-10-11）
+
+用户问「需要恢复的是不是都恢复了，不确定就先安全地全部还原」。用 `dbdiff.py` 把**线上库**与
+**仓库 base dump + 全部增量**逐表比了一遍，结论：**需要恢复的只有一处，已恢复；其余删掉的
+都是内核根本读不到的行**。
+
+复现：
+
+```bash
+python3 tools/dbdiff/dbdiff.py --mysql "$(pwd)/tools/dbdiff/mysql_local.sh tw_world" --counts
+# 需要细看某张表： --table <表名> --limit 200   （--emit-sql F 可生成 INSERT IGNORE 补数据脚本）
+```
+
+本次「线上比仓库少」的表共 15 张，逐张的判据与结论（判据都能用一条 SQL 复核，见下）：
+
+| 表 | 线上比仓库少 | 为什么内核读不到 |
+|---|---|---|
+| `npc_vendor_template` | 221 行（16 个模板） | `creature_template.vendor_id` 里 0 命中这 16 个模板 → 没有商人会读它。**崩溃那对 1277702/1279202 已恢复：各 96 行，共 192 行在位**（`SELECT COUNT(*) FROM npc_vendor_template WHERE entry IN (1277702,1279202)`） |
+| `creature_loot_template` | 37,197 行（521 个 loot id） | 512 个 loot id 没有被任何生物的 `loot_id` 使用；唯一被用到的 `16042` 只删了 8 行「同组显式概率已满 100% 的 0% 重复条目」（`20261008201000`，带「该组必须还剩显式概率行」守卫）→ 组的行为不变 |
+| `gameobject_loot_template` | 13,177 行（567 个 loot id） | 没有 `type IN (3,25)`（CHEST/FISHINGHOLE）物件的 `data1` 指向它们（内核 `GameObjectInfo::GetLootId()` 只认这两类） |
+| `pickpocketing_loot_template` | 483 行（93 个 id） | 没有被任何生物的 `pickpocket_loot_id` 使用 |
+| `skinning_loot_template` | 299 行（94 个 id） | 没有被任何生物的 `skinning_loot_id` 使用 |
+| `reference_loot_template` | 298 行（39 个组） | 没有被任何掉落表的 `-mincountOrRef` 引用 |
+| `npc_trainer` | 109 行 | 训练师生物不存在（涉及 1410/4989/5964/5973 等）或教的法术不存在 / 不是 `SPELL_EFFECT_LEARN_SPELL` → 内核 `LoadTrainers` 跳过 |
+| `skill_line_ability` | 13 行 | 4 行教库内与客户端都没有的法术（46530/41079/30236/46848），9 行 `skill_id=spell_id=0` 的空行 |
+| `creature_movement` | 46 行 | guid `2581433`、`2593426` 在 `creature` 表里不存在（路径指向不存在的 spawn） |
+| `creature_ai_events` | 1 行 | `899705` 挂在 `61418 Genn Greymane` 上，而它是 `script_name = genn_greymane` 的脚本生物 → EventAI 行永不执行 |
+| `game_graveyard_zone` | 2 行 | 被移到父区域的**子区域重复行**（136→5179、137→406 的父行都在线上，已核） |
+| `spell_affect` | 168 行 | 内核判 redundant（掩码 == `EffectItemType`）或光环类型不对，加载时跳过 |
+| `spell_effect_mod` | 12 行 | **不是我们删的**：删它的是上游文件 `20260724/20260730/20260801` |
+| `item_loot_template` | 56 行（物品 `92010 Holiday Cache`） | 该物品 `flags = 0`（不可拾取）→ 内核不给它建掉落 |
+| `locales_area` | 276 行 | **仓库里没有任何 DELETE** → 属于「线上库从来没导入过这批行」的历史缺口，与清理无关 |
+
+**为什么不做「无脑全还原」**：`dbdiff` 对子查询式的 `DELETE` 无法建模，它算出的「仓库有、线上没有」
+里混着**上游自己删过**的行——最典型的就是 `spell_affect`：168 行里有 162 条 `DELETE` 来自上游文件
+`20260815005950`（工具已提示「本工具判不了的 WHERE 条件」）。补回去等于撤销上游的清理，只会让
+`dbfix.log` 重新长出「内核跳过」的噪音，玩法上零影响。真要补，按表挑着补（`--table T --emit-sql F`）
+比一把梭安全。
+
+**如果以后想补那 3 张与清理无关的历史缺口**（`item_loot_template` / `locales_area` /
+`reference_loot_template` 之类），直接用同一工具生成 `INSERT IGNORE` 即可，与本次事故无关。
