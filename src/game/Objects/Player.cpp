@@ -3259,10 +3259,27 @@ void Player::RecallPvPGear()
 {
     //Remove all ill-gotten PvP gear, warn the accounts, remove all transmogs from player, remove all collection transmogs.
 
-    auto hordeVendorList = sObjectMgr.GetNpcVendorTemplateItemList(1279202);
-    auto allianceVendorList = sObjectMgr.GetNpcVendorTemplateItemList(1277702);
+    const uint32 hordeTemplate = 1279202;
+    const uint32 allianceTemplate = 1277702;
 
-    const auto& vendorList = GetTeamId() == TEAM_ALLIANCE ? hordeVendorList : allianceVendorList; // Intentionally swapped.
+    auto hordeVendorList = sObjectMgr.GetNpcVendorTemplateItemList(hordeTemplate);
+    auto allianceVendorList = sObjectMgr.GetNpcVendorTemplateItemList(allianceTemplate);
+
+    const bool swapped = GetTeamId() == TEAM_ALLIANCE;
+    const auto& vendorList = swapped ? hordeVendorList : allianceVendorList; // Intentionally swapped.
+
+    // These two templates are only ever used here - no creature points its vendor_id at them -
+    // which is why an SQL update had to reinstate them ("to satisfy the RecallPvPGear function").
+    // It also means a cleanup that drops "unused" vendor templates takes them away, and this
+    // function used to dereference the missing list: the realm crashed on every login. A missing
+    // list only costs the recall, so say so and return instead.
+    if (!vendorList)
+    {
+        sLog.outError("Player::RecallPvPGear: npc_vendor_template %u is missing, "
+                      "skipping the PvP gear recall for %s (%u)",
+                      swapped ? hordeTemplate : allianceTemplate, GetName(), GetGUIDLow());
+        return;
+    }
 
     std::vector<std::pair<uint32, uint32>> ownedItems;
     for (const auto elem : vendorList->m_items)

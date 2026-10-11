@@ -402,6 +402,47 @@ python3 tools/dbdiff/verify_wip_locales.py --dir sql/wip_updates --mysql "$M"
    改完 `check_update_file.py` 29/29 通过，且逐条确认值语义未变。
    **例外**：`locales_page_text.sql` 的值里含 HTML（`<a href="…">`），必须保留半角引号，勿套用此规则。
 
+## 十五、删数据前先跑 `check_delete_ids.py`（2026-10-11 事故）
+
+2026-10-11 服务端**每次玩家登录都 SIGSEGV**：
+
+```
+Received SIGSEGV
+./mangosd(_ZN6Player13RecallPvPGearEv+0x194)   ← Player::RecallPvPGear()
+./mangosd(_ZN12WorldSession17HandlePlayerLoginEP16LoginQueryHolder+0xfa2)
+```
+
+根因是 2026-10-08 那次日志清理：`20261008154500_world.sql` 把 `npc_vendor_template` 的
+`1277702` / `1279202` 当「没有任何生物的 vendor_id 指向它的孤儿」删掉了 —— 但内核**硬编码**用它们：
+`Player::RecallPvPGear()` 在每次登录时用这两份清单回收「非法获得的 PvP 装备」，
+模板不在 → `GetNpcVendorTemplateItemList()` 返回 `nullptr` → `vendorList->m_items` 解引用空指针。
+（乌龟服自己也踩过：官方更新 `20260509055406_world.sql` 里专门写了一段
+"Reinstate the old PvP npc_vendor_template entries to satisfy the RecallPvPGear function"。）
+
+**判据教训**：「没有**数据**引用」不等于「没有**代码**引用」。这类字段（商人物品模板、脚本 id、
+区域 id……）常有只给代码用的模板，数据侧当然查不到引用。
+
+所以加了 `tools/dbdiff/check_delete_ids.py`：**写删除类迁移之前跑一遍**，
+它把迁移里 `DELETE ... WHERE col IN (...)` 的数字抽出来，去 `src/`（与 `sql/base`）
+里找「像在引用一个 id」的地方（命名常量、`case`、比较、查表调用；毫秒/坐标那种普通数字会被过滤）：
+
+```bash
+python3 tools/dbdiff/check_delete_ids.py sql/database_updates/world/20261008154500_world.sql
+python3 tools/dbdiff/check_delete_ids.py --dir 'sql/database_updates/world/20261008*.sql'
+```
+
+输出很短（每个 id 几行上下文），人工判断是不是真能删；有可疑引用时退出码 1。
+拿肇事那条迁移跑，它会明确指出：
+
+```
+  1279202（来自 npc_vendor_template）
+      src/game/Objects/Player.cpp:3262  const uint32 hordeTemplate = 1279202;
+```
+
+修复：`20261011090000_world.sql` 重新 `REPLACE INTO` 这两个模板（192 行，取自官方同一段），
+`Player::RecallPvPGear()` 同时加了空指针保护（列表缺失只记日志并跳过，不再崩）。
+
+
 ## 十四、仓库里有什么 / 一次性产物放哪
 
 `tools/dbdiff/` 只放**常用工具**，一次性产物不入库：
