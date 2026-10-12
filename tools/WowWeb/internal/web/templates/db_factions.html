@@ -1,0 +1,41 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{.T "db.factions.title"}} <span class="muted">({{.Total}})</span></h1>
+  <a class="btn btn-ghost" href="/db">{{.T "db.back"}}</a>
+</div>
+
+<section class="card">
+  <form method="get" action="/db/factions" class="filters">
+    <input name="q" value="{{.Search}}" placeholder="{{.T "db.search.placeholder"}}">
+    <button class="btn" type="submit">{{.T "common.filter"}}</button>
+    <a class="btn btn-ghost" href="/db/factions">{{.T "common.reset"}}</a>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "db.entry"}}</th>
+        <th>{{.T "db.name"}}</th>
+        <th class="right">{{.T "db.faction.creatures"}}</th>
+        <th class="right">{{.T "db.faction.quests"}}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Factions}}
+      <tr>
+        <td><code>{{.ID}}</code></td>
+        <td><a href="/db/factions/{{.ID}}">{{if .Name}}{{.Name}}{{else}}{{.ID}}{{end}}</a></td>
+        <td class="right">{{.Creatures}}</td>
+        <td class="right">{{if .Quests}}{{.Quests}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        <td class="right"><a class="btn btn-ghost btn-sm" href="/db/factions/{{.ID}}">{{$.T "common.open"}}</a></td>
+      </tr>
+    {{else}}
+      <tr><td colspan="5" class="muted center">{{$.T "db.none"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+
+  {{template "pagination" .}}
+</section>
+{{end}}

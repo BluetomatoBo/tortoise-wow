@@ -1217,6 +1217,7 @@ type ContentCounts struct {
 	Quests      int
 	Creatures   int
 	GameObjects int
+	Factions    int
 }
 
 // ContentCountsFor counts the content tables. A table that is missing (an older
@@ -1232,6 +1233,7 @@ func (s *Store) ContentCountsFor(ctx context.Context) ContentCounts {
 		{"quest_template", &c.Quests},
 		{"creature_template", &c.Creatures},
 		{"gameobject_template", &c.GameObjects},
+		{"faction", &c.Factions},
 	} {
 		if err := s.World.QueryRowContext(ctx, "SELECT COUNT(*) FROM "+t.table).Scan(t.into); err != nil {
 			*t.into = 0
@@ -1330,12 +1332,286 @@ func (s *Store) ContentSearch(ctx context.Context, loc ContentLocale, term strin
 		{"quest", questSearchQuery},
 		{"creature", creatureSearchQuery},
 		{"gameobject", gameObjectSearchQuery},
+		{"faction", factionSearchQuery},
 	}
 	for _, q := range queries {
 		sql, args := q.build(loc, term)
 		run(q.kind, sql, args)
 	}
 	return out
+}
+
+// ---------------------------------------------------------------------------
+// Factions (reputation)
+// ---------------------------------------------------------------------------
+
+// ContentFaction is one row of `faction`: a reputation faction, the entry the
+// character sheet's reputation pane and every "requires/rewards reputation with"
+// field points at. The name and the description are the localized ones - the
+// table stores English in name1/description1 and the other languages in
+// `locales_faction`.
+type ContentFaction struct {
+	ID             uint32
+	Name           string
+	Description    string
+	TeamMask       uint32 // which races may interact, as the core's FactionEntry.team
+	ReputationList int32  // the list the client groups it under; -1 when it has none
+	Creatures      int    // creature templates whose faction template points here
+	Quests         int    // quests that require or reward this faction
+}
+
+// ContentFactionStanding is one of the faction's four base-reputation slots:
+// characters matching the race and class masks start at Value with these flags.
+type ContentFactionStanding struct {
+	RaceMask  uint32
+	ClassMask uint32
+	Value     int32
+	Flags     uint32
+}
+
+// ContentFactionCreature is one creature template on the faction, with the
+// number of spawn points of the world that use it.
+type ContentFactionCreature struct {
+	Entry  uint32
+	Name   string
+	Spawns int
+}
+
+// ContentFactionFilter narrows a faction list.
+type ContentFactionFilter struct {
+	Search string
+	Limit  int
+	Offset int
+}
+
+// factionWhere is the search box clause, built the way contentSearch builds the
+// others: the row's own column, the translation when there is one, and the id
+// when the term is a number. It is spelled out because faction keeps its
+// localized columns under a different base name (name_loc4 vs name1), so
+// ContentLocale.localized does not fit.
+func factionWhere(loc ContentLocale, term string) (string, []any) {
+	if term == "" {
+		return "", nil
+	}
+	like := "%" + term + "%"
+	parts := []string{"f.name1 LIKE ?"}
+	args := []any{like}
+	if loc != ContentLocaleBase {
+		parts = append(parts, "lf.name_"+string(loc)+" LIKE ?")
+		args = append(args, like)
+	}
+	if entry, err := strconv.ParseUint(term, 10, 32); err == nil {
+		parts = append(parts, "f.id = ?")
+		args = append(args, entry)
+	}
+	return " WHERE (" + strings.Join(parts, " OR ") + ")", args
+}
+
+// factionJoin brings the localized name and description in. It is written out
+// because the two sides do not share a column name: faction keys on `id`,
+// locales_faction on `entry`, which is why ContentLocale.join does not fit.
+func factionJoin(loc ContentLocale) string {
+	if loc == ContentLocaleBase {
+		return ""
+	}
+	return " LEFT JOIN locales_faction lf ON lf.entry = f.id"
+}
+
+// factionNameExpr is the faction's name in the requested language.
+func factionNameExpr(loc ContentLocale) string {
+	if loc == ContentLocaleBase {
+		return "COALESCE(f.name1, '')"
+	}
+	return "COALESCE(lf.name_" + string(loc) + ", f.name1, '')"
+}
+
+// factionDescriptionExpr is the same for the description.
+func factionDescriptionExpr(loc ContentLocale) string {
+	if loc == ContentLocaleBase {
+		return "COALESCE(f.description1, '')"
+	}
+	return "COALESCE(lf.description_" + string(loc) + ", f.description1, '')"
+}
+
+// factionQuestFields lists the reputation fields the core reads on a quest: a
+// minimum or maximum standing, and the five reputation rewards. Anything that
+// compares against a faction id uses this list, so a field the core gains does
+// not silently drop quests from the page.
+func factionQuestFields(alias string) []string {
+	fields := []string{alias + ".RequiredMinRepFaction", alias + ".RequiredMaxRepFaction"}
+	for i := 1; i <= 5; i++ {
+		fields = append(fields, alias+".RewRepFaction"+strconv.Itoa(i))
+	}
+	return fields
+}
+
+// factionQuestCountClause counts the quests naming the faction, for the
+// correlated subquery that sits in a faction row.
+func factionQuestCountClause(alias string) string {
+	parts := make([]string, 0, len(factionQuestFields(alias)))
+	for _, field := range factionQuestFields(alias) {
+		parts = append(parts, field+" = f.id")
+	}
+	return strings.Join(parts, " OR ")
+}
+
+// factionCreatureCountClause counts the creature templates that use a faction
+// template pointing at the faction: the core maps `creature_template.faction`
+// through `faction_template.faction_id` (ObjectMgr::LoadCreatureTemplates).
+func factionCreatureCountClause() string {
+	return "SELECT COUNT(*) FROM creature_template c JOIN faction_template t ON t.id = c.faction" +
+		" WHERE t.faction_id = f.id"
+}
+
+// ContentFactions lists reputation factions, A-Z, with the two counts the list
+// shows.
+func (s *Store) ContentFactions(ctx context.Context, loc ContentLocale, f ContentFactionFilter) ([]ContentFaction, int, error) {
+	where, args := factionWhere(loc, f.Search)
+	join := factionJoin(loc)
+	name := factionNameExpr(loc)
+
+	var total int
+	countQ := "SELECT COUNT(*) FROM faction f" + join + where
+	if err := s.World.QueryRowContext(ctx, countQ, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count factions: %w", err)
+	}
+
+	limit := f.Limit
+	if limit <= 0 || limit > ContentPageSize {
+		limit = ContentPageSize
+	}
+	listQ := "SELECT f.id, " + name + ", f.team, f.reputation_list_id," +
+		" (" + factionCreatureCountClause() + ")," +
+		" (SELECT COUNT(*) FROM quest_template q WHERE " + factionQuestCountClause("q") + ")" +
+		" FROM faction f" + join + where +
+		" ORDER BY " + name + " LIMIT ? OFFSET ?"
+	rows, err := s.World.QueryContext(ctx, listQ, append(args, limit, f.Offset)...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list factions: %w", err)
+	}
+	defer rows.Close()
+
+	var out []ContentFaction
+	for rows.Next() {
+		var c ContentFaction
+		if err := rows.Scan(&c.ID, &c.Name, &c.TeamMask, &c.ReputationList, &c.Creatures, &c.Quests); err != nil {
+			return nil, 0, fmt.Errorf("scan faction: %w", err)
+		}
+		out = append(out, c)
+	}
+	return out, total, rows.Err()
+}
+
+// ContentFaction loads one faction, plus its counts.
+func (s *Store) ContentFaction(ctx context.Context, loc ContentLocale, id uint32) (*ContentFaction, error) {
+	join := factionJoin(loc)
+	q := "SELECT f.id, " + factionNameExpr(loc) + ", " + factionDescriptionExpr(loc) + ", f.team, f.reputation_list_id," +
+		" (" + factionCreatureCountClause() + ")," +
+		" (SELECT COUNT(*) FROM quest_template q WHERE " + factionQuestCountClause("q") + ")" +
+		" FROM faction f" + join + " WHERE f.id = ?"
+	var c ContentFaction
+	err := s.World.QueryRowContext(ctx, q, id).Scan(&c.ID, &c.Name, &c.Description, &c.TeamMask,
+		&c.ReputationList, &c.Creatures, &c.Quests)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("faction %d: %w", id, err)
+	}
+	return &c, nil
+}
+
+// ContentFactionStandings is the faction's four base-reputation slots, in order.
+func (s *Store) ContentFactionStandings(ctx context.Context, id uint32) ([]ContentFactionStanding, error) {
+	var out []ContentFactionStanding
+	for i := 1; i <= 4; i++ {
+		q := "SELECT base_rep_race_mask" + strconv.Itoa(i) + ", base_rep_class_mask" + strconv.Itoa(i) +
+			", base_rep_value" + strconv.Itoa(i) + ", reputation_flags" + strconv.Itoa(i) +
+			" FROM faction WHERE id = ?"
+		var st ContentFactionStanding
+		if err := s.World.QueryRowContext(ctx, q, id).Scan(&st.RaceMask, &st.ClassMask, &st.Value, &st.Flags); err != nil {
+			return nil, fmt.Errorf("faction %d standings: %w", id, err)
+		}
+		if st.RaceMask == 0 && st.ClassMask == 0 && st.Value == 0 {
+			continue // an unused slot
+		}
+		out = append(out, st)
+	}
+	return out, nil
+}
+
+// ContentFactionCreatures lists the creatures on the faction, busiest first -
+// the ones a player meets most while grinding the reputation.
+func (s *Store) ContentFactionCreatures(ctx context.Context, loc ContentLocale, id uint32, limit int) ([]ContentFactionCreature, error) {
+	if limit <= 0 || limit > relationLimit {
+		limit = relationLimit
+	}
+	name := loc.localized("lc", "c", "name")
+	q := "SELECT c.entry, " + name + ", COUNT(cr.guid)" +
+		" FROM creature_template c" +
+		" JOIN faction_template t ON t.id = c.faction" +
+		loc.join("lc", "locales_creature", "entry", "c") +
+		" LEFT JOIN creature cr ON cr.id = c.entry" +
+		" WHERE t.faction_id = ?" +
+		" GROUP BY c.entry, " + name +
+		" ORDER BY COUNT(cr.guid) DESC, " + name + " LIMIT ?"
+	rows, err := s.World.QueryContext(ctx, q, id, limit)
+	if err != nil {
+		return nil, fmt.Errorf("faction %d creatures: %w", id, err)
+	}
+	defer rows.Close()
+
+	var out []ContentFactionCreature
+	for rows.Next() {
+		var c ContentFactionCreature
+		if err := rows.Scan(&c.Entry, &c.Name, &c.Spawns); err != nil {
+			return nil, fmt.Errorf("scan faction creature: %w", err)
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// ContentFactionQuests lists the quests that require or reward this faction.
+func (s *Store) ContentFactionQuests(ctx context.Context, loc ContentLocale, id uint32, limit int) ([]ContentQuestRef, error) {
+	if limit <= 0 || limit > relationLimit {
+		limit = relationLimit
+	}
+	title := loc.localized("lq", "q", "Title")
+	q := "SELECT q.entry, " + title +
+		" FROM quest_template q" + loc.join("lq", "locales_quest", "entry", "q") +
+		" WHERE ? IN (" + strings.Join(factionQuestFields("q"), ", ") + ")" +
+		" ORDER BY " + title + " LIMIT ?"
+	rows, err := s.World.QueryContext(ctx, q, id, limit)
+	if err != nil {
+		return nil, fmt.Errorf("faction %d quests: %w", id, err)
+	}
+	defer rows.Close()
+
+	var out []ContentQuestRef
+	for rows.Next() {
+		var ref ContentQuestRef
+		if err := rows.Scan(&ref.Entry, &ref.Title); err != nil {
+			return nil, fmt.Errorf("scan faction quest: %w", err)
+		}
+		out = append(out, ref)
+	}
+	return out, rows.Err()
+}
+
+// factionSearchQuery is the faction group of the unified search.
+func factionSearchQuery(loc ContentLocale, term string) (string, []any) {
+	where, args := factionWhere(loc, term)
+	name := factionNameExpr(loc)
+	join := factionJoin(loc)
+	subtitle := "''"
+	if loc != ContentLocaleBase {
+		subtitle = "COALESCE(lf.description_" + string(loc) + ", '')"
+	} else {
+		subtitle = "COALESCE(f.description1, '')"
+	}
+	return "SELECT f.id, " + name + ", LEFT(" + subtitle + ", 60) FROM faction f" + join + where +
+		" ORDER BY " + name + " LIMIT " + strconv.Itoa(contentSearchLimit), args
 }
 
 // ---------------------------------------------------------------------------

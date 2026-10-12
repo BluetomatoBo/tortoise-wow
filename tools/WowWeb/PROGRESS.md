@@ -774,6 +774,39 @@ node 24 (4930,-3026) → 25 (5149,-3128) → 26 (5276,-3274) 正是那 16 个哨
   两页各自 200、各自的地图图（kalimdor.png / azeroth.png）与内容；`/db/zones/0` → **404**；
   `/db/zones/17` 仍是「贫瘠之地 #17」；搜索里再没有 `/db/zones/0`。
 
+## 第十九轮：阵营页（`/db/factions`）
+
+数据来自服务端自己的两张表：`faction`（204 行：id、`reputation_list_id`、四个「基础声望」槽、
+`team`、`name1`/`description1`）与 `locales_faction`（`name_loc4`/`description_loc4` 是中文，
+与站内其它表同一套 locale 约定）。关联内容靠两条链：
+
+* **生物**：`creature_template.faction` 是「阵营模板」id，要经 `faction_template.faction_id` 才落到
+  声望阵营（内核 `ObjectMgr::LoadCreatureTemplates` 就是这么读的）→ 暴风城 1001 个生物模板；
+  列表里的「刷新点」是再 join `creature` 数出来的（暴风城卫兵 64 个）。
+* **任务**：`quest_template` 的七个声望字段 —— `RequiredMinRepFaction`、`RequiredMaxRepFaction`
+  与 `RewRepFaction1..5`。七个字段由 `factionQuestFields()` 统一列出：相关子查询写 `= f.id`，
+  普通查询写 `? IN (...)`，漏一个都会悄悄少任务。
+
+- 页面：`/db/factions`（按名字排序、可搜中文名/英文名/id、25 行一页）+ `/db/factions/{id}`
+  （本地化名字与描述 + 声望数据卡（team 掩码 / 声望列表 / 两个计数）+ 基础声望四槽 +
+  「属于这个阵营的生物」（按刷新点降序，前 25）+ 「要求或奖励这个阵营声望的任务」（前 100））。
+- 首页加第 7 张卡（阵营 204）；统一搜索加第六类 `faction`（`dbKindPath("faction") = "/db/factions"`）。
+- **两处只有跑起来才暴露的坑**（都已修）：
+  1. `ContentLocale.join()` 用同一个列名拼两侧，而这两张表的主键不同名（`faction.id` vs
+     `locales_faction.entry`）→ `Unknown column 'f.entry'`；改成显式的 `factionJoin(loc)`。
+  2. `reputation_list_id` 是**有符号**列，值里有 **-1** → 按 `uint32` 扫会报错；改成 `int32`，
+     并注明 -1 = 没有列表。其余列按建表文档对齐（`team`/`race_mask`/`class_mask` 无符号、`Value` 有符号）。
+- 测试：store 侧 `TestFactionSearchClause`（空/基名/中文名/id 数值四种 clause 与参数）、
+  `TestFactionColumnPairs`（`name1` ↔ `name_loc4` 这对不同名的列）、
+  `TestFactionQuestClauseNamesEveryField`（七个字段一个不漏 + 两种写法）；
+  web 侧 render fixture 加 `db_factions`（含空名字行）与 `db_faction`（完整行 + 只有名字的行），
+  routes 加 `/db/factions` 与 `/db/factions/72`。
+- 端到端（真库只读，跑完已停进程、零错误日志）：列表 204 行分 9 页（25/…/最后 4）；
+  `?q=暴风` → 暴风城 1001/459；`/db/factions/72` → 暴风城 + 中文描述 + team 469 + 声望列表 19 +
+  基础声望（种族掩码 588 / 值 3100 / 标志 17）+ 生物 top（暴风城卫兵 64、北风守卫 45）+ 任务段；
+  英文页同一页读 `Stormwind` + 英文描述；`/db/factions/1`（描述为空）不渲染描述卡；
+  统一搜索 `Stormwind` → 阵营 / 暴风城 / `/db/factions/72`；未知 id → 404。
+
 ## 附：2026-10-11 服务端登录崩溃（与本项目无关，但同属这个仓库）
 
 用户报服务端每次玩家登录 SIGSEGV，栈顶是 `Player::RecallPvPGear()`。根因是 2026-10-08 那次

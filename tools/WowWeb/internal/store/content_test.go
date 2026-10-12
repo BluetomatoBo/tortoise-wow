@@ -435,3 +435,73 @@ func TestSpellCollectNumbersTheEffectSlots(t *testing.T) {
 		t.Errorf("first effect = %+v", sp.Effects[0])
 	}
 }
+
+// TestFactionSearchClause pins the faction search the same way the item one is
+// pinned: faction is the one table whose localized column does not carry the
+// same base name as the table's own (name_loc4 against name1), so the pair is
+// spelled out and a slip here would only show up at runtime.
+func TestFactionSearchClause(t *testing.T) {
+	if clause, args := factionWhere(ContentLocaleZH, ""); clause != "" || args != nil {
+		t.Errorf("empty search built %q with %v, want nothing", clause, args)
+	}
+
+	clause, args := factionWhere(ContentLocaleBase, "storm")
+	if clause != " WHERE (f.name1 LIKE ?)" {
+		t.Errorf("base clause = %q", clause)
+	}
+	if len(args) != 1 || args[0] != "%storm%" {
+		t.Errorf("base args = %v, want one %%%%storm%%%%", args)
+	}
+
+	clause, args = factionWhere(ContentLocaleZH, "暴风")
+	if clause != " WHERE (f.name1 LIKE ? OR lf.name_loc4 LIKE ?)" {
+		t.Errorf("zh clause = %q", clause)
+	}
+	if len(args) != 2 || args[1] != "%暴风%" {
+		t.Errorf("zh args = %v", args)
+	}
+
+	// A numeric term also matches the id, which is how players paste one.
+	clause, args = factionWhere(ContentLocaleBase, "72")
+	if clause != " WHERE (f.name1 LIKE ? OR f.id = ?)" {
+		t.Errorf("numeric clause = %q", clause)
+	}
+	if len(args) != 2 || args[1] != uint64(72) {
+		t.Errorf("numeric args = %v, want a uint64 id", args)
+	}
+}
+
+// TestFactionColumnPairs pins the two expressions the faction queries build from
+// one language: the table's own column is name1/description1 and the translation
+// lives under name_locN/description_locN.
+func TestFactionColumnPairs(t *testing.T) {
+	if got := factionNameExpr(ContentLocaleBase); got != "COALESCE(f.name1, '')" {
+		t.Errorf("base name expr = %q", got)
+	}
+	if got := factionNameExpr(ContentLocaleZH); got != "COALESCE(lf.name_loc4, f.name1, '')" {
+		t.Errorf("zh name expr = %q", got)
+	}
+	if got := factionDescriptionExpr(ContentLocaleZH); got != "COALESCE(lf.description_loc4, f.description1, '')" {
+		t.Errorf("zh description expr = %q", got)
+	}
+}
+
+// TestFactionQuestClauseNamesEveryField guards the list of reputation fields the
+// core reads on a quest: missing one would silently hide quests that still
+// require or reward the faction.
+func TestFactionQuestClauseNamesEveryField(t *testing.T) {
+	want := []string{"q.RequiredMinRepFaction", "q.RequiredMaxRepFaction",
+		"q.RewRepFaction1", "q.RewRepFaction2", "q.RewRepFaction3", "q.RewRepFaction4", "q.RewRepFaction5"}
+	fields := factionQuestFields("q")
+	if len(fields) != len(want) {
+		t.Fatalf("fields = %v, want %d", fields, len(want))
+	}
+	for i, field := range want {
+		if fields[i] != field {
+			t.Errorf("field %d = %q, want %q", i, fields[i], field)
+		}
+		if !strings.Contains(factionQuestCountClause("q"), field+" = f.id") {
+			t.Errorf("correlated clause misses %s: %s", field, factionQuestCountClause("q"))
+		}
+	}
+}

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -308,6 +309,8 @@ func dbKindPath(kind string) string {
 		return "/db/objects"
 	case "zone":
 		return "/db/zones"
+	case "faction":
+		return "/db/factions"
 	default:
 		return "/db/npcs"
 	}
@@ -1080,6 +1083,106 @@ func (s *Server) handleDBObject(w http.ResponseWriter, r *http.Request, page *Pa
 		Stats:              stats,
 		LootID:             lootID,
 		DataFields:         nonZeroDataFields(*object),
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Factions
+// ---------------------------------------------------------------------------
+
+type dbFactionsView struct {
+	PageData
+	Factions []store.ContentFaction
+
+	Search      string
+	Total       int
+	Page        int
+	Pages       int
+	QueryString template.URL
+}
+
+func (s *Server) handleDBFactions(w http.ResponseWriter, r *http.Request, page *PageData) {
+	q := r.URL.Query()
+	filter := store.ContentFactionFilter{
+		Search: strings.TrimSpace(q.Get("q")),
+		Limit:  store.ContentPageSize,
+	}
+	pageNum := dbPageNum(q)
+	filter.Offset = (pageNum - 1) * store.ContentPageSize
+
+	factions, total, err := s.store.ContentFactions(r.Context(), dbLocale(page), filter)
+	if err != nil {
+		s.serverError(w, r, "list factions", err)
+		return
+	}
+
+	page.Title = page.T("db.factions.title")
+	page.Active = "db"
+	s.rend.Render(w, http.StatusOK, "db_factions", dbFactionsView{
+		PageData:    *page,
+		Factions:    factions,
+		Search:      filter.Search,
+		Total:       total,
+		Page:        pageNum,
+		Pages:       pages(total, store.ContentPageSize),
+		QueryString: baseQuery(r),
+	})
+}
+
+type dbFactionView struct {
+	PageData
+	Faction store.ContentFaction
+
+	// Standings are the four base-reputation slots: who starts where.
+	Standings []store.ContentFactionStanding
+	// Creatures are the creatures on the faction, busiest first.
+	Creatures []store.ContentFactionCreature
+	// Quests require or reward reputation with it.
+	Quests []store.ContentQuestRef
+}
+
+func (s *Server) handleDBFaction(w http.ResponseWriter, r *http.Request, page *PageData) {
+	entry, ok := s.parseUintPath(r, "entry")
+	if !ok {
+		s.notFound(w, r)
+		return
+	}
+
+	loc := dbLocale(page)
+	faction, err := s.store.ContentFaction(r.Context(), loc, entry)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			s.notFound(w, r)
+			return
+		}
+		s.serverError(w, r, "load faction", err)
+		return
+	}
+
+	standings, err := s.store.ContentFactionStandings(r.Context(), entry)
+	if err != nil {
+		s.serverError(w, r, "load faction standings", err)
+		return
+	}
+	creatures, err := s.store.ContentFactionCreatures(r.Context(), loc, entry, 25)
+	if err != nil {
+		s.serverError(w, r, "load faction creatures", err)
+		return
+	}
+	quests, err := s.store.ContentFactionQuests(r.Context(), loc, entry, 100)
+	if err != nil {
+		s.serverError(w, r, "load faction quests", err)
+		return
+	}
+
+	page.Title = faction.Name
+	page.Active = "db"
+	s.rend.Render(w, http.StatusOK, "db_faction", dbFactionView{
+		PageData:  *page,
+		Faction:   *faction,
+		Standings: standings,
+		Creatures: creatures,
+		Quests:    quests,
 	})
 }
 

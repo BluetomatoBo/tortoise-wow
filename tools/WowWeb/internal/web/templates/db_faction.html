@@ -1,0 +1,85 @@
+{{define "content"}}
+<div class="pagehead">
+  <h1>{{if .Faction.Name}}{{.Faction.Name}}{{else}}{{.Faction.ID}}{{end}} <span class="muted">#{{.Faction.ID}}</span></h1>
+  <a class="btn btn-ghost" href="/db/factions">{{.T "db.factions.title"}}</a>
+</div>
+
+{{if .Faction.Description}}
+<section class="card">
+  <p class="lead">{{.Faction.Description}}</p>
+</section>
+{{end}}
+
+<section class="card">
+  <h2>{{.T "db.faction.data"}}</h2>
+  <table class="table">
+    <tbody>
+      <tr><th>{{.T "db.faction.team"}}</th><td><code>{{.Faction.TeamMask}}</code></td></tr>
+      <tr><th>{{.T "db.faction.reputationList"}}</th><td><code>{{.Faction.ReputationList}}</code></td></tr>
+      <tr><th>{{.T "db.faction.creatures"}}</th><td><a href="/db/npcs">{{.Faction.Creatures}}</a></td></tr>
+      <tr><th>{{.T "db.faction.quests"}}</th><td><a href="/db/quests">{{.Faction.Quests}}</a></td></tr>
+    </tbody>
+  </table>
+
+  {{if .Standings}}
+  <h2>{{.T "db.faction.standings"}}</h2>
+  <p class="hint">{{.T "db.faction.standingsHint"}}</p>
+  <table class="table">
+    <thead>
+      <tr>
+        <th class="right">{{.T "db.faction.raceMask"}}</th>
+        <th class="right">{{.T "db.faction.classMask"}}</th>
+        <th class="right">{{.T "db.faction.baseValue"}}</th>
+        <th class="right">{{.T "db.faction.flags"}}</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Standings}}
+      <tr>
+        <td class="right"><code>{{.RaceMask}}</code></td>
+        <td class="right"><code>{{.ClassMask}}</code></td>
+        <td class="right">{{.Value}}</td>
+        <td class="right"><code>{{.Flags}}</code></td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{end}}
+</section>
+
+{{if .Creatures}}
+<section class="card">
+  <h2>{{.T "db.faction.creatureList"}}</h2>
+  <table class="table">
+    <thead><tr><th>{{.T "db.entry"}}</th><th>{{.T "db.name"}}</th><th class="right">{{.T "db.faction.spawnCount"}}</th></tr></thead>
+    <tbody>
+    {{range .Creatures}}
+      <tr>
+        <td><code>{{.Entry}}</code></td>
+        <td><a href="/db/npcs/{{.Entry}}">{{if .Name}}{{.Name}}{{else}}{{.Entry}}{{end}}</a></td>
+        <td class="right">{{.Spawns}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+{{end}}
+
+{{if .Quests}}
+<section class="card">
+  <h2>{{.T "db.faction.questList"}}</h2>
+  <table class="table">
+    <thead><tr><th>{{.T "db.entry"}}</th><th>{{.T "db.name"}}</th></tr></thead>
+    <tbody>
+    {{range .Quests}}
+      <tr>
+        <td><code>{{.Entry}}</code></td>
+        <td><a href="/db/quests/{{.Entry}}">{{if .Title}}{{.Title}}{{else}}{{.Entry}}{{end}}</a></td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  <p class="hint">{{.T "db.faction.questsHint"}}</p>
+</section>
+{{end}}
+{{end}}

@@ -430,6 +430,23 @@ func TestTemplatesParse(t *testing.T) {
 				{Dir: "kalimdor", Area: 0, Path: "/db/zones/kalimdor", Name: "卡利姆多",
 					Stats: zoneContent{Dir: "kalimdor", Creatures: 36, Objects: 91}},
 			}}},
+		{"db_factions", dbFactionsView{
+			PageData: page, Search: "storm", Total: 2, Page: 1, Pages: 1, QueryString: "q=storm&",
+			Factions: []store.ContentFaction{
+				{ID: 72, Name: "暴风城", Description: "人类的堡垒", TeamMask: 469, ReputationList: 19,
+					Creatures: 1001, Quests: 459},
+				{ID: 0, Name: "", Creatures: 0, Quests: 0},
+			}}},
+		{"db_faction", dbFactionView{
+			PageData: page,
+			Faction: store.ContentFaction{ID: 72, Name: "暴风城", Description: "人类的堡垒",
+				TeamMask: 469, ReputationList: 19, Creatures: 1001, Quests: 459},
+			Standings: []store.ContentFactionStanding{{RaceMask: 588, ClassMask: 0, Value: 3100, Flags: 17}},
+			Creatures: []store.ContentFactionCreature{{Entry: 68, Name: "暴风城卫兵", Spawns: 64}},
+			Quests:    []store.ContentQuestRef{{Entry: 1, Title: "任务"}},
+		}},
+		{"db_faction", dbFactionView{PageData: page,
+			Faction: store.ContentFaction{ID: 9, Name: "无名阵营"}}},
 		{"db_zones", dbZonesView{PageData: page, Total: 0, Page: 1, Pages: 1}},
 		{"db_zone", dbZoneView{
 			PageData: page, Area: 1519, Name: "暴风城", Image: "/assets/maps/stormwind.png",
