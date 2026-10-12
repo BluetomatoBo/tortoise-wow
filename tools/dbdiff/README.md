@@ -856,3 +856,25 @@ SELECT c.entry, c.name, c.spell_list_id FROM creature_template c
 * 生成文件与更新包（不进仓库）：`~/Desktop/tw-dbc-1.18.1/`
   —— `SpellCategory.dbc`（188 行，最大 1176）、`check_server_dbc.sh`（服务器上只读体检）、
   `client-reference-sha256.txt`（43 个文件的参考哈希）、`README.md`（换法/回滚/判读规矩）。
+
+### 5. 服务器实测收口（2026-10-12）
+
+在 server6 上跑 `check_server_dbc.sh` / `inspect_dbc.sh` 的结果：
+
+* 43 个文件里 **33 个与客户端参考 sha256 相同**，`SpellCategory.dbc` 已换成生成版（1525 字节）；
+* 另 **10 个「不一致」的，服务器那份全都更大**（`inspect_dbc.sh` 给出行数/最大 id）：
+  SpellCastTimes 52 行/max 191（客户端 50/171）、SpellDuration 86/557（70/427）、
+  DurabilityCosts 300/300（100/100）、Emotes 124/428（73/333）、EmotesText 171/366（166/329）、
+  NamesProfanity 1538/6382（943/5153）、NamesReserved 2288/5628（1556/4610）、
+  SkillRaceClassInfo 204/1009（199/862）、SkillTiers 26/223（25/222）、StableSlotPrices 4/4（2/2）。
+  其中 `SpellCastTimes` 的 191 ≥ 数据用到的 190、`SpellDuration` 的 557 = 数据用到的 557
+  —— 换成客户端那两份（171/427）会**盖不住**数据 → **这 10 个一律不动**。
+
+**因此结论修正为**：服务端 DataDir 里这套 DBC 是**为服务端扩过的版本**（客户端那份更小），
+「从客户端刷新 DBC」不仅修不了 spellcategory，还会让 `castingTimeIndex`/`durationIndex` 的
+解析范围倒退。需要动的只有 `SpellCategory.dbc` 一个（按数据生成，见上）。
+
+**语言（locale）说明**：线上是从**纯英文客户端**解出来的，而参考件取自客户端清单（英欧镜像）
+—— 带文字的表（ChrRaces/SkillLine/ItemSet/TalentTab/SpellShapeshiftForm…）与线上 **sha256 完全相同**，
+说明两边同为 enUS。生成的 `SpellCategory.dbc` 只有 `id + flags` 两个数字字段（字符串块 1 字节），
+**与语言无关**。
