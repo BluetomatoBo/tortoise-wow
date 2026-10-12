@@ -1025,6 +1025,20 @@ python3 tools/dbdiff/verify_cmangos_desc_fill.py \
     --report /tmp/cmangos_desc_fill.tsv --sql /tmp/cmangos_desc_revert.sql
 ```
 
+### 应用记录（2026-10-12）
+
+已在线上库执行 `sql/wip_updates/locales_item_desc_fixes.sql`：
+
+| 指标 | 前 | 后 |
+|---|---|---|
+| `locales_item` 带中文说明的行 | 3867 | **3414** |
+| 其中谈插槽的说明 | 108 | **0** |
+| 复核器判定要撤的 | 453 | **0**（keep 3413，剩下每条都过了身份判据） |
+
+内核 `ObjectMgr::LoadItemLocales`（`src/game/ObjectMgr.cpp:2636`）把空串当作「没有译文」，
+所以撤成空串＝回落英文（这批的英文本来也是空）→ 与英文客户端一致；
+Web 侧 `db_item.html` 只在说明非空时才渲染那一行 → 中英两版都不再显示说明。
+
 ### 没动的
 
 * **上游 base 自带的 2089 条中文说明**（含 798 条「教你学会…」配方说明）：那是官方本地化
