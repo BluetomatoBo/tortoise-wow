@@ -122,6 +122,8 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /db/npcs/{entry}", s.public(s.handleDBCreature))
 	s.mux.HandleFunc("GET /db/objects", s.public(s.handleDBObjects))
 	s.mux.HandleFunc("GET /db/objects/{entry}", s.public(s.handleDBObject))
+	s.mux.HandleFunc("GET /db/sets", s.public(s.handleDBSets))
+	s.mux.HandleFunc("GET /db/sets/{entry}", s.public(s.handleDBSet))
 	s.mux.HandleFunc("GET /db/factions", s.public(s.handleDBFactions))
 	s.mux.HandleFunc("GET /db/factions/{entry}", s.public(s.handleDBFaction))
 	s.mux.HandleFunc("GET /db/zones", s.public(s.handleDBZones))

@@ -430,6 +430,19 @@ func TestTemplatesParse(t *testing.T) {
 				{Dir: "kalimdor", Area: 0, Path: "/db/zones/kalimdor", Name: "卡利姆多",
 					Stats: zoneContent{Dir: "kalimdor", Creatures: 36, Objects: 91}},
 			}}},
+		{"db_sets", dbSetsView{
+			PageData: page, Search: "dal", Total: 2, Page: 1, Pages: 1, QueryString: "q=dal&",
+			Sets: []dbSetRow{
+				{ID: 41, Name: "雷德双刀", Pieces: 2, Client: 2, Bonuses: 2},
+				{ID: 0, Name: "", Pieces: 0, Client: 0, Bonuses: 0},
+			}}},
+		{"db_set", dbSetView{
+			PageData: page, ID: 41, Name: "雷德双刀",
+			Pieces:  []store.ContentItemCount{{Entry: 12583, Name: "雷德的巨刃", DisplayID: 1234}},
+			Bonuses: []SetBonus{{Pieces: 2, SpellID: 133, Name: "火球术"}},
+		}},
+		{"db_set", dbSetView{PageData: page, ID: 5, Name: "", FromClient: true,
+			Pieces: []store.ContentItemCount{{Entry: 1, Name: ""}}}},
 		{"db_factions", dbFactionsView{
 			PageData: page, Search: "storm", Total: 2, Page: 1, Pages: 1, QueryString: "q=storm&",
 			Factions: []store.ContentFaction{

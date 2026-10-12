@@ -2,11 +2,13 @@ package web
 
 import (
 	_ "embed"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 
 	"tortoiseweb/internal/i18n"
+	"tortoiseweb/internal/store"
 )
 
 // Names for the ids the database stores where a player expects a word: a quest's
@@ -197,6 +199,93 @@ type SetBonus struct {
 	SpellID uint32
 	Name    string
 }
+
+// itemSetKnown reports whether the client's ItemSet.dbc knows this id, so a page
+// can 404 an id that names nothing.
+func itemSetKnown(id uint32) (string, bool) {
+	if _, ok := itemSetNames[id]; ok {
+		return "name", true
+	}
+	if _, ok := setItems[id]; ok {
+		return "pieces", true
+	}
+	if _, ok := setBonuses[id]; ok {
+		return "bonus", true
+	}
+	return "", false
+}
+
+// ItemSetIDs is every set the client's ItemSet.dbc carries, in id order: the
+// named sets plus any set that only lists pieces or bonuses. It is the list the
+// sets browser walks.
+func ItemSetIDs() []uint32 {
+	seen := make(map[uint32]bool, len(itemSetNames)+len(setItems)+len(setBonuses))
+	for id := range itemSetNames {
+		seen[id] = true
+	}
+	for id := range setItems {
+		seen[id] = true
+	}
+	for id := range setBonuses {
+		seen[id] = true
+	}
+	ids := make([]uint32, 0, len(seen))
+	for id := range seen {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	return ids
+}
+
+// SearchSets is the set group of the unified search: sets whose name in the
+// page's language contains term, plus an exact id hit, A-Z by the shown name -
+// the order the set list uses.
+//
+// Like the zones it runs here rather than in the store: a set lives in the
+// client's ItemSet.dbc, not in a table, and filtering by the name the page shows
+// is what keeps every hit clickable.
+func SearchSets(page *PageData, term string) []store.ContentSearchResult {
+	needle := strings.ToLower(strings.TrimSpace(term))
+	if needle == "" {
+		return nil
+	}
+	var exact uint32
+	if id, err := strconv.ParseUint(strings.TrimSpace(term), 10, 32); err == nil {
+		exact = uint32(id)
+	}
+
+	type hit struct {
+		id   uint32
+		name string
+	}
+	var hits []hit
+	for _, id := range ItemSetIDs() {
+		name := page.ItemSetName(id)
+		if name == "" {
+			continue
+		}
+		if id != exact && !strings.Contains(strings.ToLower(name), needle) {
+			continue
+		}
+		hits = append(hits, hit{id, name})
+	}
+	sort.Slice(hits, func(i, j int) bool { return hits[i].name < hits[j].name })
+
+	limit := len(hits)
+	if limit > setSearchLimit {
+		limit = setSearchLimit
+	}
+	out := make([]store.ContentSearchResult, 0, limit)
+	for _, h := range hits[:limit] {
+		out = append(out, store.ContentSearchResult{Kind: "set", Entry: h.id, Name: h.name,
+			Subtitle: fmt.Sprintf("%d %s", len(page.SetPieces(h.id)), page.T("db.set.pieces"))})
+	}
+	return out
+}
+
+// setSearchLimit caps the set group of the unified search, the way
+// store.contentSearchLimit caps each table it asks.
+const setSearchLimit = 10
 
 // SetPieces is the client's own list of what is in a set, used when the server's
 // item templates point at a set id but no item carries it.

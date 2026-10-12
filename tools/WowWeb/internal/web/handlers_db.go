@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -272,6 +273,8 @@ type dbHomeView struct {
 	Counts store.ContentCounts
 	// ZoneCount is how many zones have a map of their own with something on it.
 	ZoneCount int
+	// SetCount is how many item sets the client's ItemSet.dbc carries.
+	SetCount int
 	// Query is what the shared search box shows in its input.
 	Query string
 }
@@ -283,6 +286,7 @@ func (s *Server) handleDBHome(w http.ResponseWriter, r *http.Request, page *Page
 		PageData:  *page,
 		Counts:    s.store.ContentCountsFor(r.Context()),
 		ZoneCount: len(ZoneDirs()),
+		SetCount:  len(ItemSetIDs()),
 	})
 }
 
@@ -311,6 +315,8 @@ func dbKindPath(kind string) string {
 		return "/db/zones"
 	case "faction":
 		return "/db/factions"
+	case "set":
+		return "/db/sets"
 	default:
 		return "/db/npcs"
 	}
@@ -323,6 +329,7 @@ func (s *Server) handleDBSearch(w http.ResponseWriter, r *http.Request, page *Pa
 	// they come from the generated zone table rather than the database.
 	results := s.store.ContentSearch(r.Context(), dbLocale(page), term)
 	results = append(results, SearchZones(page, term)...)
+	results = append(results, SearchSets(page, term)...)
 
 	page.Title = page.T("db.search.title")
 	page.Active = "db"
@@ -1183,6 +1190,167 @@ func (s *Server) handleDBFaction(w http.ResponseWriter, r *http.Request, page *P
 		Standings: standings,
 		Creatures: creatures,
 		Quests:    quests,
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Item sets
+// ---------------------------------------------------------------------------
+
+// dbSetRow is one line of the set list. The pieces the server's items carry and
+// the pieces the client lists can differ - a realm may not have imported every
+// piece - so both counts are carried.
+type dbSetRow struct {
+	ID      uint32
+	Name    string
+	Pieces  int // item templates in this database that carry the set
+	Client  int // pieces the client's ItemSet.dbc lists
+	Bonuses int
+}
+
+type dbSetsView struct {
+	PageData
+	Sets []dbSetRow
+
+	Search      string
+	Total       int
+	Page        int
+	Pages       int
+	QueryString template.URL
+}
+
+func (s *Server) handleDBSets(w http.ResponseWriter, r *http.Request, page *PageData) {
+	term := strings.TrimSpace(r.URL.Query().Get("q"))
+	needle := strings.ToLower(term)
+
+	counts, err := s.store.SetPieceCounts(r.Context())
+	if err != nil {
+		s.serverError(w, r, "count set pieces", err)
+		return
+	}
+
+	var exact uint32
+	if id, err := strconv.ParseUint(term, 10, 32); err == nil {
+		exact = uint32(id)
+	}
+
+	rows := make([]dbSetRow, 0, len(ItemSetIDs()))
+	for _, id := range ItemSetIDs() {
+		name := page.ItemSetName(id)
+		if term != "" && id != exact && !strings.Contains(strings.ToLower(name), needle) {
+			continue
+		}
+		rows = append(rows, dbSetRow{
+			ID:      id,
+			Name:    name,
+			Pieces:  counts[id],
+			Client:  len(page.SetPieces(id)),
+			Bonuses: len(page.SetBonuses(id)),
+		})
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		if rows[i].Name != rows[j].Name {
+			return rows[i].Name < rows[j].Name
+		}
+		return rows[i].ID < rows[j].ID
+	})
+
+	total := len(rows)
+	pageNum := dbPageNum(r.URL.Query())
+	start := (pageNum - 1) * store.ContentPageSize
+	if start >= total {
+		pageNum = 1
+		start = 0
+	}
+	end := start + store.ContentPageSize
+	if end > total {
+		end = total
+	}
+
+	page.Title = page.T("db.sets.title")
+	page.Active = "db"
+	s.rend.Render(w, http.StatusOK, "db_sets", dbSetsView{
+		PageData:    *page,
+		Sets:        rows[start:end],
+		Search:      term,
+		Total:       total,
+		Page:        pageNum,
+		Pages:       pages(total, store.ContentPageSize),
+		QueryString: baseQuery(r),
+	})
+}
+
+type dbSetView struct {
+	PageData
+	ID      uint32
+	Name    string
+	Pieces  []store.ContentItemCount
+	Bonuses []SetBonus
+	// FromClient is true when no item template in this database carries the set,
+	// so the piece list had to come from the client's ItemSet.dbc.
+	FromClient bool
+}
+
+func (s *Server) handleDBSet(w http.ResponseWriter, r *http.Request, page *PageData) {
+	entry, ok := s.parseUintPath(r, "entry")
+	if !ok {
+		s.notFound(w, r)
+		return
+	}
+	if _, known := itemSetKnown(entry); !known {
+		s.notFound(w, r)
+		return
+	}
+
+	loc := dbLocale(page)
+	pieces, err := s.store.ItemsInSet(r.Context(), loc, entry)
+	if err != nil {
+		s.serverError(w, r, "load set pieces", err)
+		return
+	}
+	fromClient := false
+	if len(pieces) == 0 {
+		// The set is only in the client's data: look its pieces up so the page
+		// still shows them.
+		ids := page.SetPieces(entry)
+		briefs, err := s.store.ItemBriefs(r.Context(), loc, ids)
+		if err != nil {
+			s.serverError(w, r, "load set pieces", err)
+			return
+		}
+		for _, id := range ids {
+			pieces = append(pieces, store.ContentItemCount{Entry: id, Count: 1,
+				Name: briefs[id].Name, DisplayID: briefs[id].DisplayID})
+		}
+		fromClient = true
+	}
+
+	bonuses := page.SetBonuses(entry)
+	if len(bonuses) > 0 {
+		ids := make([]uint32, 0, len(bonuses))
+		for _, b := range bonuses {
+			ids = append(ids, b.SpellID)
+		}
+		names, err := s.store.SpellNames(r.Context(), loc, ids)
+		if err != nil {
+			s.serverError(w, r, "load set bonus names", err)
+			return
+		}
+		for i := range bonuses {
+			bonuses[i].Name = names[bonuses[i].SpellID]
+		}
+	}
+
+	name := page.ItemSetName(entry)
+	page.Title = name
+	page.Active = "db"
+	s.rend.Render(w, http.StatusOK, "db_set", dbSetView{
+		PageData:   *page,
+		ID:         entry,
+		Name:       name,
+		Pieces:     pieces,
+		Bonuses:    bonuses,
+		FromClient: fromClient,
 	})
 }
 

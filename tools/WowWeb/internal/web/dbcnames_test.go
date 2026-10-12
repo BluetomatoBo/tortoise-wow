@@ -258,3 +258,68 @@ func TestSetDataLoads(t *testing.T) {
 		t.Errorf("unknown set returned %d bonuses", len(bonuses))
 	}
 }
+
+// TestItemSetIDsCoverTheClientTable pins the list the set browser walks: it is
+// built from three sections of the generated table (names, pieces, bonuses), so
+// a set that only appears in one of them must still be listed, in id order.
+func TestItemSetIDsCoverTheClientTable(t *testing.T) {
+	ids := ItemSetIDs()
+	if len(ids) < 100 {
+		t.Fatalf("ItemSetIDs() = %d ids, want the client's full table", len(ids))
+	}
+	for i := 1; i < len(ids); i++ {
+		if ids[i-1] >= ids[i] {
+			t.Fatalf("ids not strictly increasing at %d: %d then %d", i, ids[i-1], ids[i])
+		}
+	}
+
+	zh := namePage(t, i18n.ZH)
+	seen := map[uint32]bool{}
+	for _, id := range ids {
+		if seen[id] {
+			t.Fatalf("id %d listed twice", id)
+		}
+		seen[id] = true
+	}
+	// 41 is Dal'Rend's Arms, the set the fixtures use; it has a name in both
+	// languages, so the browser can show it either way.
+	if _, ok := seen[41]; !ok {
+		t.Error("id 41 missing from the list")
+	}
+	if got := zh.ItemSetName(41); got == "" || got == "#41" {
+		t.Errorf("ItemSetName(41) = %q", got)
+	}
+}
+
+// TestSearchSetsFindsByNameAndID pins the set group of the unified search.
+func TestSearchSetsFindsByNameAndID(t *testing.T) {
+	zh := namePage(t, i18n.ZH)
+
+	hits := SearchSets(&zh, "雷德")
+	if len(hits) == 0 {
+		t.Fatal(`SearchSets(zh, 雷德) found nothing`)
+	}
+	found := false
+	for _, h := range hits {
+		if h.Kind != "set" || h.Entry == 0 || h.Name == "" {
+			t.Errorf("hit = %+v", h)
+		}
+		if h.Entry == 41 {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("雷德 did not find set 41: %+v", hits)
+	}
+
+	// A numeric term finds the set by id even when the name is in another
+	// language, which is how players paste an id.
+	byID := SearchSets(&zh, "41")
+	if len(byID) == 0 || byID[0].Entry != 41 {
+		t.Errorf(`SearchSets(zh, "41") = %+v`, byID)
+	}
+
+	if hits := SearchSets(&zh, "   "); hits != nil {
+		t.Errorf("blank term = %+v, want nothing", hits)
+	}
+}

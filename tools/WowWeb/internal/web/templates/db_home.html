@@ -44,6 +44,12 @@
     <a class="btn" href="/db/zones">{{.T "db.browse"}}</a>
   </section>
   <section class="card">
+    <h2>{{.T "db.sets.title"}}</h2>
+    <p class="stat">{{.SetCount}}</p>
+    <p class="muted">{{.T "db.sets.hint"}}</p>
+    <a class="btn" href="/db/sets">{{.T "db.browse"}}</a>
+  </section>
+  <section class="card">
     <h2>{{.T "db.factions.title"}}</h2>
     <p class="stat">{{.Counts.Factions}}</p>
     <p class="muted">{{.T "db.factions.hint"}}</p>

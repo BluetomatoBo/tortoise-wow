@@ -807,6 +807,32 @@ node 24 (4930,-3026) → 25 (5149,-3128) → 26 (5276,-3274) 正是那 16 个哨
   英文页同一页读 `Stormwind` + 英文描述；`/db/factions/1`（描述为空）不渲染描述卡；
   统一搜索 `Stormwind` → 阵营 / 暴风城 / `/db/factions/72`；未知 id → 404。
 
+## 第二十轮：物品套装页（`/db/sets`）
+
+套装的数据都在**客户端** `ItemSet.dbc` 里 —— 服务端的 `item_template` 只存每件物品属于哪个套装
+（`set_id`），而名字、部件清单、件数奖励都来自 DBC。`gen_dbc_names.py` 早就把这三段写进了
+`dbcnames.txt`（`ITEMSET` / `SETITEM` / `SETBONUS`），所以这一轮基本是在已有数据上加浏览器：
+
+- `dbcnames.go`：新增 `ItemSetIDs()`（三段的并集、id 升序，359 个）与 `itemSetKnown()`；
+  新增 `SearchSets(page, term)` —— 与 `SearchZones` 同理放在 web 层（不是 store），
+  按页面语言里显示的名字过滤（外加 id 精确命中），命中项一定能点开。
+- `store.SetPieceCounts()`：一条 `GROUP BY set_id` 拿到「每个套装在本库里有多少件物品」，
+  避免按套装逐个查。
+- 页面：`/db/sets`（按名字排序、可搜名字/id、25 行一页；四列：件数/客户端件数/奖励数）
+  + `/db/sets/{id}`（部件表：图标 + 名字 + 链到物品页；件数奖励表：`(N)` + 奖励法术名，
+  链到法术页）。
+- 首页加第 8 张卡（套装 359）；统一搜索加第七类 `set`（`dbKindPath("set") = "/db/sets"`）。
+- **服务端没导入的套装**也照顾到了：`ItemsInSet` 为空时退回客户端的部件清单 + `ItemBriefs`
+  （物品页早就这么做，这里复用），页面上有提示行。
+- 测试：`TestItemSetIDsCoverTheClientTable`（≥100 个、严格升序、无重复、41 在列且中英都有名字）、
+  `TestSearchSetsFindsByNameAndID`（中文名命中 41、数字命中 id、空白 → nil）；
+  render fixture 加 `db_sets`（含无名行）与 `db_set`（完整行 + 只有客户端部件的行）；routes 加两条。
+- 端到端（真库只读、零错误日志）：列表按中文名排序（不灭的生命 / 云织套装 / 五雷…）；
+  `?q=雷德` → 雷德双刀 41（2 件 / 客户端 2 件 / 1 条奖励）；
+  `/db/sets/41` → 部件「雷德的部族护卫者、雷德的神圣控诉者」+ 奖励「(2) 攻击强度50 → /db/spells/14056」；
+  客户端独有套装 `/db/sets/787`（战斗员的遮蔽）→ 退回客户端 6 件部件并显示提示；
+  未知 id → 404；搜索「雷德双刀」→ 套装 / 雷德双刀 / `/db/sets/41`；首页第 8 卡显示 359。
+
 ## 附：2026-10-11 服务端登录崩溃（与本项目无关，但同属这个仓库）
 
 用户报服务端每次玩家登录 SIGSEGV，栈顶是 `Player::RecallPvPGear()`。根因是 2026-10-08 那次

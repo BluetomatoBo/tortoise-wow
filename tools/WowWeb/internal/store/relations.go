@@ -952,6 +952,29 @@ func (s *Store) ItemsInSet(ctx context.Context, loc ContentLocale, setID uint32)
 	return out, nil
 }
 
+// SetPieceCounts counts, per set, how many item templates carry it. The set
+// browser needs one number per set and the table is small enough to GROUP BY in
+// one query rather than a per-set count.
+func (s *Store) SetPieceCounts(ctx context.Context) (map[uint32]int, error) {
+	rows, err := s.World.QueryContext(ctx,
+		"SELECT set_id, COUNT(*) FROM item_template WHERE set_id <> 0 GROUP BY set_id")
+	if err != nil {
+		return nil, fmt.Errorf("set piece counts: %w", err)
+	}
+	defer rows.Close()
+
+	out := map[uint32]int{}
+	for rows.Next() {
+		var id uint32
+		var n int
+		if err := rows.Scan(&id, &n); err != nil {
+			return nil, fmt.Errorf("scan set piece count: %w", err)
+		}
+		out[id] = n
+	}
+	return out, rows.Err()
+}
+
 // ItemBriefs reads the name and display id of the given items. It is exported for
 // the page that shows a set's pieces, which only has their ids.
 func (s *Store) ItemBriefs(ctx context.Context, loc ContentLocale, ids []uint32) (map[uint32]ItemBrief, error) {
