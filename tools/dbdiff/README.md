@@ -518,7 +518,7 @@ python3 tools/dbdiff/check_delete_ids.py --dir 'sql/database_updates/world/20261
 | 报错 | 数量 | 来历与处置 |
 |---|---|---|
 | `Table npc_vendor_template has vendor template 1277702/1279202 not used by any vendors` | 2 | **设计如此**：这两个模板只给代码用（`Player::RecallPvPGear`）。**永远不要删**（第十五节的事故）——留着这条日志即可。 |
-| `Item (Entry: N) has wrong (not existing) spell category in spellcategory_K (M)` | 174 个物品 | **服务器 DBC 旧**：`DataDir/dbc/SpellCategory.dbc` 只到 1011，而数据用到 1091+（乌龟服新增类别）。修法：把当前乌龟服客户端的 `DBFilesClient/*.dbc` 刷新到 `DataDir/dbc/`。 |
+| `Item (Entry: N) has wrong (not existing) spell category in spellcategory_K (M)` | 174 个物品 | **上游缺口，换客户端 DBC 修不了**（2026-10-12 更正，见第二十二节）：服务器那份 `SpellCategory.dbc` 到 1011，客户端 1.18.1 那份只到 932（更少），而数据用到 1175 → 没有现成文件可用；该字段服务端从不读，只做存在性检查。要消掉只能**按数据生成**一份扩展文件（`tools/dbc_verification/extend_spellcategory.py`）。 |
 | `Creature (Entry: N) has nonexistent spell list id / pet_spell_list_id (M)` | 14 | 引用的 id 在 **`creature_spells`** 里没有（base dump 里也没有，共 2648 条）→ 上游数据缺口，与本仓库无关。 |
 | `Spell N (…) misses spell_affect for effect M` | 38 个法术 | 上游缺口（需要一个 `spell_affect` 行而没有）。**核对过：20261008154500 删掉的 8 个法术一个都不在这 38 个里** —— 删掉的那些都是 mask 与 `EffectItemType` 相同的 redundant 行，内核本来就跳过（见 SpelMgr 的加载检查）。 |
 | `Table 'pickpocketing_loot_template' entry 1183 … not exist but used as loot id` / `skinning_loot_template` 61393 | 4 | base dump 里从来没有这些行 → 上游缺口。 |
@@ -811,3 +811,48 @@ SELECT c.entry, c.name, c.spell_list_id FROM creature_template c
   LEFT JOIN creature_spells s ON s.entry = c.spell_list_id
  WHERE c.spell_list_id <> 0 AND s.entry IS NULL;
 ```
+
+## 二十二、服务端 DBC 体检：`SpellCategory.dbc` 的真相与更新包（2026-10-12）
+
+用户要「把服务端要更新的 DBC 放一个文件夹」时做的体检。结论：**43 个服务端会加载的 DBC 里，
+只有 `SpellCategory.dbc` 有明确问题，而它恰恰不能靠客户端那份修**。
+
+### 1. 哪些 DBC 是服务端读的
+
+`src/game/Database/DBCStores.cpp` 里 44 处 `LoadDBC(...)`，去重后 **43 个文件名**；格式串在
+`DBCfmt.h`（`Spell.dbc` **不**在其中 —— 法术数据走数据库 `spell_template`）。逐个把客户端 1.18.1
+的文件取来（客户端清单 sha256 校验），读 DBC 头比字段数：**42/43 与服务端格式串一致**
+（第 43 个 `SpellVisual.dbc` 也对得上，只是格式常量写作 `char const SpellVisualfmt[]`，
+解析时容易漏掉）。所在键值：
+
+| 客户端来源 | 文件数 | 说明 |
+|---|---|---|
+| 客户端清单里的 patch 覆盖层（`DBFilesClient/*.dbc`） | 29 | 乌龟服改过的，优先级最高 |
+| 客户端 `Data/dbc.MPQ`（4.2 MB，sha256 校验） | 14 | 清单没单列的那些（Emotes、SpellCastTimes、SpellDuration、**SpellCategory** 等） |
+
+### 2. SpellCategory 的四份文件对比
+
+| 来源 | 行数 | 最大 id |
+|---|---|---|
+| 原版 1.12.1 客户端 | 137 | 1011 |
+| 服务器 `DataDir/dbc`（报错来源） | 137 | 1011 |
+| 乌龟服 1.18.1 客户端（dbc.MPQ） | 133 | **932** |
+| 数据库实际用到 | — | **1176**（物品 1175 / 法术 1176） |
+
+所以「把客户端 DBC 刷新过去」是**降级**，而数据里那 45 个缺号（含 3、5、1031、1051、1071、1091、
+1111、1131…1176）在四份文件里都不存在 → 属上游缺口。
+
+### 3. 为什么补 `flags = 0` 是行为等价的
+
+* 服务端只调 `sSpellCategoryStore.LookupEntry(...)` 做**存在性检查**（`ObjectMgr.cpp:2534`），
+  `SpellCategoryEntry::Flags` 全源码无人读；也没有 `SPELL_CATEGORY_FLAG_*` 常量。
+* 客户端自带的 `Spell.dbc` 用到 1176 分组而随身 SpellCategory 只到 932
+  → 客户端对这些分组本来就走「查不到 → 默认」，补 0 与查不到等价。
+
+### 4. 交付物
+
+* 工具：`tools/dbc_verification/extend_spellcategory.py`（并集三份底稿 + 数据里用到的 id，升序输出，
+  自带加载校验）。
+* 生成文件与更新包（不进仓库）：`~/Desktop/tw-dbc-1.18.1/`
+  —— `SpellCategory.dbc`（188 行，最大 1176）、`check_server_dbc.sh`（服务器上只读体检）、
+  `client-reference-sha256.txt`（43 个文件的参考哈希）、`README.md`（换法/回滚/判读规矩）。
