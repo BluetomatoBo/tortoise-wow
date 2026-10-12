@@ -1146,6 +1146,19 @@ type dbFactionView struct {
 	Creatures []store.ContentFactionCreature
 	// Quests require or reward reputation with it.
 	Quests []store.ContentQuestRef
+	// Zones are where its creatures stand, busiest first. SpawnsTruncated says
+	// the underlying spawn list hit the page cap.
+	Zones           []dbZoneSpawnRow
+	SpawnsTruncated bool
+}
+
+// dbZoneSpawnRow is one "where this faction lives" line: a zone, how many of the
+// faction's spawn points fall in it, and how many distinct creatures they are.
+type dbZoneSpawnRow struct {
+	Path   string
+	Name   string
+	Spawns int
+	Kinds  int
 }
 
 func (s *Server) handleDBFaction(w http.ResponseWriter, r *http.Request, page *PageData) {
@@ -1182,14 +1195,42 @@ func (s *Server) handleDBFaction(w http.ResponseWriter, r *http.Request, page *P
 		return
 	}
 
+	// The biggest faction in this realm places about 13,500 spawn points, so the
+	// cap is set to leave room for growth; ZoneAt over that many points is a
+	// handful of lookups. Anything above it shows the truncation hint.
+	spawns, truncated, err := s.store.FactionSpawns(r.Context(), entry, 20000)
+	if err != nil {
+		s.serverError(w, r, "load faction spawns", err)
+		return
+	}
+	// A faction can reach a lot of zones - the generic "Monster" one lives in 65
+	// of them - so the list is cut like the other top lists and the page says so.
+	zoneSpawns := page.ZoneSpawns(spawns)
+	const zoneListLimit = 25
+	if len(zoneSpawns) > zoneListLimit {
+		zoneSpawns = zoneSpawns[:zoneListLimit]
+		truncated = true
+	}
+	zones := make([]dbZoneSpawnRow, 0, len(zoneSpawns))
+	for _, z := range zoneSpawns {
+		zones = append(zones, dbZoneSpawnRow{
+			Path:   ZonePath(z.Dir),
+			Name:   ZoneLabel(page, z.Dir),
+			Spawns: z.Spawns,
+			Kinds:  z.Kinds,
+		})
+	}
+
 	page.Title = faction.Name
 	page.Active = "db"
 	s.rend.Render(w, http.StatusOK, "db_faction", dbFactionView{
-		PageData:  *page,
-		Faction:   *faction,
-		Standings: standings,
-		Creatures: creatures,
-		Quests:    quests,
+		PageData:        *page,
+		Faction:         *faction,
+		Standings:       standings,
+		Creatures:       creatures,
+		Quests:          quests,
+		Zones:           zones,
+		SpawnsTruncated: truncated,
 	})
 }
 

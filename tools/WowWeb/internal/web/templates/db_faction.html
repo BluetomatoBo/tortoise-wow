@@ -47,6 +47,32 @@
   {{end}}
 </section>
 
+{{if .Zones}}
+<section class="card">
+  <h2>{{.T "db.faction.zoneList"}}</h2>
+  <p class="hint">{{.T "db.faction.zoneListHint"}}</p>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{.T "db.zone"}}</th>
+        <th class="right">{{.T "db.spawns"}}</th>
+        <th class="right">{{.T "db.zone.kinds"}}</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Zones}}
+      <tr>
+        <th><a href="{{.Path}}">{{if .Name}}{{.Name}}{{else}}{{.Path}}{{end}}</a></th>
+        <td class="right">{{.Spawns}}</td>
+        <td class="right">{{.Kinds}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{if .SpawnsTruncated}}<p class="hint">{{.T "db.faction.zonesTruncated"}}</p>{{end}}
+</section>
+{{end}}
+
 {{if .Creatures}}
 <section class="card">
   <h2>{{.T "db.faction.creatureList"}}</h2>

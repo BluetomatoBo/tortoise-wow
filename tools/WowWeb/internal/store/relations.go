@@ -1000,6 +1000,56 @@ type CreatureSpawn struct {
 // and says how many it left out.
 const spawnLimit = 200
 
+// factionSpawnLimit caps how many placements one faction page reads. The biggest
+// faction in this realm places about 13,500 of them, and ZoneAt is a lookup per
+// point, so a whole faction fits in one request.
+const factionSpawnLimit = 20000
+
+// FactionSpawn is one spawn point of a creature that belongs to a faction, with
+// the creature it is a placement of. The zone a spawn falls in is not stored
+// anywhere: it comes from the client's terrain grid, which the web layer reads
+// through ZoneAt, so the rows carry world coordinates.
+type FactionSpawn struct {
+	Entry uint32
+	Map   uint16
+	X, Y  float64
+}
+
+// FactionSpawns lists where a faction's creatures stand, capped like the other
+// per-page spawn lists. A realm's biggest faction has a few thousand placements,
+// well inside one query.
+func (s *Store) FactionSpawns(ctx context.Context, factionID uint32, limit int) ([]FactionSpawn, bool, error) {
+	if limit <= 0 || limit > factionSpawnLimit {
+		limit = factionSpawnLimit
+	}
+	rows, err := s.World.QueryContext(ctx,
+		"SELECT cr.id, cr.map, cr.position_x, cr.position_y FROM creature cr"+
+			" JOIN creature_template c ON c.entry = cr.id"+
+			" JOIN faction_template t ON t.id = c.faction"+
+			" WHERE t.faction_id = ? ORDER BY cr.guid LIMIT ?", factionID, limit+1)
+	if err != nil {
+		return nil, false, fmt.Errorf("spawns of faction %d: %w", factionID, err)
+	}
+	defer rows.Close()
+
+	var out []FactionSpawn
+	for rows.Next() {
+		var spawn FactionSpawn
+		if err := rows.Scan(&spawn.Entry, &spawn.Map, &spawn.X, &spawn.Y); err != nil {
+			return nil, false, fmt.Errorf("scan faction spawn: %w", err)
+		}
+		out = append(out, spawn)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, false, err
+	}
+	truncated := len(out) > limit
+	if truncated {
+		out = out[:limit]
+	}
+	return out, truncated, nil
+}
+
 // CreatureSpawns lists where a creature stands, and whether the list was cut.
 //
 // The lookup is an index read: the spawns table has a key on the creature id.

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"tortoiseweb/internal/i18n"
+	"tortoiseweb/internal/store"
 )
 
 // TestSearchZonesFindsByLocalizedName pins the zone group of the unified search:
@@ -222,5 +223,66 @@ func TestZoneNeighboursAreTheOnesNextDoor(t *testing.T) {
 	// zone must always border something.
 	if again := ZoneNeighbours(dir, 3); len(again) != 3 {
 		t.Errorf("limit 3 gave %d entries", len(again))
+	}
+}
+
+// TestZoneSpawnsGroupByTerrainGrid pins the grouping a faction page uses: spawn
+// points are judged by the same ZoneAt chain the zone pages use, counted per
+// zone with their distinct creature count, busiest first, and a point no zone
+// claims is left out rather than guessed into one.
+func TestZoneSpawnsGroupByTerrainGrid(t *testing.T) {
+	zh := namePage(t, i18n.ZH)
+
+	// Two real zones, taken from their own boxes so the test does not depend on
+	// hand-copied coordinates.
+	sw, ok := ZoneBoxForDir("stormwind")
+	if !ok {
+		t.Fatal("no stormwind box")
+	}
+	elwynn, ok := ZoneBoxForDir("elwynn")
+	if !ok {
+		t.Fatal("no elwynn box")
+	}
+	centre := func(b zoneBox) (uint16, float64, float64) {
+		return b.mapID, (b.xmin + b.xmax) / 2, (b.ymin + b.ymax) / 2
+	}
+	swMap, swX, swY := centre(sw)
+	elMap, elX, elY := centre(elwynn)
+
+	spawns := []store.FactionSpawn{
+		{Entry: 68, Map: swMap, X: swX, Y: swY},
+		{Entry: 68, Map: swMap, X: swX + 1, Y: swY},
+		{Entry: 1423, Map: swMap, X: swX + 2, Y: swY},
+		{Entry: 900, Map: elMap, X: elX, Y: elY},
+		// Nowhere: no map box contains it, so it must not be counted anywhere.
+		{Entry: 1, Map: 900, X: 999999, Y: 999999},
+	}
+
+	got := zh.ZoneSpawns(spawns)
+	if len(got) != 2 {
+		t.Fatalf("zones = %+v, want the two the points stand in", got)
+	}
+	if got[0].Dir != "stormwind" || got[0].Spawns != 3 || got[0].Kinds != 2 {
+		t.Errorf("first zone = %+v, want stormwind 3 spawns / 2 kinds", got[0])
+	}
+	if got[1].Dir != "elwynn" || got[1].Spawns != 1 || got[1].Kinds != 1 {
+		t.Errorf("second zone = %+v, want elwynn 1/1", got[1])
+	}
+	for _, z := range got {
+		if z.Area == 0 {
+			t.Errorf("zone %q has no area id", z.Dir)
+		}
+		if _, ok := ZonePath(z.Dir), true; !ok {
+			t.Errorf("zone %q has no page", z.Dir)
+		}
+	}
+
+	// Busiest first, and the count must not depend on the input order.
+	reversed := append([]store.FactionSpawn(nil), spawns...)
+	for i, j := 0, len(reversed)-1; i < j; i, j = i+1, j-1 {
+		reversed[i], reversed[j] = reversed[j], reversed[i]
+	}
+	if again := zh.ZoneSpawns(reversed); again[0].Dir != got[0].Dir || again[1].Dir != got[1].Dir {
+		t.Errorf("input order changed the result: %+v", again)
 	}
 }

@@ -457,6 +457,12 @@ func TestTemplatesParse(t *testing.T) {
 			Standings: []store.ContentFactionStanding{{RaceMask: 588, ClassMask: 0, Value: 3100, Flags: 17}},
 			Creatures: []store.ContentFactionCreature{{Entry: 68, Name: "暴风城卫兵", Spawns: 64}},
 			Quests:    []store.ContentQuestRef{{Entry: 1, Title: "任务"}},
+			Zones: []dbZoneSpawnRow{
+				{Path: "/db/zones/1519", Name: "暴风城", Spawns: 812, Kinds: 210},
+				{Path: "/db/zones/12", Name: "艾尔文森林", Spawns: 55, Kinds: 40},
+				{Path: "/db/zones/kalimdor", Name: "", Spawns: 1, Kinds: 1},
+			},
+			SpawnsTruncated: true,
 		}},
 		{"db_faction", dbFactionView{PageData: page,
 			Faction: store.ContentFaction{ID: 9, Name: "无名阵营"}}},

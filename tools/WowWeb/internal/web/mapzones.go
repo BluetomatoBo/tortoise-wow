@@ -472,6 +472,60 @@ func (p PageData) MapPoint(mapID uint16, x, y float64) (MapView, bool) {
 //
 // Points on a map with no zone box are dropped: a coordinate that cannot be
 // placed would otherwise be drawn at a made-up position.
+// ZoneSpawn is one zone a set of spawn points lands in.
+type ZoneSpawn struct {
+	Dir    string
+	Area   uint32
+	Spawns int
+	Kinds  int
+}
+
+// ZoneSpawns groups spawn points by the zone they fall in, busiest first - the
+// same four-step judgement the zone pages use (ZoneAt), with the points that no
+// zone claims left out.
+//
+// It runs per request rather than at generation time because a faction's spawn
+// list is small: the biggest faction in this realm places about a thousand
+// spawn points, and ZoneAt is a lookup.
+func (p PageData) ZoneSpawns(spawns []store.FactionSpawn) []ZoneSpawn {
+	type tally struct {
+		area  uint32
+		dir   string
+		spawn int
+		kinds map[uint32]bool
+	}
+	byDir := map[string]*tally{}
+	for _, spawn := range spawns {
+		box, ok := ZoneAt(spawn.Map, spawn.X, spawn.Y)
+		if !ok {
+			continue
+		}
+		dir, ok := ZoneDirForArea(box.area)
+		if !ok {
+			dir = box.dir
+		}
+		t := byDir[dir]
+		if t == nil {
+			t = &tally{area: box.area, dir: dir, kinds: map[uint32]bool{}}
+			byDir[dir] = t
+		}
+		t.spawn++
+		t.kinds[spawn.Entry] = true
+	}
+
+	out := make([]ZoneSpawn, 0, len(byDir))
+	for _, t := range byDir {
+		out = append(out, ZoneSpawn{Dir: t.dir, Area: t.area, Spawns: t.spawn, Kinds: len(t.kinds)})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Spawns != out[j].Spawns {
+			return out[i].Spawns > out[j].Spawns
+		}
+		return out[i].Dir < out[j].Dir
+	})
+	return out
+}
+
 func (p PageData) SpawnMaps(spawns []store.CreatureSpawn) []MapView {
 	points := make([]mapPoint, 0, len(spawns))
 	for _, spawn := range spawns {
