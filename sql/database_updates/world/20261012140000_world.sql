@@ -50,9 +50,11 @@ VALUES
     (51345,0,34359738368),
 
     -- ── 大地的召唤（天赋 #228，58238/58239 两个 rank）eff1 ────────────────────────────────
-    -- 效果：aura 107 ADD_FLAT_MODIFIER，op 8 ALL_EFFECTS +24/+49（作用在**施放地盾**时取的效果值上）。
-    -- 机制：地盾自带 aura 149 RESIST_PUSHBACK（bp 30），内核 Spell.cpp:7657/7689 读
-    --       `GetTotalAuraModifier(SPELL_AURA_RESIST_PUSHBACK) - 100` → 30% → 54% / 79%。
+    -- 效果：aura 107 ADD_FLAT_MODIFIER，op 8 ALL_EFFECTS +25/+50（bp 24/49 + baseDice 1）
+    --       —— 作用在**施放地盾**时取的效果值上。
+    -- 机制：地盾自带 aura 149 RESIST_PUSHBACK（bp 30、baseDice 0 → 取值 30），内核
+    --       Spell.cpp:7657/7689 读 `GetTotalAuraModifier(SPELL_AURA_RESIST_PUSHBACK) - 100`
+    --       → 抗打断 30% → **55% / 80%**。
     -- 掩码 = bit40 = Earth Shield。依据：**同一法术的 eff0**（增加地盾层数）乌龟服写的就是
     --   1099511627776；eff1 作用于同一目标的同一数值，没有理由换 bit。反查只命中 Earth Shield。
     (58238,1,1099511627776),

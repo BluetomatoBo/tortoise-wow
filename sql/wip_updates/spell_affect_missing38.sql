@@ -63,8 +63,10 @@
 --       **没有任何学习包装**（且 bit29 与 Judgement of the Crusader 共用）→ 是废弃版本，不能用作掩码。
 --       反查：家族 10 里 bit35 只命中 Crusader Strike。
 --   58238,1 / 58239,1 = 1099511627776（bit40 = 大地之盾）
---       依据：同一法术的 eff0（增加地盾层数）乌龟服写的就是这个值；机制是提高地盾自带
---       aura 149 RESIST_PUSHBACK 的数值（内核 Spell.cpp:7657/7689 读该 aura），靶子同为 Earth Shield。
+--       依据：同一法术的 eff0（增加地盾层数）乌龟服写的就是这个值；机制是给「施放地盾」时的效果值
+--       加 ALL_EFFECTS +25/+50（bp 24/49 + baseDice 1），而地盾自带 aura 149 RESIST_PUSHBACK
+--       取值 30（bp 30、baseDice 0），内核 Spell.cpp:7657/7689 读该 aura → 抗打断 30% → 55%/80%。
+--       靶子同为 Earth Shield，反查只命中它。
 --   58241,1 = 9007199254740992（bit53 = 图腾打击自身的位，与 eff0 相同）
 --   58243,0 = 9007267974217728（妖术自身的位 bit53|bit36）
 --   58242,0 = 9007199254743040（野性之魂自身的位 bit53|bit11；bit11 与 Ghost Wolf 共用）
