@@ -1663,17 +1663,28 @@ func (s *Store) ZoneNames(ctx context.Context, loc ContentLocale, kind string, e
 // ZoneQuests lists the quests the core files under one zone: a positive
 // ZoneOrSort is an area id (ObjectMgr.cpp reads it that way), which is what the
 // zone page asks for.
-func (s *Store) ZoneQuests(ctx context.Context, loc ContentLocale, area uint32, limit int) ([]ContentQuestRef, error) {
+func (s *Store) ZoneQuests(ctx context.Context, loc ContentLocale, area uint32, limit, offset int) ([]ContentQuestRef, int, error) {
 	if limit <= 0 || limit > relationLimit {
 		limit = relationLimit
 	}
+	if offset < 0 {
+		offset = 0
+	}
 	title := loc.localized("lq", "q", "Title")
+
+	// The zone page pages through its quests, so it needs the total as well.
+	var total int
+	if err := s.World.QueryRowContext(ctx,
+		"SELECT COUNT(*) FROM quest_template q WHERE q.ZoneOrSort = ?", area).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count zone quests of %d: %w", area, err)
+	}
+
 	q := "SELECT q.entry, " + title +
 		" FROM quest_template q" + loc.join("lq", "locales_quest", "entry", "q") +
-		" WHERE q.ZoneOrSort = ? ORDER BY q.entry LIMIT ?"
-	rows, err := s.World.QueryContext(ctx, q, area, limit)
+		" WHERE q.ZoneOrSort = ? ORDER BY q.entry LIMIT ? OFFSET ?"
+	rows, err := s.World.QueryContext(ctx, q, area, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("zone quests of %d: %w", area, err)
+		return nil, 0, fmt.Errorf("zone quests of %d: %w", area, err)
 	}
 	defer rows.Close()
 
@@ -1681,9 +1692,9 @@ func (s *Store) ZoneQuests(ctx context.Context, loc ContentLocale, area uint32, 
 	for rows.Next() {
 		var ref ContentQuestRef
 		if err := rows.Scan(&ref.Entry, &ref.Title); err != nil {
-			return nil, fmt.Errorf("scan zone quest: %w", err)
+			return nil, 0, fmt.Errorf("scan zone quest: %w", err)
 		}
 		out = append(out, ref)
 	}
-	return out, rows.Err()
+	return out, total, rows.Err()
 }

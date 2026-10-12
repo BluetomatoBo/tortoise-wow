@@ -3,6 +3,8 @@ package web
 import (
 	_ "embed"
 	"fmt"
+	"math"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -235,6 +237,80 @@ func ZoneLabel(page *PageData, dir string) string {
 		return page.MapName(uint32(box.mapID))
 	}
 	return ""
+}
+
+// zoneNeighbour is one zone whose map picture touches this one.
+type zoneNeighbour struct {
+	Dir   string
+	Area  uint32
+	Share float64 // how much of that zone's own box lies inside this one
+}
+
+// zoneNeighbourLimit caps the neighbour list on a zone page.
+const zoneNeighbourLimit = 8
+
+// ZoneNeighbours lists the zones a zone borders, busiest adjacency first.
+//
+// A zone's box is its map picture's world rectangle, which by construction
+// reaches into the zones next to it (that is why ZoneAt needs the grid and the
+// checked corrections). Overlap is therefore the signal, and the share is taken
+// against the *neighbour's* own box: a city inside a zone covers all of itself,
+// two large zones beside each other cover most of each other, and a zone that
+// merely touches a corner covers little.
+//
+// The two continent rows are left out: they span the whole map, so they overlap
+// everything and would always come first.
+func ZoneNeighbours(dir string, limit int) []zoneNeighbour {
+	self, ok := ZoneBoxForDir(dir)
+	if !ok {
+		return nil
+	}
+	if limit <= 0 || limit > 32 {
+		limit = zoneNeighbourLimit
+	}
+
+	type scored struct {
+		zoneNeighbour
+		overlap float64
+	}
+	var out []scored
+	for _, boxes := range boxesByDir {
+		for other, box := range boxes {
+			if other == dir || box.mapID != self.mapID || box.area == 0 {
+				continue
+			}
+			w := math.Min(self.xmax, box.xmax) - math.Max(self.xmin, box.xmin)
+			h := math.Min(self.ymax, box.ymax) - math.Max(self.ymin, box.ymin)
+			if w <= 0 || h <= 0 {
+				continue // only a corner, or not touching at all
+			}
+			overlap := w * h
+			area := (box.xmax - box.xmin) * (box.ymax - box.ymin)
+			if area <= 0 {
+				continue
+			}
+			out = append(out, scored{zoneNeighbour{Dir: other, Area: box.area, Share: overlap / area}, overlap})
+		}
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Share != out[j].Share {
+			return out[i].Share > out[j].Share
+		}
+		if out[i].overlap != out[j].overlap {
+			return out[i].overlap > out[j].overlap
+		}
+		return out[i].Dir < out[j].Dir
+	})
+	if len(out) > limit {
+		out = out[:limit]
+	}
+
+	neighbours := make([]zoneNeighbour, 0, len(out))
+	for _, n := range out {
+		neighbours = append(neighbours, n.zoneNeighbour)
+	}
+	return neighbours
 }
 
 // zoneSearchLimit caps the zone group of the unified search, the same way

@@ -496,6 +496,8 @@
   "db.zone.creatures": "生物刷新点",
   "db.zone.hint": "数字按刷出点算，区域归属用的是客户端地形网格 + 人工核验过的修正（见 README）；任务按核心的 ZoneOrSort 归类。",
   "db.zone.kinds": "种",
+  "db.zone.neighbours": "相邻区域",
+  "db.zone.neighboursHint": "按各区域地图框与本区的重叠程度排序：这些区域的图与本区相接，或本身落在本区里（城市、副本入口）。",
   "db.zone.none": "这个区域的地图没有被任何刷出点用到。",
   "db.zone.objects": "物件刷新点",
   "db.zone.quests": "任务",

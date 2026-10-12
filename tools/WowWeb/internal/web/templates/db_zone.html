@@ -71,7 +71,19 @@
       </tr>
     {{end}}
   </table>
-  {{if .QuestLimitReached}}<p class="hint">{{.T "db.listTruncated"}}</p>{{end}}
+  {{template "pagination" .QuestsPager}}
+</section>
+{{end}}
+
+{{if .Neighbours}}
+<section class="card">
+  <h2>{{.T "db.zone.neighbours"}}</h2>
+  <p class="hint">{{.T "db.zone.neighboursHint"}}</p>
+  <p>
+    {{range .Neighbours}}
+      <a class="btn btn-ghost btn-sm" href="{{.Path}}">{{if .Name}}{{.Name}}{{else}}{{.Dir}}{{end}}</a>
+    {{end}}
+  </p>
 </section>
 {{end}}
 {{end}}

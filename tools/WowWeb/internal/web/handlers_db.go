@@ -1410,6 +1410,22 @@ func (s *Server) handleDBZones(w http.ResponseWriter, r *http.Request, page *Pag
 	})
 }
 
+// questPager drives the pagination partial inside a zone page: the quests are
+// paged by ?page= while the page itself is a single zone.
+type questPager struct {
+	PageData
+	Page        int
+	Pages       int
+	QueryString template.URL
+}
+
+// dbZoneNeighbour is one "next door" link on a zone page.
+type dbZoneNeighbour struct {
+	Dir  string
+	Path string
+	Name string
+}
+
 type dbZoneView struct {
 	PageData
 	Area  uint32
@@ -1421,9 +1437,11 @@ type dbZoneView struct {
 	// The top lists, with the names filled in and the entries in link order.
 	Creatures []dbZoneItem
 	Objects   []dbZoneItem
-	Quests    []store.ContentQuestRef
-	// QuestLimitReached says the quest list was cut at the store's cap.
-	QuestLimitReached bool
+	// Quests are one page of the quests the core files under this zone.
+	Quests      []store.ContentQuestRef
+	QuestsPager questPager
+	// Neighbours are the zones this one borders, nearest adjacency first.
+	Neighbours []dbZoneNeighbour
 	// HasContent is false for a zone with a map but nothing counted in it.
 	HasContent bool
 	// Query is what the shared search box shows in its input.
@@ -1482,10 +1500,21 @@ func (s *Server) handleDBZone(w http.ResponseWriter, r *http.Request, page *Page
 		*spec.into = out
 	}
 
-	quests, err := s.store.ZoneQuests(r.Context(), loc, area, 100)
+	questsPage := dbPageNum(r.URL.Query())
+	quests, questCount, err := s.store.ZoneQuests(r.Context(), loc, area,
+		store.ContentPageSize, (questsPage-1)*store.ContentPageSize)
 	if err != nil {
 		s.serverError(w, r, "load zone quests", err)
 		return
+	}
+
+	neighbours := make([]dbZoneNeighbour, 0, zoneNeighbourLimit)
+	for _, n := range ZoneNeighbours(dir, zoneNeighbourLimit) {
+		neighbours = append(neighbours, dbZoneNeighbour{
+			Dir:  n.Dir,
+			Path: ZonePath(n.Dir),
+			Name: ZoneLabel(page, n.Dir),
+		})
 	}
 
 	// The zone's map, for the picture at the top of the page.
@@ -1498,16 +1527,17 @@ func (s *Server) handleDBZone(w http.ResponseWriter, r *http.Request, page *Page
 	page.Title = label
 	page.Active = "db"
 	s.rend.Render(w, http.StatusOK, "db_zone", dbZoneView{
-		PageData:          *page,
-		Area:              area,
-		Path:              ZonePath(dir),
-		Name:              label,
-		Image:             image,
-		Stats:             content,
-		Creatures:         creatures,
-		Objects:           objects,
-		Quests:            quests,
-		QuestLimitReached: len(quests) >= 100,
-		HasContent:        hasContent,
+		PageData:    *page,
+		Area:        area,
+		Path:        ZonePath(dir),
+		Name:        label,
+		Image:       image,
+		Stats:       content,
+		Creatures:   creatures,
+		Objects:     objects,
+		Quests:      quests,
+		QuestsPager: questPager{PageData: *page, Page: questsPage, Pages: pages(questCount, store.ContentPageSize)},
+		Neighbours:  neighbours,
+		HasContent:  hasContent,
 	})
 }

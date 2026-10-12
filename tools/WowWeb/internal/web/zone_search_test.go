@@ -172,3 +172,55 @@ func TestContinentRowsHaveTheirOwnPages(t *testing.T) {
 		t.Errorf("zone 17 label = %q, want %q", got, zh.AreaName(17))
 	}
 }
+
+// TestZoneNeighboursAreTheOnesNextDoor pins the adjacency rule on a zone whose
+// neighbours are known: the Barrens borders Durotar, Mulgore and Dustwallow
+// Marsh, so those must be present, the zone must not list itself, and the two
+// continent rows must be left out (they span a whole map and would otherwise
+// rank first by overlap).
+func TestZoneNeighboursAreTheOnesNextDoor(t *testing.T) {
+	zh := namePage(t, i18n.ZH)
+	dir, ok := ZoneDirForArea(17) // the Barrens
+	if !ok {
+		t.Fatal("area 17 has no zone page")
+	}
+
+	neighbours := ZoneNeighbours(dir, zoneNeighbourLimit)
+	if len(neighbours) == 0 || len(neighbours) > zoneNeighbourLimit {
+		t.Fatalf("neighbours = %d entries", len(neighbours))
+	}
+
+	want := map[uint32]string{14: "杜隆塔尔", 215: "莫高雷", 15: "尘泥沼泽"}
+	got := map[uint32]bool{}
+	for _, n := range neighbours {
+		got[n.Area] = true
+		if n.Dir == dir {
+			t.Errorf("the zone lists itself as a neighbour")
+		}
+		if n.Area == 0 {
+			t.Errorf("a continent row is listed as a neighbour: %q", n.Dir)
+		}
+		if n.Share <= 0 || n.Share > 1.0001 {
+			t.Errorf("share out of range for %q: %f", n.Dir, n.Share)
+		}
+		if name := zh.AreaName(n.Area); name == "" {
+			t.Errorf("neighbour %q has no name", n.Dir)
+		}
+	}
+	for area, name := range want {
+		if !got[area] {
+			t.Errorf("neighbour %s (area %d) is missing: %+v", name, area, neighbours)
+		}
+	}
+
+	// The share ranks the list, so the first entry must be the most covered one.
+	if neighbours[0].Share < neighbours[len(neighbours)-1].Share {
+		t.Errorf("shares are not in descending order: %+v", neighbours)
+	}
+
+	// The continent rows have no neighbours of their own to offer, but a real
+	// zone must always border something.
+	if again := ZoneNeighbours(dir, 3); len(again) != 3 {
+		t.Errorf("limit 3 gave %d entries", len(again))
+	}
+}

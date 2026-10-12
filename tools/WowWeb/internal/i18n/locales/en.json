@@ -496,6 +496,8 @@
   "db.zone.creatures": "Creature spawns",
   "db.zone.hint": "Counts are spawn points; a spawn's zone comes from the client's own area grid plus the checked corrections (see README). Quests are grouped the way the core does, by ZoneOrSort.",
   "db.zone.kinds": "kinds",
+  "db.zone.neighbours": "Neighbouring zones",
+  "db.zone.neighboursHint": "Ordered by how much of each zone's own map box lies inside this one: the zones whose maps touch this one, or sit inside it (cities, instance entrances).",
   "db.zone.none": "No spawn point of this realm lands on this zone's map.",
   "db.zone.objects": "Object spawns",
   "db.zone.quests": "Quests",
