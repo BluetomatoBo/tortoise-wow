@@ -733,6 +733,33 @@ node 24 (4930,-3026) → 25 (5149,-3128) → 26 (5276,-3274) 正是那 16 个哨
 **下一步候选**：阵营页、物品套装独立页；区域页可以再加「区域内的任务列表分页」与「相邻区域」；
 搜索把区域加进去（现在一次搜五类，不含区域）。
 
+## 第十八轮：搜索纳入区域（`/db/search` 的第六类）
+
+区域页做完之后，搜索框还搜不到区域 —— 搜「贫瘠之地」只出任务/生物。这一轮把它补上。
+
+- **实现位置**：`SearchZones(page, term)` 放在 `internal/web/zones.go`（不是 store），因为区域不是数据库表：
+  「哪些区域有页面」是生成表 `zonecontent.txt`，「名字」来自客户端 AreaTable（`PageData.AreaName`）。
+  按这个名字过滤，命中项才**一定能点开** —— 客户端知道、但没有任何刷出点落在其地图上的区域没有页面，
+  不能进搜索结果。
+- **顺序与上限**：沿用列表页的顺序（内容多的在前），上限 `zoneSearchLimit = 10`，与 store 里每张表的
+  `contentSearchLimit` 一致；`handleDBSearch` 把区域结果**追加**在五类之后。
+- **链接**：`dbKindPath("zone") = "/db/zones"`，详情链接仍由模板拼成 `/db/zones/<area>`，与列表页同源。
+- **文案**：结果行的副标题用列表页同一套词（`db.zone.creatures` / `db.zone.objects`），
+  形如 `3716 生物刷新点 · 2903 物件刷新点`；新键 `db.kind.zone`（区域 / Zone）。
+- **测试**：`TestSearchZonesFindsByLocalizedName`（中文页搜「贫瘠之地」→ area 17、英文页搜「Stranglethorn」→ 33、
+  中文页搜英文名**不命中** —— 与其它五类只读当前语言一致）；`TestSearchZonesIgnoresBlankAndCaps`
+  （空/纯空白 → nil；「之」在 16 个区域名里出现，命中数正好顶到上限 10）；
+  `TestSearchZonesRoundTripsEveryZone`（每个有名字的区域都能用自己的名字搜到、且都有页面；例外只有两个大陆桶，断言里点名）；
+  `TestDBKindPathHasAZoneList`；`render_test.go` 的 `db_search` fixture 加了一条 zone 结果，让模板里的区域行真的渲染一次。
+- **端到端（本机跑真库只读）**：英文页 `q=Barrens` → `Zone / The Barrens / 2× /db/zones/17`；
+  切中文后 `q=贫瘠之地` → `区域 / 贫瘠之地 / 生物刷新点`；回归：`火球术` 21 行、`贫瘠` 17 行、空查询仍是「没有找到」。
+
+**顺手发现的一处瑕疵（未修，留档）**：生成表里有两个「大陆桶」—— `kalimdor`（36 生物点 + 91 物件点）与
+`azeroth`（38 生物点），它们是**没有落进任何子区域框**的刷出点，`ZoneArea` 都返回 **area 0**，
+于是列表页两行都链到 `/db/zones/0`，而该页只显示其中一个（实测显示 36 生物点那个）。
+搜索侧因为拿不到名字（AreaTable 里 area 0 无名）**直接跳过**，不会产生这种歧义链接；
+要修的是区域页本身（例如详情路由接受目录名，或给大陆桶单独命名）。
+
 ## 附：2026-10-11 服务端登录崩溃（与本项目无关，但同属这个仓库）
 
 用户报服务端每次玩家登录 SIGSEGV，栈顶是 `Player::RecallPvPGear()`。根因是 2026-10-08 那次

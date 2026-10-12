@@ -226,6 +226,8 @@ func TestTemplatesParse(t *testing.T) {
 				{Kind: "spell", Entry: 133, Name: "火球术", Subtitle: "等级 1"},
 				{Kind: "quest", Entry: 5, Name: "A Quest", Subtitle: "30"},
 				{Kind: "creature", Entry: 80117, Name: "发疯的战斗鸡", Subtitle: ""},
+				// A zone hit links to its own page, /db/zones/<area>.
+				{Kind: "zone", Entry: 17, Name: "贫瘠之地", Subtitle: "3716 生物刷新点 · 2903 物件刷新点"},
 			}}},
 		{"db_search", dbSearchView{PageData: page}},
 		{"db_items", dbItemsView{

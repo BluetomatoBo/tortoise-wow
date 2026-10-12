@@ -306,6 +306,8 @@ func dbKindPath(kind string) string {
 		return "/db/quests"
 	case "gameobject":
 		return "/db/objects"
+	case "zone":
+		return "/db/zones"
 	default:
 		return "/db/npcs"
 	}
@@ -314,12 +316,17 @@ func dbKindPath(kind string) string {
 func (s *Server) handleDBSearch(w http.ResponseWriter, r *http.Request, page *PageData) {
 	term := strings.TrimSpace(r.URL.Query().Get("q"))
 
+	// The tables answer in kind order; the zones are appended after them because
+	// they come from the generated zone table rather than the database.
+	results := s.store.ContentSearch(r.Context(), dbLocale(page), term)
+	results = append(results, SearchZones(page, term)...)
+
 	page.Title = page.T("db.search.title")
 	page.Active = "db"
 	s.rend.Render(w, http.StatusOK, "db_search", dbSearchView{
 		PageData: *page,
 		Query:    term,
-		Results:  s.store.ContentSearch(r.Context(), dbLocale(page), term),
+		Results:  results,
 	})
 }
 

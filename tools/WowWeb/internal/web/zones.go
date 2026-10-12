@@ -2,8 +2,11 @@ package web
 
 import (
 	_ "embed"
+	"fmt"
 	"strconv"
 	"strings"
+
+	"tortoiseweb/internal/store"
 )
 
 // The zones browser: the regions the maps describe, and what stands in each.
@@ -167,4 +170,49 @@ func ZoneDirForArea(area uint32) (string, bool) {
 func ZoneArea(dir string) (uint32, bool) {
 	area, ok := areaOfDir[dir]
 	return area, ok
+}
+
+// zoneSearchLimit caps the zone group of the unified search, the same way
+// store.contentSearchLimit caps each table it asks.
+const zoneSearchLimit = 10
+
+// SearchZones is the zone group of the unified search: the zones whose name in
+// the page's language contains term, busiest first - the order the zones list
+// uses.
+//
+// It runs here rather than in the store because a zone is not a table: the set
+// of zones with a page is the generated table above, and the names come from the
+// client's AreaTable through PageData.AreaName. Filtering by that name is what
+// keeps every hit linkable - an area the client knows but no spawn point lands on
+// has no /db/zones page to send the reader to.
+func SearchZones(page *PageData, term string) []store.ContentSearchResult {
+	needle := strings.ToLower(strings.TrimSpace(term))
+	if needle == "" {
+		return nil
+	}
+
+	var out []store.ContentSearchResult
+	for _, dir := range zoneOrder {
+		area, ok := ZoneArea(dir)
+		if !ok {
+			continue
+		}
+		name := page.AreaName(area)
+		if name == "" || !strings.Contains(strings.ToLower(name), needle) {
+			continue
+		}
+		content, _ := ZoneContent(dir)
+		out = append(out, store.ContentSearchResult{
+			Kind:  "zone",
+			Entry: area,
+			Name:  name,
+			Subtitle: fmt.Sprintf("%d %s · %d %s",
+				content.Creatures, page.T("db.zone.creatures"),
+				content.Objects, page.T("db.zone.objects")),
+		})
+		if len(out) == zoneSearchLimit {
+			break
+		}
+	}
+	return out
 }
