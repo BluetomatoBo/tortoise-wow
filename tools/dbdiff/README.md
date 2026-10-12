@@ -675,3 +675,76 @@ python3 tools/dbdiff/dbdiff.py --mysql "$(pwd)/tools/dbdiff/mysql_local.sh tw_wo
 
 **如果以后想补那 3 张与清理无关的历史缺口**（`item_loot_template` / `locales_area` /
 `reference_loot_template` 之类），直接用同一工具生成 `INSERT IGNORE` 即可，与本次事故无关。
+
+## 二十、38 条 `misses spell_affect` 的收口（2026-10-12）
+
+接第十八节（先查出处、给出 A/B/C 分级），用户要求「能从**原始数据 / wowhead / turtle-wow wiki**
+挖到依据能判定的都修，查不到就不动」。这轮把五个来源都翻完了，**结论是：外部没有可抄的数据，
+只能按「库内已有数据的模式」判定**，最终补了 13 行，剩 8 条留白。
+
+### 1. 又查了哪些来源（都空）
+
+```bash
+# ① 上游仓库最新 main（2026-10-12 拉取）：只比我们多两个迁移文件，都不含 spell_affect
+curl -s "https://api.github.com/repos/tortoise-wow/tortoise-wow/contents/sql/database_updates/world?ref=main"
+# ② 上游 base dump 与本地**字节一致**（说明上游也没填这些槽）
+curl -s -o /tmp/up_spell_affect.sql \
+  "https://raw.githubusercontent.com/tortoise-wow/tortoise-wow/main/sql/base/tw_world_spell_affect.sql"
+md5 -q /tmp/up_spell_affect.sql sql/base/tw_world_spell_affect.sql   # 33e42c81f25ae4698e90305d9ad769d1（同一个）
+# ③ 客户端 Spell.dbc 的掩码槽（DBC 103/104/105）：这 38 个法术**全是 0**
+# ④ Talent.dbc：38 个里只有 7 个是天赋 rank
+# ⑤ 网络：wowhead 403、turtle-wow.org / wiki / database 域名均无连接 → 外部来源不可用
+```
+
+### 2. 判定的依据从哪来（方法论）
+
+掩码语义 = 「命中哪些法术的 familyFlags」（官方 250 行里 186 行恰好等于客户端同法术的
+`EffectItemType`，可作反证）。于是判定靠**库内同类行的写法**：
+
+| 场景 | 用了哪条库内数据 |
+|---|---|
+| 同一法术的兄弟槽已有行 | 直接沿用（58238/58239 的 eff1 用 eff0 的 bit；58241 的 eff1 用 eff0 的 bit） |
+| 同系列法术有行 | 借位图（58243 用 Hex 自身的位，与兄弟 58240 的写法同源） |
+| 同批天赋有掩码 | 照抄（51888 用「Improved Shocks」51851 的 `EffectItemType`） |
+| 同类天赋多职业版本 | 找规律（Faster Bleeds 四兄弟 → 「该职业的流血法术」） |
+| 「哪个版本的技能才是玩家能放的」 | 用**学习包装法术**判定（`effect 36 LEARN_SPELL` 指向谁，谁就是可施放版本） |
+
+最后一条是本轮的关键：`51341-51345` 的靶子「十字军打击」在库里有两代（bit35 的 2537 系、
+bit29 的 45409 系），**47314-47318 这五个学习包装教的是 2537 系**，45409 系没有任何包装
+→ 只有 bit35 是玩家真正会施放的版本；这也与乌龟服自己写的
+`(51242,0) = bit32|bit35`（「Holy Strike Crusader Strike Cooldown Reduction」）、
+`(51355-51359,1) = bit35`（「Vengeful Strikes」）完全吻合。
+
+### 3. 落库结果
+
+`sql/database_updates/world/20261012140000_world.sql`（13 行，REPLACE 幂等）：
+
+| entry | eff | 掩码 | 靶子（反查命中） |
+|---|---|---|---|
+| 51341-51345 | 0 | 34359738368 | Crusader Strike（bit35，唯一命中） |
+| 58238 / 58239 | 1 | 1099511627776 | Earth Shield |
+| 58241 | 1 | 9007199254740992 | Totemic Slam / Feral Spirit / Hex（共用 bit53，同一件物品给出） |
+| 58242 | 0 | 9007199254743040 | Feral Spirit / Ghost Wolf / Hex / Totemic Slam |
+| 58243 | 0 | 9007267974217728 | Hex / Feral Spirit / Totemic Slam |
+| 51888 | 1 | 2416967680 | Earth/Flame/Frost Shock（+ 共位的 Molten Blast / Rekindled Flame） |
+| 52402 | 0/1 | 274877906944 | Lacerate（猎人唯一的玩家流血技能） |
+
+复验：`spell_affect` **280 → 293** 行；内核判据复算的 misses **21 → 8**；
+全表 293 行静态体检（法术存在 / effectId ≤ 2 / 该槽 Effect==6 / aura∈{107,108,109,112}）**0 行有问题**。
+
+### 4. 留白的 8 条（已核明原因，不再尝试）
+
+| entry | 法术 | 留白原因 |
+|---|---|---|
+| 45405 | [Deprecated] Arcane Potency | 废弃法术，`effectBasePoints = 0`（写行也无效） |
+| 45985 | Counterattack | **家族不匹配**：自身 GENERIC(0)，靶子「猫鼬撕咬」是 HUNTER(9) → `isAffectedOnSpell` 第一步就返回 false，写什么掩码都没用 |
+| 51369-51371 | Improved Water Shield | op 31（CUSTOM_VALUE_1）**内核没有消费者**；且靶子有两个候选 bit，描述无法定唯一答案 |
+| 52603 | Improved Swift Aspects | 靶子 Swift Aspects（#19552-56）`familyFlags = 0` → 任何掩码都选不中 |
+| 52690 | Crystal Infusion | 靶子「使用法力宝石」（Replenish Mana #5405）家族 GENERIC、`familyFlags = 0` → 同上 |
+| 52701 | Purge Haste Passive | **找不到授予者**（非天赋 rank、不在 item 的 spellid_1..5、无触发链、不在 spell_learn_spell/skill_line_ability；`itemset` 表为空 —— 邻居 52698/52699 是「T2.5 Set Bonus」，疑似客户端套装奖励）；且 bit47 与 Bloodlust/Calm Elements 共用，授予者不明时无法确认是否有害 |
+
+这 8 条会继续在 `dbfix.log` 里各留一行 —— **属于已核明的上游缺口**，不是本地配置错误。
+要真正消掉它们，得动内核（实现 op 31/32 的消费者、给 spellmod 加家族例外）或改客户端位图，
+都不属于「补数据」范围。
+
+完整记录（含每条掩码的证据链与复现命令）：`sql/wip_updates/spell_affect_missing38.sql`。
