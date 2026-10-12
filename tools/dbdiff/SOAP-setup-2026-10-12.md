@@ -1,5 +1,18 @@
 # SOAP 接入配置（一次性 · 测完就关）
 
+> **2026-10-12 结论：这批验证不走 SOAP，配置已作废、账号已删除。**
+> * 原因 1：**本构建没带 SOAP** —— `CMakeLists.txt:51` 是 `option(ENABLE_SOAP ... OFF)`，
+>   `Master.cpp:216` 的启动整段包在 `#ifdef ENABLE_SOAP` 里，而服务器当初的 cmake 命令没有这个开关
+>   → 端口 7878 不通、日志里没有 SOAP 行（`SOAP: could not bind ...` / `bound to ...` 都不会出现）。
+> * 原因 2：**SOAP 解决不了观测问题** —— 它没有会话与选中目标，`.aura` / `.cast` 这类命令用不了
+>   （会回 `You must select a character or creature!`），也读不到日志文件；效果验证无论如何要
+>   游戏内操作。所以即使重编译也换不来完整闭环。
+> * 已清理：`DELETE FROM tw_logon.account WHERE username='soaptest'`（id=11，无关联行）；
+>   管理员账号（id=5 BO rank4、id=7 SIEJIEY rank0）未受影响。
+> * 下面内容保留备用：将来真要 SOAP，先按第 2 节末尾的方式带 `-DENABLE_SOAP=ON` 重编译。
+> * 如果 `mangosd.conf` 里已经加了 `SOAP.Enabled = 1`，请改回 `0`（当前构建下无效果，
+>   但将来重编译会真的把 GM 命令接口开出来）。
+
 接口来自 `src/mangosd/MaNGOSsoap.cpp`：单方法 `ns1:executeCommand`（命名空间 `urn:MaNGOS`），
 用**游戏账号**做 HTTP Basic 认证，命令以 `SEC_CONSOLE` 执行，**命令的控制台输出原样返回**。
 
