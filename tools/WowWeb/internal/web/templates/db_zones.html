@@ -18,11 +18,11 @@
     <tbody>
     {{range .Zones}}
       <tr>
-        <td><a href="/db/zones/{{.Area}}">{{if .Name}}{{.Name}}{{else}}{{.Dir}}{{end}}</a></td>
+        <td><a href="{{.Path}}">{{if .Name}}{{.Name}}{{else}}{{.Dir}}{{end}}</a></td>
         <td class="right">{{.Stats.Creatures}}</td>
         <td class="right">{{.Stats.Objects}}</td>
         <td class="right">{{if .Stats.Quests}}{{.Stats.Quests}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
-        <td class="right"><a class="btn btn-ghost btn-sm" href="/db/zones/{{.Area}}">{{$.T "common.open"}}</a></td>
+        <td class="right"><a class="btn btn-ghost btn-sm" href="{{.Path}}">{{$.T "common.open"}}</a></td>
       </tr>
     {{else}}
       <tr><td colspan="5" class="muted center">{{$.T "db.none"}}</td></tr>

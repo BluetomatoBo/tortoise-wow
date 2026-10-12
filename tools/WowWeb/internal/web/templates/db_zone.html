@@ -1,6 +1,6 @@
 {{define "content"}}
 <div class="pagehead">
-  <h1>{{.Name}} <span class="muted">#{{.Area}}</span></h1>
+  <h1>{{.Name}} {{if .Area}}<span class="muted">#{{.Area}}</span>{{end}}</h1>
   <a class="btn btn-ghost" href="/db/zones">{{.T "db.zones.title"}}</a>
 </div>
 

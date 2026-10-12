@@ -754,11 +754,25 @@ node 24 (4930,-3026) → 25 (5149,-3128) → 26 (5276,-3274) 正是那 16 个哨
 - **端到端（本机跑真库只读）**：英文页 `q=Barrens` → `Zone / The Barrens / 2× /db/zones/17`；
   切中文后 `q=贫瘠之地` → `区域 / 贫瘠之地 / 生物刷新点`；回归：`火球术` 21 行、`贫瘠` 17 行、空查询仍是「没有找到」。
 
-**顺手发现的一处瑕疵（未修，留档）**：生成表里有两个「大陆桶」—— `kalimdor`（36 生物点 + 91 物件点）与
-`azeroth`（38 生物点），它们是**没有落进任何子区域框**的刷出点，`ZoneArea` 都返回 **area 0**，
-于是列表页两行都链到 `/db/zones/0`，而该页只显示其中一个（实测显示 36 生物点那个）。
-搜索侧因为拿不到名字（AreaTable 里 area 0 无名）**直接跳过**，不会产生这种歧义链接；
-要修的是区域页本身（例如详情路由接受目录名，或给大陆桶单独命名）。
+### 同日接着修：两个大陆桶各归其位
+
+上一段提到的瑕疵当轮就修了 —— `kalimdor`（36 生物点 + 91 物件点）与 `azeroth`（38 生物点）是
+**没有落进任何子区域框**的刷出点，两者 `ZoneArea` 都是 **area 0**，于是列表页两行都链到同一个
+`/db/zones/0`，而 `dirOfArea[0]` 是**遍历 map 时随机定下来的**（Go 的 map 迭代顺序），
+连「显示哪一个」都不稳定。修法：
+
+- `dirOfArea` **不再登记 area 0**（只登记真实区域）→ 随机歧义消失，`ZoneDirForArea(0)` 明确返回「无」。
+- 详情路由改成**接受 area 或目录**：`ZoneDirFromSegment("17")` 依区域找目录，`ZoneDirFromSegment("kalimdor")`
+  直接用目录（`/db/zones/0` 现在 404）。新增 `ZonePath(dir)`（area 0 时写目录）与 `ZoneBoxForDir(dir)`。
+- 名字：新增 `ZoneLabel(page, dir)` —— 有 area 的走 `AreaName`（不变），大陆桶走**它那块地图的名字**
+  （`MapName(box.mapID)`：kalimdor→卡利姆多、azeroth→东部王国），列表不再显示裸目录名。
+- 列表模板改用每行的 `Path`（`/db/zones/1519` 或 `/db/zones/kalimdor`）；详情页 area 为 0 时不显示 `#0`。
+- 搜索侧仍然跳过这两个（结果行只有 area 一个字段，拿不到目录），这一点写在 `SearchZones` 的注释里。
+- 测试：`TestContinentRowsHaveTheirOwnPages`（`ZoneDirForArea(0)` 无答案、两条目录各自解析、名字取地图名且两者不同、
+  真实区域行为不变）；render fixture 的 `db_zones` / `db_zone` 各加一条大陆行。
+- 端到端（真库只读）：列表第 5 页出现「卡利姆多 → /db/zones/kalimdor」「东部王国 → /db/zones/azeroth」；
+  两页各自 200、各自的地图图（kalimdor.png / azeroth.png）与内容；`/db/zones/0` → **404**；
+  `/db/zones/17` 仍是「贫瘠之地 #17」；搜索里再没有 `/db/zones/0`。
 
 ## 附：2026-10-11 服务端登录崩溃（与本项目无关，但同属这个仓库）
 

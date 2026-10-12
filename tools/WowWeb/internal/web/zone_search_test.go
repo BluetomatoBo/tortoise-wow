@@ -112,3 +112,63 @@ func TestDBKindPathHasAZoneList(t *testing.T) {
 		t.Errorf("dbKindPath(zone) = %q, want /db/zones", got)
 	}
 }
+
+// TestContinentRowsHaveTheirOwnPages pins the fix for the two rows that share
+// area 0 (Azeroth on map 0, Kalimdor on map 1): each is addressed by its
+// directory, named after its map, and the area still answers nothing - a
+// lookup that took area 0 would hand both rows the same page, and which one it
+// named would depend on the map iteration order.
+func TestContinentRowsHaveTheirOwnPages(t *testing.T) {
+	zh := namePage(t, i18n.ZH)
+
+	if dir, ok := ZoneDirForArea(0); ok {
+		t.Errorf("ZoneDirForArea(0) = %q, want no answer: two rows share it", dir)
+	}
+	if _, ok := ZoneDirFromSegment("0"); ok {
+		t.Error(`ZoneDirFromSegment("0") found a zone, want none`)
+	}
+
+	rows := map[string]struct {
+		label string
+		path  string
+	}{}
+	for _, dir := range []string{"kalimdor", "azeroth"} {
+		resolved, ok := ZoneDirFromSegment(dir)
+		if !ok || resolved != dir {
+			t.Fatalf("ZoneDirFromSegment(%q) = %q/%v", dir, resolved, ok)
+		}
+		label := ZoneLabel(&zh, dir)
+		if label == "" {
+			t.Fatalf("zone %q has no label", dir)
+		}
+		rows[dir] = struct {
+			label string
+			path  string
+		}{label, ZonePath(dir)}
+	}
+	if rows["kalimdor"].path == rows["azeroth"].path {
+		t.Errorf("the two continent rows share the page %s", rows["kalimdor"].path)
+	}
+	if rows["kalimdor"].path != "/db/zones/kalimdor" {
+		t.Errorf("kalimdor path = %q", rows["kalimdor"].path)
+	}
+	// The label is the map's name in the page's language, not the directory.
+	if rows["kalimdor"].label == rows["azeroth"].label {
+		t.Errorf("both continent rows read %q", rows["kalimdor"].label)
+	}
+	if got := rows["kalimdor"].label; got != zh.MapName(1) {
+		t.Errorf("kalimdor label = %q, want the map name %q", got, zh.MapName(1))
+	}
+
+	// A real zone still works the old way: area id in, area URL out.
+	dir, ok := ZoneDirFromSegment("17")
+	if !ok {
+		t.Fatal(`ZoneDirFromSegment("17") found nothing`)
+	}
+	if got := ZonePath(dir); got != "/db/zones/17" {
+		t.Errorf("zone 17 path = %q, want /db/zones/17", got)
+	}
+	if got := ZoneLabel(&zh, dir); got != zh.AreaName(17) {
+		t.Errorf("zone 17 label = %q, want %q", got, zh.AreaName(17))
+	}
+}

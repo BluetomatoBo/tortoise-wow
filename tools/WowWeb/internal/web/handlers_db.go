@@ -1101,6 +1101,7 @@ type dbZonesView struct {
 type dbZoneRow struct {
 	Dir   string
 	Area  uint32
+	Path  string // /db/zones/<area>, or the directory for the two rows that share area 0
 	Name  string
 	Stats zoneContent
 }
@@ -1123,7 +1124,7 @@ func (s *Server) handleDBZones(w http.ResponseWriter, r *http.Request, page *Pag
 	for _, dir := range dirs[start:end] {
 		content, _ := ZoneContent(dir)
 		area, _ := ZoneArea(dir)
-		rows = append(rows, dbZoneRow{Dir: dir, Area: area, Name: page.AreaName(area), Stats: content})
+		rows = append(rows, dbZoneRow{Dir: dir, Area: area, Path: ZonePath(dir), Name: ZoneLabel(page, dir), Stats: content})
 	}
 
 	page.Title = page.T("db.zones.title")
@@ -1141,6 +1142,7 @@ func (s *Server) handleDBZones(w http.ResponseWriter, r *http.Request, page *Pag
 type dbZoneView struct {
 	PageData
 	Area  uint32
+	Path  string // canonical URL of this zone's page
 	Name  string
 	Image string
 	Stats zoneContent
@@ -1165,17 +1167,19 @@ type dbZoneItem struct {
 }
 
 func (s *Server) handleDBZone(w http.ResponseWriter, r *http.Request, page *PageData) {
-	area, ok := s.parseUintPath(r, "entry")
+	// The segment is an area id, or a directory for the continent rows that have
+	// no area of their own (they would share /db/zones/0).
+	dir, ok := ZoneDirFromSegment(r.PathValue("entry"))
 	if !ok {
 		s.notFound(w, r)
 		return
 	}
-	dir, hasContent := ZoneDirForArea(area)
-	if dir == "" {
+	area, hasArea := ZoneArea(dir)
+	if !hasArea {
 		s.notFound(w, r)
 		return
 	}
-	content, _ := ZoneContent(dir)
+	content, hasContent := ZoneContent(dir)
 
 	// The top lists carry entries only; fetch their names in one query each.
 	type listSpec struct {
@@ -1215,19 +1219,18 @@ func (s *Server) handleDBZone(w http.ResponseWriter, r *http.Request, page *Page
 
 	// The zone's map, for the picture at the top of the page.
 	image := ""
-	for _, boxes := range boxesByDir {
-		if box, ok := boxes[dir]; ok {
-			image = mapImage(box.dir)
-			break
-		}
+	if box, ok := ZoneBoxForDir(dir); ok {
+		image = mapImage(box.dir)
 	}
 
-	page.Title = page.AreaName(area)
+	label := ZoneLabel(page, dir)
+	page.Title = label
 	page.Active = "db"
 	s.rend.Render(w, http.StatusOK, "db_zone", dbZoneView{
 		PageData:          *page,
 		Area:              area,
-		Name:              page.AreaName(area),
+		Path:              ZonePath(dir),
+		Name:              label,
 		Image:             image,
 		Stats:             content,
 		Creatures:         creatures,

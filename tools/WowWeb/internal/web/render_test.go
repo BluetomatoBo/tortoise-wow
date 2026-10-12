@@ -419,12 +419,16 @@ func TestTemplatesParse(t *testing.T) {
 		// The same page with nothing filled in at all.
 		{"db_object", dbObjectView{PageData: page, Object: store.ContentGameObject{Entry: 2, Name: "Spawn Point"}}},
 		{"db_zones", dbZonesView{
-			PageData: page, Total: 2, Page: 1, Pages: 1,
+			PageData: page, Total: 3, Page: 1, Pages: 1,
 			Zones: []dbZoneRow{
-				{Dir: "stormwind", Area: 1519, Name: "暴风城",
+				{Dir: "stormwind", Area: 1519, Path: "/db/zones/1519", Name: "暴风城",
 					Stats: zoneContent{Dir: "stormwind", Creatures: 777, Objects: 2335, Quests: 114}},
-				{Dir: "elwynn", Area: 12, Name: "艾尔文森林",
+				{Dir: "elwynn", Area: 12, Path: "/db/zones/12", Name: "艾尔文森林",
 					Stats: zoneContent{Dir: "elwynn", Creatures: 900, Objects: 400}},
+				// A continent row: no area id, so it is named after its map and
+				// reached through its directory.
+				{Dir: "kalimdor", Area: 0, Path: "/db/zones/kalimdor", Name: "卡利姆多",
+					Stats: zoneContent{Dir: "kalimdor", Creatures: 36, Objects: 91}},
 			}}},
 		{"db_zones", dbZonesView{PageData: page, Total: 0, Page: 1, Pages: 1}},
 		{"db_zone", dbZoneView{
@@ -436,6 +440,10 @@ func TestTemplatesParse(t *testing.T) {
 			HasContent: true, QuestLimitReached: true,
 		}},
 		{"db_zone", dbZoneView{PageData: page, Area: 12, Name: "艾尔文森林"}},
+		{"db_zone", dbZoneView{PageData: page, Area: 0, Path: "/db/zones/kalimdor", Name: "卡利姆多",
+			Image:      "/assets/maps/kalimdor.png",
+			Stats:      zoneContent{Dir: "kalimdor", Creatures: 36, Objects: 91},
+			HasContent: true}},
 		{"error", page},
 	}
 

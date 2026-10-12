@@ -92,10 +92,19 @@ func init() {
 	sortZoneOrder(zoneOrder)
 
 	// area -> directory, for the URLs, and back again for the pages.
+	//
+	// Area 0 is left out on purpose: both continent fallback rows carry it
+	// (Azeroth on map 0, Kalimdor on map 1), so the pair is not a lookup and
+	// whoever won it would depend on the map iteration order. Those two are
+	// addressed by their directory instead - ZonePath writes it, and
+	// ZoneDirFromSegment reads it back.
 	for _, boxes := range boxesByDir {
 		for dir, box := range boxes {
 			if _, seen := areaOfDir[dir]; !seen {
 				areaOfDir[dir] = box.area
+			}
+			if box.area == 0 {
+				continue
 			}
 			if _, seen := dirOfArea[box.area]; !seen {
 				dirOfArea[box.area] = dir
@@ -154,7 +163,8 @@ func ZoneContent(dir string) (zoneContent, bool) {
 func ZoneDirs() []string { return zoneOrder }
 
 // ZoneDirForArea maps an area id to the directory its map is stored under, and
-// reports whether that zone has any content.
+// reports whether that zone has any content. Area 0 is not a zone: the two
+// continent fallback rows share it, so they are addressed by directory.
 func ZoneDirForArea(area uint32) (string, bool) {
 	dir, ok := dirOfArea[area]
 	if !ok {
@@ -166,10 +176,65 @@ func ZoneDirForArea(area uint32) (string, bool) {
 	return dir, true
 }
 
-// ZoneArea is the area id of a zone directory, so a page can name it.
+// ZoneArea is the area id of a zone directory, so a page can name it. The
+// continent fallback rows answer 0.
 func ZoneArea(dir string) (uint32, bool) {
 	area, ok := areaOfDir[dir]
 	return area, ok
+}
+
+// ZoneDirFromSegment resolves the single path segment of /db/zones/<segment>:
+// a real area id, or a directory for the two rows that have no area of their
+// own. Anything else - an unknown area, an unknown directory, a non-numeric
+// area - reports false so the caller can answer 404.
+func ZoneDirFromSegment(segment string) (string, bool) {
+	if segment == "" {
+		return "", false
+	}
+	if area, err := strconv.ParseUint(segment, 10, 32); err == nil {
+		if area == 0 {
+			return "", false // two rows share it; only the directory is unique
+		}
+		return ZoneDirForArea(uint32(area))
+	}
+	if _, has := zoneContents[segment]; !has {
+		return "", false
+	}
+	return segment, true
+}
+
+// ZoneBoxForDir is the map box a zone's directory was built from: its map id
+// names the picture and, for the continent rows, the zone itself.
+func ZoneBoxForDir(dir string) (zoneBox, bool) {
+	for _, boxes := range boxesByDir {
+		if box, ok := boxes[dir]; ok {
+			return box, true
+		}
+	}
+	return zoneBox{}, false
+}
+
+// ZonePath is the URL of a zone's page: by area id where it has one, by
+// directory for the two continent rows that would otherwise share /db/zones/0.
+func ZonePath(dir string) string {
+	area, _ := ZoneArea(dir)
+	if area == 0 {
+		return "/db/zones/" + dir
+	}
+	return "/db/zones/" + strconv.FormatUint(uint64(area), 10)
+}
+
+// ZoneLabel is what a zone is called on a page. A zone is named by its area;
+// the continent rows have no area name, so they go by the map they hold - the
+// same name the picture's map carries, in the page's language.
+func ZoneLabel(page *PageData, dir string) string {
+	if area, ok := ZoneArea(dir); ok && area != 0 {
+		return page.AreaName(area)
+	}
+	if box, ok := ZoneBoxForDir(dir); ok {
+		return page.MapName(uint32(box.mapID))
+	}
+	return ""
 }
 
 // zoneSearchLimit caps the zone group of the unified search, the same way
@@ -194,10 +259,13 @@ func SearchZones(page *PageData, term string) []store.ContentSearchResult {
 	var out []store.ContentSearchResult
 	for _, dir := range zoneOrder {
 		area, ok := ZoneArea(dir)
-		if !ok {
+		if !ok || area == 0 {
+			// The two continent rows have no area id, so a hit could not carry
+			// one: the result row shows the id and links by it. They keep their
+			// own pages through the directory, reachable from the zones list.
 			continue
 		}
-		name := page.AreaName(area)
+		name := ZoneLabel(page, dir)
 		if name == "" || !strings.Contains(strings.ToLower(name), needle) {
 			continue
 		}
