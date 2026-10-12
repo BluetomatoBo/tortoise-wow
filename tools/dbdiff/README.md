@@ -878,3 +878,26 @@ SELECT c.entry, c.name, c.spell_list_id FROM creature_template c
 —— 带文字的表（ChrRaces/SkillLine/ItemSet/TalentTab/SpellShapeshiftForm…）与线上 **sha256 完全相同**，
 说明两边同为 enUS。生成的 `SpellCategory.dbc` 只有 `id + flags` 两个数字字段（字符串块 1 字节），
 **与语言无关**。
+
+## 二十三、启动日志收口（2026-10-12 14:51 重启后）
+
+`server_2026-10-12_14-51-14.log` 里与本文相关的行数从 **336 → 319 → 22**（10-11 13:01 那次是 A 级
+17 行生效后的 319）。现在这 22 行**逐条都能对上数据库侧的算法**，没有一条意外：
+
+| 日志里的报错 | 行数 | 与数据库对账 |
+|---|---|---|
+| `Spell N (...) misses spell_affect for effect M` | **8** | 内核判据（Effect==6、aura∈{107,108,109}、EffectItemType==0、无对应行）复算 = 8：45405 / 45985 / 51369 / 51370 / 51371 / 52603 / 52690 / 52701 —— 已核明无出处（见 `sql/wip_updates/spell_affect_missing38.sql` 第五节） |
+| `Creature (Entry: N) has nonexistent pet_spell_list_id (M)` | **2** | #503（Crimson Guard Olbreg）、#627600（Blackwind Villager）—— 客户端 `CreatureSpellData.dbc` 里没有这两个 id |
+| `Creature (Entry: N) has nonexistent spell list id (M)` | **12** | 7 只指向不存在的 `creature_spells` 行 + 5 只指向「8 槽全 0」的行（内核 `if (!spellsList.empty())` 不登记空行 → 视同不存在）—— 官方 1.12 与客户端都没有这些 id |
+| `Item (Entry: N) has wrong (not existing) spell category ...` | **0** | ✅ 换 `SpellCategory.dbc`（生成版 188 行）后归零 —— 本次唯一需要换 DBC 的一项 |
+
+**读日志的两个坑（写下来避免误读）**：
+
+1. `grep -c ... *.log` 会把**历史**全算进去 —— 每个旧 `server_*.log` 各留一份当年的 336/319 行，
+   而 `errors.log` 是 `a+` 追加的（当前累计 5047 行）。看当前状态只认**最新那个** `server_<日期>.log`。
+2. `logs/dbfix.log` 是 `LOG_DBERRFIX` 通道（`Log.cpp:335` 绑 `DBErrorFixFile`），里面写的是内核
+   给的**修复语句**（`UPDATE ...`），不是错误清单；它为空 = 没有「能自动给出修法」的数据问题，
+   不等于「所有 DB 检查都过了」。`outErrorDb()` 的正文去 `DBErrorLogFile`（`Log.cpp:322`）与主日志。
+
+**剩余 22 行 = 已核明、无原始数据可依的上游缺口**，不再处理；要真正消掉得改内核（给
+`SPELLMOD_CUSTOM_VALUE_*` 加消费者、给 spellmod 放宽 family 判定）或补客户端 DBC 的位图。
