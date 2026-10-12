@@ -901,3 +901,36 @@ SELECT c.entry, c.name, c.spell_list_id FROM creature_template c
 
 **剩余 22 行 = 已核明、无原始数据可依的上游缺口**，不再处理；要真正消掉得改内核（给
 `SPELLMOD_CUSTOM_VALUE_*` 加消费者、给 spellmod 放宽 family 判定）或补客户端 DBC 的位图。
+
+### 剩余 22 行的精确清单（2026-10-12 14:51 启动实测，与上表逐条吻合）
+
+`misses spell_affect`（8 条，全是「没有出处」的那些）：
+
+```
+Spell 45405 ([Deprecated] Arcane Potency)      effect 0
+Spell 45985 (Counterattack)                    effect 0
+Spell 51369 / 51370 / 51371 (Improved Water Shield)  effect 0
+Spell 52603 (Improved Swift Aspects)           effect 0
+Spell 52690 (Crystal Infusion)                 effect 0
+Spell 52701 (Purge Haste Passive)              effect 0
+```
+
+`has nonexistent spell list id`（12 条 = 7 条指向不存在的行 + 5 条指向「8 槽全 0」的行）：
+
+```
+不存在：59967 King / 62051 Dragonmaw Veteran / 62177 Blackrock Conjurer /
+        62210 Dragonmaw Pillager / 62226 Stonehide Boar / 62227 Elder Stonehide Boar /
+        62263 Dragonmaw Marauder
+8 槽全 0：61244 Brol'ok Mauler / 62321 Rotting Resident / 62335 Blistering Remains /
+        62341 Slavering Crag Coyote / 62361 Stormreaver Drone
+```
+
+`has nonexistent pet_spell_list_id`（2 条）：
+
+```
+62760 Blackwind Villager    → pet_spell_list_id 627600（客户端 CreatureSpellData.dbc 里没有）
+63187 Crimson Guard Olbreg  → pet_spell_list_id 503（同上；503 只在服务端出现过）
+```
+
+**这 22 行的处置：不动**（每条都查过官方 1.12、客户端 1.18.1、上游仓库与客户端 dbc.MPQ，
+都没有出处）。日志里保留它们反而是有用的信号：哪天乌龟服补上了数据，这几行会自己消失。
