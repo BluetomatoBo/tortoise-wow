@@ -934,3 +934,104 @@ Spell 52701 (Purge Haste Passive)              effect 0
 
 **这 22 行的处置：不动**（每条都查过官方 1.12、客户端 1.18.1、上游仓库与客户端 dbc.MPQ，
 都没有出处）。日志里保留它们反而是有用的信号：哪天乌龟服补上了数据，这几行会自己消失。
+
+## 二十四、物品说明按 entry 误配（2026-10-12 复核，撤 453 条）
+
+### 现象
+
+`/db/items/42142`（Simple Leaves / 朴素树叶）中文有说明「对应红色插槽。」，英文没有，
+而且这条说明和物品名毫无关系 —— 玩家报的就是这个。
+
+### 溯源：不是「放错了格子」，是**按 entry 抄了另一件物品的中文**
+
+`locales_item.description_loc4` 里空着的格子，2026-10-05 是用会话产物
+`files/i18n-zh/p5/upstream-data/fill_from_cmangos.py` 按 **entry** 从
+[cmangos classic-db](https://github.com/cmangos/classic-db) 的官方简中填的
+（`locales/Chinese/locales_item.sql`）。这个脚本**没有**核对「来源行讲的是不是同一件物品」，
+而香草的条目表里留着一大批当时没用上、后来才启用/废弃的 entry：
+
+```
+cmangos:    INSERT INTO `locales_item` VALUES (42142, '朴素龙眼石', '对应红色插槽。');
+我们的库:   item_template 42142 = Simple Leaves（朴素树叶）
+            ← 乌龟服自定义内容，见 sql/database_updates/world/20260505222630_world.sql
+```
+
+名字列逃过一劫纯属侥幸：名字先被本项目自己的译名管道填好了（fill 只填空格子），
+**说明列是空的，于是宝石的插槽说明被抄了进来**。
+
+### 三组证据
+
+1. **插槽机制在 1.12 根本不存在**：`grep -rn "SOCKET_" src/game/` 只命中网络 socket；
+   1.12 客户端没有插槽 UI，物品表也没有插槽字段。而 108 条插槽说明的来源行，
+   在 cmangos 里**清一色是宝石**（龙眼石 / 天焰钻石 / 大地侵攻钻石 / 茶晶石 / 血玉石…），
+   我们的物品却是护甲、武器、食物、任务杂物（`Idol of Fluidity` ← 反光德拉诺影钻、
+   `Delicious Pizza` ← 闪光血玉石、`Black Tie Plum Waistcoat` ← 混乱之天焰钻石）。
+2. **物品根本不教东西，说明却说「教你学会…」**：`spellid_1..5` 全 0 的物品不可能是
+   配方 / 图鉴 / 坐骑 / 宠物（这些东西必须挂一个法术）。上游 base 的 2089 条说明里
+   这种自相矛盾只有 5 条，本次补进来的有 213 条。
+3. **来源行是另一件物品**：例如 `Crown of Transcendence`（头冠）抄到了
+   「叛逃者传单」的风味文案「这只箱子里满是传单…」；`Mossbloom Coating`（涂料）
+   抄到了「金色龙鹰卵」的「教你学会召唤这种小伙伴。」。
+
+### 判据（可复现）
+
+`tools/dbdiff/verify_cmangos_desc_fill.py`：**只有能确认来源行讲的就是我们这件物品时才保留** ——
+
+| 判据 | 含义 |
+|---|---|
+| W1 同名 | 我们库里的中文名 == 来源行的中文名，**且上游 base 里本来就有这个中文名**（base 空说明这中文不是抄来的，才可作证） |
+| W2 香草同物 | 香草原版 `item_template` 同 entry 的英文名 == 我们的英文名 |
+| W3 异译 | 两个中文名高度重合（最长公共子串 ≥ 较短者的 50%），即同一物品的不同译法（`配方：自由行动药剂` vs `配方：自由行动药水`） |
+| R1 机制不存在 | 说明含 插槽 / 镶嵌 / 多彩宝石 / 切割 |
+| R2 不可能教人 | 说明以「教你学会」开头但五个法术槽全 0 |
+| R3 我方是占位名 | 我们这件是 Placeholder / Monster - / Deprecated / OLD / [PH]，而来源行是具体物品名 |
+
+W1/W2/W3 任一成立 → keep；R1/R2/R3 命中 → revert；都不沾 → revert。
+
+### 结果
+
+库里 3866 条中文说明：**keep 3413 / revert 453**
+
+```
+机制在 1.12 不存在                 236
+来源行是另一件物品                  160
+物品五个法术槽全 0，不可能教人          40
+我们这件是占位/测试名，来源行讲的是另一件物品    17
+```
+
+### 安全性（逐条核过）
+
+* 453 条**在上游 base 里本来就没有中文说明**（444 条上游无此条目、9 条上游说明为空）
+  → 撤成空串 = 回到上游状态，不会删掉任何上游/官方中文。
+* 453 条在上游 `item_template` 与**线上库**里的英文说明也都是空的
+  → 撤掉后中英一致（两边都没有说明行），不是「英文有中文删了」。
+* **幂等**：`WHERE entry=… AND description_loc4='原文'`，值被人改过就整行不动。
+* 用 `START TRANSACTION … ROLLBACK` 在线上库试跑过：453 条全部命中、无报错、回滚后原样。
+
+### 交付
+
+| 文件 | 作用 |
+|---|---|
+| `tools/dbdiff/verify_cmangos_desc_fill.py` | 复核器：自动拉 cmangos 源（sha256 钉住）、读线上库与上游 base、输出明细 TSV 与回滚 SQL |
+| `sql/wip_updates/locales_item_desc_fixes.sql` | 453 条幂等回滚（应用：`mysql tw_world < …`） |
+| `sql/wip_updates/locales_item.sql` | 同步删除那 453 行（6584 → 6131 条；description 段 1516 → 1063 条），重跑导入不会再写回来 |
+
+复现：
+
+```sh
+python3 tools/dbdiff/verify_cmangos_desc_fill.py \
+    --mysql "$(pwd)/tools/dbdiff/mysql_local.sh tw_world" \
+    --base sql/base/tw_world_locales_item.sql --cache /tmp/cmangos-data \
+    --report /tmp/cmangos_desc_fill.tsv --sql /tmp/cmangos_desc_revert.sql
+```
+
+### 没动的
+
+* **上游 base 自带的 2089 条中文说明**（含 798 条「教你学会…」配方说明）：那是官方本地化
+  数据，koKR / frFR / zhTW 列有同样的文本，与本次误配无关，一个字都没动。
+* **名字列同样的误配**：`fill_from_cmangos.py` 也填 `name_loc4`（空格子时）。
+  已核出 27 条英文名是占位名、中文名却是具体物品名（33102 中文名「祖尔金之血」= 官方同
+  entry 的废弃条目）。这些是乌龟服尚未启用的 Placeholder 物品，玩家见不到，名字侧没动 ——
+  如要清另开一轮。
+* **本批 453 条的「正确中文」**：这些物品的英文说明本来就是空的（上游与乌龟服都没写），
+  所以正确状态就是没有说明行，不需要补译。
