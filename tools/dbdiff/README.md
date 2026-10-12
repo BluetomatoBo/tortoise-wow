@@ -748,3 +748,66 @@ bit29 的 45409 系），**47314-47318 这五个学习包装教的是 2537 系**
 都不属于「补数据」范围。
 
 完整记录（含每条掩码的证据链与复现命令）：`sql/wip_updates/spell_affect_missing38.sql`。
+
+## 二十一、宠物法术表缺口：按客户端 `CreatureSpellData.dbc` 补齐（2026-10-12）
+
+dbfix 里 `Creature (Entry: N) has nonexistent pet_spell_list_id (M)` 与
+`has nonexistent spell list id (M)` 是**两张不同的表**，这轮只把能查到原始数据的那部分修了。
+
+### 1. 哪张表由谁说话
+
+| 报错 | 查的表 | 原始数据在哪 |
+|---|---|---|
+| `nonexistent pet_spell_list_id` | `pet_spell_data`（id + 4 个技能） | **客户端 `CreatureSpellData.dbc`**（内核注释：`fill data from DBC as more correct source if available`；同一 id 还会随 `CMSG_CREATURE_QUERY` 发给客户端显示宠物技能） |
+| `nonexistent spell list id` | `creature_spells`（8 槽 + 概率/目标/延迟） | 服务端自有的旧社区数据，**客户端里没有对应文件** |
+
+### 2. 新增工具 `tools/WowWeb/gen_pet_spell_data.py`
+
+```bash
+# 客户端文件按清单下载 + sha256 校验（与其它生成器同一套缓存），逐行对比线上表
+python3 tools/WowWeb/gen_pet_spell_data.py \
+    --mysql "tools/dbdiff/mysql_local.sh tw_world" --emit-sql /tmp/pet.sql
+# 可选：--vanilla-client ~/Downloads/WoW_Classic  用原版 1.12.1 的同名 DBC 做三方对照
+```
+
+结论分三类：**只有客户端有 → 该补**；**两侧都有但客户端多技能 → 该更新**；
+**客户端清成 0 / 只有服务端有 → 默认不动**（这是矛盾或乌龟服自己的增删，需人工判断）。
+
+### 3. 本轮判定与落库
+
+`sql/database_updates/world/20261012150000_world.sql`：
+
+* **补 33 行**（9486–9518，客户端 1.18.1 的 CreatureSpellData.dbc 有、线上没有）——
+  其中 32 行被 **99 只生物**引用；填上后 `pet_spell_list_id` 解析不了的数量
+  从 **34 个 id / 101 只生物**降到 **2 个 id / 2 只生物**。
+* **更新 35 行**（线上只有 1 个技能、客户端有 2 个）—— 被 **44 只生物**引用。规律很清楚：
+  客户端给每个宠物家族都配了第二个技能（熊 Roar of Fortitude、蟹/龟 Bubble Barrier、
+  鳄鱼 Death Roll、蜘蛛 Web、陆行鸟 Strider Presence、狼 Packleader、蝎 Scorpid Poison、
+  迅猛龙 Savage Rend……），而且这些技能在库里**都有学习包装**（`effect 36 LEARN_SPELL`
+  + trigger = 该技能，内核 `LoadPetCreateSpells` 就是这样把「宠物用的技能」换成
+  「可学习的技能」）→ 驯服后宠物会正常学会。乌龟服自己的服务端表停在旧版，客户端更新了。
+* 复跑生成器：`两侧一致 354 行`，该补 / 该更新都是 0。
+
+### 4. 没动的部分（查不到可判定的原始数据）
+
+| 对象 | 情况 |
+|---|---|
+| `pet_spell_data` #9091（Rotting Agam'ar） | **新旧客户端说法相反**：旧版 12,621 字节的 DBC 里是 `(26178 Charge)`（与线上一致），新版 12,765 字节是 `(0,0,0,0)`。单点矛盾，不动。 |
+| `pet_spell_data` #61975（Blackwind Villager） | 只有服务端有（客户端两个版本都没有）→ 乌龟服服务端自造，保留。 |
+| `pet_spell_data` #503（Crimson Guard Olbreg）、#627600（Blackwind Villager） | 客户端里根本没有这两个 id → 无处可查，保持原样（各留一行日志）。 |
+| `creature_spells`：7 只生物（59967 King、62051/62210/62263 Dragonmaw ⋯、62226/62227 Stonehide Boar） `spell_list_id` 指向**不存在的行** | 官方 1.12 的 `creature_spells` 里也没有这些 id → 无出处。 |
+| `creature_spells`：5 只生物（61244 Brol'ok Mauler、62321 Rotting Resident、62335 Blistering Remains、62341 Slavering Crag Coyote、62361 Stormreaver Drone）指向 **8 槽全 0 的行** | 其中 4 行的 `probability_1 = 100` 但技能空着 —— 上游写了行忘了填技能；没有出处可抄（同族兄弟的写法只能算推测，不算原始数据），不动。 |
+
+复现口径：
+
+```sql
+-- 宠物表缺口（应只剩 503 / 627600 两个 id、2 只生物）
+SELECT c.pet_spell_list_id, COUNT(*) FROM creature_template c
+  LEFT JOIN (SELECT DISTINCT entry AS id FROM pet_spell_data) p ON p.id = c.pet_spell_list_id
+ WHERE c.pet_spell_list_id <> 0 AND p.id IS NULL GROUP BY c.pet_spell_list_id;
+
+-- 生物技能表缺口（7 条不存在 + 5 条全 0，共 12 只生物；无出处）
+SELECT c.entry, c.name, c.spell_list_id FROM creature_template c
+  LEFT JOIN creature_spells s ON s.entry = c.spell_list_id
+ WHERE c.spell_list_id <> 0 AND s.entry IS NULL;
+```
