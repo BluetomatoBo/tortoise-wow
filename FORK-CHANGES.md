@@ -2,14 +2,14 @@
 
 - **基准 / Baseline**：上游 [`tortoise-wow/tortoise-wow`](https://github.com/tortoise-wow/tortoise-wow) 的 `1181dev` 分支，共同祖先 `187af78`
 - **分支 / Branch**：[`BluetomatoBo/tortoise-wow`](https://github.com/BluetomatoBo/tortoise-wow) 的 `1181-zhcn-localization`
-- **规模 / Size**（截至 `40df267`，下面的命令给出的才是当前值 / measured at `40df267`; the commands below print the current numbers）：本分支自己的提交 43 个，合计 120 个文件（104 新增 / 16 修改），+54549 / −18
-- **上游同步 / Upstream sync**：已并入上游 `main` 的最新提交 `d94947b`（见第 10 节）
+- **规模 / Size**（截至 `1e8d0c5`；数量因 `tools/WowWeb/` 生成的数据文件而有很大变化，以命令输出为准 / measured at `1e8d0c5`; the count is dominated by the generated data files under `tools/WowWeb/`, so trust the commands below）：本分支自己的提交 240 个，合计 5197 个文件（5174 新增 / 23 修改 / **0 删除**），+173769 / −38
+- **上游同步 / Upstream sync**：已并入上游 `main` 的最新提交 `1039342`（2026-10-11；两次合并见第 10 节）
 
 这条清单可以自己复现 / Reproduce this list:
 
 ```bash
 git fetch origin
-# 本分支独有的提交（43 个，不含上游的合并提交）
+# 本分支独有的提交（240 个，不含上游的合并提交）
 git log --oneline --reverse --no-merges 1181dev..1181-zhcn-localization
 # 文件级差异（新增 vs 修改）
 git diff --name-status 1181dev...1181-zhcn-localization
@@ -28,12 +28,16 @@ git diff --stat 1181dev...1181-zhcn-localization -- src/
 | 配置模板补文档 | 2 个键 | `src/mangosd/mangosd.conf.dist.in` |
 | 新增工具 | 3 套 | `tools/WowWeb/`、`tools/ClientPatch/`、`tools/I18nKit/` |
 
-> 上游的东西**一个都没删**：120 个文件里 104 个是新增、16 个是修改，全部 18 行删除都是
-> 被替换掉的旧代码，没有删掉任何文件或功能。
+> 上游的东西**一个都没删**：5197 个改动文件里 5174 个是新增（其中 5074 个是 `tools/WowWeb/`
+> 生成的数据文件）、23 个是修改，**删除的文件为 0**，全部 38 行删除都是被替换掉的旧代码
+> （例如 `sql/setup_databases.sh` 被重写、`ObjectMgr` 里的旧检查被换成更严的版本），
+> 没有删掉任何文件或功能。
 >
-> **Nothing upstream was deleted**: of the 120 files, 104 are additions and 16 are
-> modifications, and all 18 deleted lines are old code that was replaced. No file and no
-> feature was removed.
+> **Nothing upstream was deleted**: of the 5197 changed files, 5174 are additions (5074 of
+> them generated data files under `tools/WowWeb/`) and 23 are modifications, with **zero
+> deleted files**; all 38 deleted lines are old code that was replaced (e.g.
+> `sql/setup_databases.sh` was rewritten, an older check in `ObjectMgr` was replaced by a
+> stricter one). No file and no feature was removed.
 
 ---
 
@@ -321,11 +325,43 @@ DBC 不存任务文本），官方 zhCN 又只覆盖官方内容，所以 Turtle
 
 ### 10. 上游同步状态
 
-上游 [`main`](https://github.com/tortoise-wow/tortoise-wow) 的最新提交 `d94947b`
-（2026-09-29，「Merging SOAP Interface, Windows build/deploy fixes, and creature HP
-clamping」）已并入本分支，合并提交 `ad4ff55`。
+上游 [`main`](https://github.com/tortoise-wow/tortoise-wow) 的最新提交 `1039342`
+（2026-10-11）已并入本分支，合并提交 `1e8d0c5`。此前还有一次合并 `ad4ff55`
+（`d94947b`，2026-09-29）。`git merge-base --is-ancestor upstream/main HEAD` 现在为真。
 
-它是一次**纯同步合并，一个文件都没改**：
+#### 10.1 第二次合并（`1e8d0c5`，2026-10-12）：8 个提交，**无冲突**
+
+上游这 8 个提交只碰 **5 个文件**，其中 4 个我们从未改动：
+
+| 上游改了 | 内容 | 我们动过吗 |
+|---|---|---|
+| `src/game/Objects/Unit.h` | `SpellCooldown.itemid` 由 `uint16` 改 `uint32` —— 修「物品 id 超过 65535 被截断」导致冷却串号 | 否 |
+| `src/scripts/spells/spell_druid.cpp` | 修生命之触 `OnFinish` 读已释放 spell mod 的崩服（SIGSEGV in `Spell::finish`）：改为去玩家当前生效的 mod 列表里查，再拿指针与 `m_appliedMods` 比对 | 否 |
+| `src/game/World.cpp` | `Shutdown()` 里补一行 `m_headlessSessionMgr->Shutdown()`，在关库之前把无头会话存盘踢下线 | **是**（`a720440` 的 `Loot.RetryEmptyDrops`）—— 自动合并，两处改动都保留 |
+| `sql/database_updates/world/20261007161727_world.sql` | 新迁移：`npc_vendor_template` 1500149/1206 补货（`maxcount` 0→3、`incrtime` 14400）；`npc_vendor` 62150 的 3355/3356（0→2）；删 5 个 Redridge 废弃生物 spawn（guid 6163/6167/6168/6169/6170）；起始投掷武器 2947/3111 数量 100/200 → 1 | 新增文件 |
+| `sql/database_updates/world/20261008075941_world.sql` | 新迁移：补 Dark Iron Aggression 的 11 个 Stolen Crate（`2020263`）刷新点；`gameobject_template` 2020263 的 `flags` 设为 4 | 新增文件 |
+
+合并前逐项核过（用的都是本仓库既有工具）：
+
+| 检查 | 工具 | 结果 |
+|---|---|---|
+| 文本冲突 | `git merge-tree --write-tree` | 退出码 0；实际合并时只有 `World.cpp` 需要自动合并 |
+| 内核能不能解析新迁移 | `tools/dbdiff/check_update_file.py` | 4 + 2 条语句全部 OK |
+| 删数据安全（2026-10-11 事故后加的守卫） | `tools/dbdiff/check_delete_ids.py` | 那 5 个 guid 在 `src/`、`sql/base/` 里都没出现；`creature_addon` / `creature_linking` 里也没有对应行，不留孤儿 |
+| 线上库试算 | `START TRANSACTION … ROLLBACK` | 两条迁移都干净执行：5 行生物被删、补货字段按预期改值、11 个刷新点插入、`flags` 改 4；且这 11 个 guid 线上原本不存在，不会撞主键 |
+| 迁移登记表一致性 | 逐文件算 SHA1 比对线上 `migrations` | 线上 176 条里正好只缺这两个文件；仓库 177 个迁移文件的哈希与库内记录**逐条一致**（没有「已应用的文件被改过」） |
+| 需不需要补翻译 | 查 `locales_*` | **不需要**：这两条迁移不含任何文本（只有数值与坐标），且 2020263「被盗的箱子」的 zhCN 名字早已在 `locales_gameobject` 里 |
+
+上游代码引用的符号在本树里都存在：`Player::GetSpellMod`（`Player.h:1754`）、
+`MAX_SPELLMOD = 34`（`SpellDefines.h:527`）、`m_appliedMods` 是
+`std::list<SpellModifier*>`（`Spell.h:501`）、`HeadlessSessionMgr::Shutdown()`
+（`HeadlessSessionMgr.h:74`）；`std::find` 靠 PCH（同目录其它脚本也这么用）。
+真正的编译在服务器上做，本机没有 ACE。
+
+**两条新迁移还没进线上库** —— 内核的自动更新器（`src/shared/Database/AutoUpdater.cpp`，
+按文件 SHA1 记进 `migrations` 表）会在服务器下次启动时执行它们；不需要手工灌。
+
+#### 10.2 第一次合并（`ad4ff55`，`d94947b`）：纯同步，一个文件都没改
 
 - `d94947b` 的两个父是 `4f4fcaa`（`main` 的旧头，9-16）和 `187af78`（`1181dev`，9-24，
   **也就是本分支的基点**），而 `4f4fcaa` 本身是 `187af78` 的祖先 —— 上游只是把 `main`
@@ -344,9 +380,10 @@ clamping」）已并入本分支，合并提交 `ad4ff55`。
 自己确认：
 
 ```bash
-git merge-base --is-ancestor main HEAD && echo "main 已是本分支的祖先"
-git diff --stat 187af78 d94947b        # 空
-git rev-parse 187af78^{tree} d94947b^{tree}   # 两行相同
+git fetch https://github.com/tortoise-wow/tortoise-wow main:upstream-main
+git merge-base --is-ancestor upstream-main HEAD && echo "上游 main 已是本分支的祖先"
+git diff --diff-filter=D --name-only upstream-main HEAD    # 空：没删任何上游文件
+git log --oneline d94947b..upstream-main                  # 第二次合并吃进来的 8 个提交
 ```
 
 ---
@@ -662,10 +699,44 @@ calls.
 
 ### 10. Upstream sync status
 
-Upstream `main`'s latest commit, `d94947b` (2026-09-29, "Merging SOAP Interface, Windows
-build/deploy fixes, and creature HP clamping"), is merged into this branch as `ad4ff55`.
+Upstream `main`'s latest commit, `1039342` (2026-10-11), is merged into this branch as
+`1e8d0c5`; an earlier merge, `ad4ff55`, brought in `d94947b` (2026-09-29).
+`git merge-base --is-ancestor upstream/main HEAD` is now true.
 
-It is a **pure catch-up merge that changes no files at all**:
+#### 10.1 The second merge (`1e8d0c5`, 2026-10-12): eight commits, **no conflicts**
+
+Those commits touch **five files**, four of which we had never touched:
+
+| Upstream changed | What it does | Did we touch it? |
+|---|---|---|
+| `src/game/Objects/Unit.h` | `SpellCooldown.itemid` `uint16` → `uint32`, so item ids above 65535 are no longer truncated (which used to mix up cooldowns) | no |
+| `src/scripts/spells/spell_druid.cpp` | Fixes a crash in Healing Touch's `OnFinish`, which read a freed spell mod (SIGSEGV in `Spell::finish`): it now looks the mods up in the caster's live list and only compares pointers against `m_appliedMods` | no |
+| `src/game/World.cpp` | One line in `Shutdown()`: `m_headlessSessionMgr->Shutdown()`, saving and kicking headless sessions before the DB closes | **yes** (`a720440`, `Loot.RetryEmptyDrops`) — auto-merged, both changes kept |
+| `sql/database_updates/world/20261007161727_world.sql` | New migration: restocks `npc_vendor_template` 1500149/1206 (`maxcount` 0→3, `incrtime` 14400) and `npc_vendor` 62150's 3355/3356 (0→2); deletes five deprecated Redridge creature spawns (guids 6163/6167/6168/6169/6170); starting thrown weapons 2947/3111 drop from 100/200 to 1 | new file |
+| `sql/database_updates/world/20261008075941_world.sql` | New migration: the eleven missing Stolen Crate (`2020263`) spawns for Dark Iron Aggression, plus `flags` = 4 on `gameobject_template` 2020263 | new file |
+
+Everything was checked before committing, with tools this repo already has:
+
+| Check | Tool | Result |
+|---|---|---|
+| Textual conflicts | `git merge-tree --write-tree` | exit code 0; in the real merge only `World.cpp` needed auto-merging |
+| Can the core parse the new migrations? | `tools/dbdiff/check_update_file.py` | 4 + 2 statements, all OK |
+| Delete safety (the guard added after the 2026-10-11 incident) | `tools/dbdiff/check_delete_ids.py` | none of the five guids appears in `src/` or `sql/base/`, and `creature_addon` / `creature_linking` hold no rows for them — no orphans |
+| Rehearsal on the live database | `START TRANSACTION … ROLLBACK` | both migrations ran clean: five creature rows deleted, the restock columns set as intended, eleven spawns inserted, `flags` = 4; none of those guids existed before, so nothing collides on the primary key |
+| Migration ledger | SHA1 of every file vs the live `migrations` table | the live table (176 rows) is missing exactly these two files, and all 177 repo files match their recorded hash — nothing already applied was ever edited |
+| Any translation needed? | `locales_*` | **none**: neither migration carries text (values and coordinates only), and 2020263 ("Stolen Crate") already has its Chinese name in `locales_gameobject` |
+
+Every symbol the incoming code uses exists in this tree: `Player::GetSpellMod`
+(`Player.h:1754`), `MAX_SPELLMOD = 34` (`SpellDefines.h:527`), `m_appliedMods` is a
+`std::list<SpellModifier*>` (`Spell.h:501`) and `HeadlessSessionMgr::Shutdown()`
+(`HeadlessSessionMgr.h:74`); `std::find` comes from the PCH, as it does in other files in
+the same directory. The real compile happens on the server — there is no ACE here.
+
+**The two new migrations are not in the live database yet.** The core's auto-updater
+(`src/shared/Database/AutoUpdater.cpp`, which records each file's SHA1 in the `migrations`
+table) will run them on the next server start; nothing has to be applied by hand.
+
+#### 10.2 The first merge (`ad4ff55`, `d94947b`): a pure catch-up that changes no files
 
 * `d94947b`'s two parents are `4f4fcaa` (`main`'s old tip, Sep 16) and `187af78`
   (`1181dev`, Sep 24 — **this branch's own base**), and `4f4fcaa` is itself an ancestor of
@@ -684,7 +755,10 @@ So all three things in its title were **already in our base**:
 To check it yourself:
 
 ```bash
-git merge-base --is-ancestor main HEAD && echo "main is an ancestor of this branch"
-git diff --stat 187af78 d94947b        # empty
-git rev-parse 187af78^{tree} d94947b^{tree}   # both lines identical
+git fetch https://github.com/tortoise-wow/tortoise-wow main:upstream-main
+git merge-base --is-ancestor upstream-main HEAD && echo "upstream main is an ancestor of this branch"
+git diff --diff-filter=D --name-only upstream-main HEAD    # empty: no upstream file was removed
+git log --oneline d94947b..upstream-main                   # the eight commits the second merge brings in
+git diff --stat 187af78 d94947b                            # empty
+git rev-parse 187af78^{tree} d94947b^{tree}                # both lines identical
 ```
