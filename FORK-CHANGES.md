@@ -358,8 +358,31 @@ DBC 不存任务文本），官方 zhCN 又只覆盖官方内容，所以 Turtle
 （`HeadlessSessionMgr.h:74`）；`std::find` 靠 PCH（同目录其它脚本也这么用）。
 真正的编译在服务器上做，本机没有 ACE。
 
-**两条新迁移还没进线上库** —— 内核的自动更新器（`src/shared/Database/AutoUpdater.cpp`，
-按文件 SHA1 记进 `migrations` 表）会在服务器下次启动时执行它们；不需要手工灌。
+**两条新迁移已随 2026-10-13 10:58 的服务器重启落库**（内核自动更新器按文件 SHA1 记进
+`migrations` 表）。落库后逐项复核：
+
+| 迁移内容 | 线上实测 |
+|---|---|
+| `npc_vendor_template` 1500149/1206 | `maxcount`=3、`incrtime`=14400 ✓ |
+| `npc_vendor` 62150 的 3355/3356 | `maxcount`=2、`incrtime`=14400 ✓ |
+| 删 5 个废弃生物 spawn | `SELECT COUNT(*) FROM creature WHERE guid IN (…)=0` ✓ |
+| 起始投掷武器 2947/3111 | 全部 `amount`=1 ✓ |
+| 11 个 Stolen Crate 刷新点 | `gameobject` 里 2020263 共 11 行 ✓ |
+| `gameobject_template` 2020263 `flags` | 4 ✓ |
+| 落库文件的 SHA1 | 与仓库两份文件**逐字节一致**（`E8C9BAE5…` / `8F9C39D3…`）✓ |
+
+顺带把这条内容链也核了一遍，确认任务真的能做完：
+
+* 箱子的 `data1` 是 `chest.lootId`（`GameObject.h:96-101` 的字段定义），指向掉落表
+  `2020263`；该表只有一行：任务物品 **42072 Refugee Supplies（难民补给品，已有中文名）
+  `-100`（必掉）`mincount/maxcount` = 1/1**
+* 任务 41905「Dark Iron Aggression / 黑铁的进犯」要 8 个 42072，标题、目标文本、
+  物品名**都已有中文** —— 这次合并**不需要补任何翻译**
+* 箱子的 `data0`=43 是 `lockId`（`Lock.dbc` 里 43 的开锁技能要求为 0），`flags`=4 是
+  `GO_FLAG_INTERACT_COND`；库里 **589 个同类箱子**用的是完全一样的取值，属于项目既有约定，
+  没有引入新风险
+* 被删的 5 个 guid 在 7 张关联表（`creature_addon` / `creature_linking` /
+  `game_event_creature` / `pool_creature` / `creature_movement` …）里都没有残留行
 
 #### 10.2 第一次合并（`ad4ff55`，`d94947b`）：纯同步，一个文件都没改
 
@@ -732,9 +755,34 @@ Every symbol the incoming code uses exists in this tree: `Player::GetSpellMod`
 (`HeadlessSessionMgr.h:74`); `std::find` comes from the PCH, as it does in other files in
 the same directory. The real compile happens on the server — there is no ACE here.
 
-**The two new migrations are not in the live database yet.** The core's auto-updater
-(`src/shared/Database/AutoUpdater.cpp`, which records each file's SHA1 in the `migrations`
-table) will run them on the next server start; nothing has to be applied by hand.
+**The two new migrations landed with the 2026-10-13 10:58 server restart** (the core's
+auto-updater records each file's SHA1 in the `migrations` table). Everything was then
+re-checked against the live database:
+
+| What the migration does | What the live database shows |
+|---|---|
+| `npc_vendor_template` 1500149/1206 | `maxcount` = 3, `incrtime` = 14400 ✓ |
+| `npc_vendor` 62150's 3355/3356 | `maxcount` = 2, `incrtime` = 14400 ✓ |
+| five deprecated creature spawns deleted | `SELECT COUNT(*) FROM creature WHERE guid IN (…)` = 0 ✓ |
+| starting thrown weapons 2947/3111 | every row `amount` = 1 ✓ |
+| eleven Stolen Crate spawns | eleven rows with `gameobject.id` = 2020263 ✓ |
+| `gameobject_template` 2020263 `flags` | 4 ✓ |
+| SHA1 of the applied files | byte-identical to the two files in the repo (`E8C9BAE5…` / `8F9C39D3…`) ✓ |
+
+The quest chain behind it was verified too, so it really is completable:
+
+* A crate's `data1` is `chest.lootId` (see the field list at `GameObject.h:96-101`) and points
+  at loot table `2020263`, which holds exactly one row: quest item **42072 Refugee Supplies
+  (Chinese name 难民补给品, already present) at `-100` (always drops), count 1/1**.
+* Quest 41905 "Dark Iron Aggression" (黑铁的进犯) asks for eight of them, and its title,
+  objectives and the item name **all already have Chinese** — this merge needed **no
+  translation at all**.
+* A crate's `data0` = 43 is its `lockId` (lock 43's required skill in `Lock.dbc` is 0) and
+  `flags` = 4 is `GO_FLAG_INTERACT_COND`; **589 other chests** in the database use exactly the
+  same values, so this is established project convention, not new risk.
+* None of the five deleted guids leaves a row behind in the seven tables that reference them
+  (`creature_addon`, `creature_linking`, `game_event_creature`, `pool_creature`,
+  `creature_movement`, …).
 
 #### 10.2 The first merge (`ad4ff55`, `d94947b`): a pure catch-up that changes no files
 
