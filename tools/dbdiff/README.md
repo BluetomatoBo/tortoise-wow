@@ -1333,3 +1333,46 @@ python3 tools/dbdiff/verify_migration_deletes.py \
 3. 之后再导入的数据会把已删的行带回来，且没有任何日志提示。
 
 搭好库之后，用上面这个脚本对一遍账；①② 里出现的都值得逐条看。
+
+### 补：那 11 行是被 `dbdiff.py` 的补数据脚本带回来的（2026-10-16 二次定位）
+
+上一节说到「迁移之外的一次数据导入把它们带回来」。定位到具体是谁了：
+
+1. 上游那条删除写成 **`DELETE from\`creature\``** —— `FROM` 与表名之间**没有空格**。
+2. `dbdiff.py` 的两条正则都要求 `DELETE\s+FROM\s+\``（`\s+`）：
+   * 索引语句那条（`_stmts`）：`\s*(DELETE\s+FROM|UPDATE)\s+\`([^\`]+)\``
+   * 执行删除那条（`expected`）：`DELETE\s+FROM\s+\`%s\``
+   ⇒ **这条删除根本没进它的模型**（本地实测：`re.match(...)` 两条都不匹配）。
+3. 于是它的「仓库应有状态」里**一直留着这 11 行**（实测：把今天的新迁移排除后，模型里 11/11 都在）。
+4. 而 `dbdiff.py --table creature --emit-sql` 生成的正是「仓库有、线上没有」的 `INSERT IGNORE`。
+5. 服务器上 2026-10-11 那轮修复（`history` 669–670 行）：
+   `dbdiff.py --table $t --emit-sql /tmp/dbfix/fix_$t.sql` → `mysql … tw_world < /tmp/dbfix/fix_$t.sql`，
+   名单里就有 `creature` ⇒ 这 11 行被补回线上 ⇒ 布瑞尔出现两个卡洛琳娜克洛文。
+
+**修好的东西**
+
+| 改动 | 内容 |
+|---|---|
+| `dbdiff.py` 索引正则 | `(DELETE\s+FROM|UPDATE)\s*`` —— 允许 `FROM` 与表名之间没有空格 |
+| `dbdiff.py` 执行正则 | `DELETE\s+FROM\s*`%s`\s*(?:WHERE\s+(.*?))?;?$` —— 同上，并容忍语句末尾分号 |
+| 新增 `--self-test` | 4 个用例的回归自检，含 `DELETE from\`creature\`` 这种写法；`python3 tools/dbdiff/dbdiff.py --self-test` |
+
+**改完再验**
+
+* 把今天的新迁移（`20261016205000`）排除后，模型里的旧训练师只剩 5 个单一训练师
+  （`2583700/2583702/2583703/2583716/2583717`），11 个重复的已被正确删除 ✓
+* 对线上跑 `dbdiff.py --table creature`：**仓库 88802 行 / 线上 88802 行 / 缺 0 / 多 0** ✓
+
+**留一条旁证待解释**
+
+`creature` 的 `AUTO_INCREMENT = 12,585,178`，而仓库 base 转储**唯一版本**（`e1a48b4`，2026-05-03
+起）的建表子句是 2,583,684，所有迁移插过的最大 guid 是 2,902,655。也就是说：
+**当时建 `creature` 表用的那份 creature 转储并不是仓库里这份** —— 另有来源（很可能是一份旧服的
+dump）。若那份 dump 还在服务器上：
+
+```sh
+grep -m1 "AUTO_INCREMENT=" <那份 dump> | head -1     # 看是不是 12585178
+grep -c "2583715\|2583704" <那份 dump>               # 看它是否也带着旧训练师
+```
+
+值得查一下 —— 它意味着当时还导进了一份「别处来的」creature 数据。

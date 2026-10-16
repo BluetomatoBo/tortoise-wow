@@ -186,7 +186,9 @@ class Repo(object):
             if m:
                 grouped[m.group(1)].append(st)
                 continue
-            m = re.match(r"\s*(DELETE\s+FROM|UPDATE)\s+`([^`]+)`", st, re.I)
+            # `FROM` 与表名之间可能没有空格（上游有文件写成 `DELETE from\`creature\``），
+            # 所以这里用 \s* 而不是 \s+ —— 否则这条语句根本进不了模型（2026-10-16 的重复 NPC 事故）
+            m = re.match(r"\s*(DELETE\s+FROM|UPDATE)\s*`([^`]+)`", st, re.I)
             if m: grouped[m.group(2)].append(st)
         self._stmts_cache[path] = grouped
         return grouped
@@ -282,7 +284,8 @@ class Repo(object):
                         else:
                             plain.append(d)
                     continue
-                m = re.match(r"DELETE\s+FROM\s+`%s`\s*(?:WHERE\s+(.*))?$" % table, s, re.I | re.S)
+                # 同上：`FROM` 与表名之间允许没有空格；顺带容忍语句末尾的分号
+                m = re.match(r"DELETE\s+FROM\s*`%s`\s*(?:WHERE\s+(.*?))?;?$" % table, s, re.I | re.S)
                 if m:
                     cond = (m.group(1) or "").strip()
                     if not cond:
@@ -777,7 +780,38 @@ def sql_literal(v):
     return "'" + v.replace("\\", "\\\\").replace("'", "\\'") + "'"
 
 
+
+def selftest():
+    r"""回归自检：`--self-test` 调用。防止 DELETE 正则再退化。
+
+    背景（2026-10-16 事故）：上游有迁移写成 `DELETE from`creature``（FROM 与表名之间没有
+    空格）。旧正则要求 `DELETE\s+FROM\s+``，于是这条删除**根本不进模型** —— 模型认为
+    那 11 个已被删除的刷怪点「仓库里应该有」，`--emit-sql` 生成的 INSERT IGNORE 把它们
+    补回了线上，布瑞尔就出现了两个卡洛琳娜克洛文。
+    """
+    index_re = re.compile(r"\s*(DELETE\s+FROM|UPDATE)\s*`([^`]+)`", re.I)
+    exec_re = re.compile(r"DELETE\s+FROM\s*`(?P<t>[^`]+)`\s*(?:WHERE\s+(?P<c>.*?))?;?$", re.I | re.S)
+    cases = [
+        ("DELETE from`creature`\nWHERE `guid` IN (1, 2);", "creature", True),
+        ("DELETE FROM `creature` WHERE `map` = 820;", "creature", True),
+        ("DELETE FROM`creature` WHERE `guid` = 5", "creature", True),
+        ("UPDATE `creature` SET `x` = 1 WHERE `guid` = 2;", "creature", False),
+    ]
+    bad = 0
+    for stmt, table, want in cases:
+        got = bool(exec_re.match(stmt) and exec_re.match(stmt).group("t") == table)
+        idx = bool(index_re.match(stmt)) if "UPDATE" in stmt.upper() or "DELETE" in stmt.upper() else False
+        ok = (got == want) and idx
+        if not ok:
+            bad += 1
+        print("  %s  执行用正则=%s  索引用正则=%s   %s"
+              % ("OK " if ok else "FAIL", got, idx, stmt[:46].replace("\n", " ")))
+    print("自检结果：%s" % ("全部通过" if not bad else "%d 条失败" % bad))
+    return 1 if bad else 0
+
 def main():
+    if "--self-test" in sys.argv:
+        return selftest()
     ap = argparse.ArgumentParser(description="仓库 base dump 与线上 world 库的差异对比")
     ap.add_argument("--sql-root", default="sql", help="仓库 sql 目录（默认 ./sql）")
     ap.add_argument("--mysql", help='线上库的 mysql 命令，例如 "mysql -h127.0.0.1 -uroot -pxxx tw_world"')
