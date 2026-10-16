@@ -1176,6 +1176,60 @@ migrations 表 Id 全是奇数、每个文件占两个号（633,635,637,…）�
 恢复进来的最大值重算，重启后才会带上各自 offset 的奇偶性。另外 offset 只保护
 「自增主键」，业务自然键（账号名、角色名等）两边同时插仍会冲突。
 
+#### 「我没从 server7 写过数据」——对 tw_* 是对的，但 server7 并不是只读的（2026-10-16 复核）
+
+疑问：既然没人在 server7 上写，偏移配错又有什么关系、会不会已经有脏数据？
+
+用 binlog 把「谁在写哪个库」实测了一遍（`mysqlbinlog --read-from-remote-server`，
+按每个事务的 `SET @@SESSION.GTID_NEXT` 判断它由哪台发起）：
+
+| 库 | 写入方 | 实测（事务数） |
+|---|---|---|
+| `tw_world` / `tw_char` / `tw_logon` / `ref_mangos` | **只有 server6** | 6 号自发起 86240 / 10608 / 635 / 5；7 号自发起 **0** |
+| `zabbix` | **只有 server6** | 6 号 99053；7 号 0 |
+| `weiwei`（Joomla：`fw8db_session` / `fw8db_content`） | **只有 server7** | 7 号 550+2141+298；6 号自发起里没有，只有「同步自 7 号」的 461 条 |
+| `bosbio` | **只有 server7** | 7 号 3430（10-08~10-10 的一次批量写入）；6 号只有同步来的 2448 条 |
+
+* 6 号侧：binlog `000413`（10-09 00:56 起，1 GB，171 万个事务）
+* 7 号侧：binlog `000180`–`000184`（10-08 17:35 起，共约 3.8 GB）
+
+结论：
+
+1. **每一个库都只有一个写入方**，没有任何一张表是两边都写的 —— 所以这次偏移配错
+   **没有产生过冲突，tw_* 里没有脏数据**（`tw_world` 两张表的 `CHECKSUM TABLE`
+   两台完全相同，`migrations` 178 行全是奇数 Id）。
+2. 但「没有第二个人写」不代表「只有你在写」：server7 上一直在写 `weiwei`（网站）与
+   `bosbio`，只是不写 tw_*。这些库不在 6 号的 `Replicate_Ignore_DB` 里，变更会同步回 6 号
+   —— 也就是说双主的两半都是活的，只是分工不同。
+3. 偏移错开的价值在**将来**：一旦出现「同一个库两边都写」，比如在 7 号上启动一次
+   worldserver（AutoUpdater 会写 `migrations`、游戏会写 `tw_char`/`tw_logs`）、
+   在 7 号上跑一次导入/改数据脚本、或者做一次主备切换，两台就会各自生成**同一个自增号**：
+   后到的那条在对面回放时主键冲突 → 复制中断（`Last_SQL_Error`），强行跳过就成了
+   两边不一致（这才是「脏数据」）。现在 6 号只用奇数、7 号只用偶数，这类撞车不可能发生。
+4. 另一个副产品：7 号自 **2026-10-13 15:00** 起就没有再发起过任何本地事务
+   （`weiwei` 也停了），说明那之后它处于纯备机状态。
+
+顺手复核：
+
+```sql
+-- 两台 tw_* 一致性
+CHECKSUM TABLE tw_world.creature, tw_world.migrations;        -- 两台输出相同
+-- 唯一的写入者是不是 6 号（offset=1 → 奇数）
+SELECT COUNT(*) 行数, SUM(Id%2) 奇数, SUM(Id%2=0) 偶数 FROM migrations;   -- 178 / 178 / 0
+```
+
+复现 binlog 侧的判断（`/tmp/mb.cnf` 放 `[client]` 的 host/user/password）：
+
+```sh
+mysqlbinlog --defaults-file=/tmp/mb.cnf --read-from-remote-server --host=172.18.1.7 \
+  mysql-bin.000182 | grep -E "GTID_NEXT|^\s*use \`"
+# GTID_NEXT 里的 UUID 决定「谁发起」：c93ef2a1…=7 号，ea8e0964…=6 号
+```
+
+旁注：`migrations` 里 **645 号是空的** —— 09-30 那次有一次迁移失败回滚
+（自增号在回滚时也会被消耗，`20260507184157_world` 后来在 22:17 才应用成功），
+不是数据问题。
+
 另外，`creature` 里同类「新旧两代贴身重复」还有 3 组，但来历不同、看起来是有意设计的
 （如 `62269 Twitching Corpse` 2585551↔2592350、`62266 Burnt Monk` 2585554↔2592346、
 `62329 Bilgerat Corsair` 2586749↔2592110），本次没有动。
