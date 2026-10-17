@@ -1430,3 +1430,106 @@ grep -c "2583715\|2583704" <那份 dump>               # 看它是否也带着�
 2. **任何 `--emit-sql` 生成的补数据脚本，应用前先过一遍 `verify_migration_deletes.py`**（① 类就是
    "迁移删过、现在要补回来"的行，逐条确认）。有疑问的行一律先不补。
 3. 工具改完立刻补 `--self-test`（`python3 tools/dbdiff/dbdiff.py --self-test`），别等下次事故。
+
+## 二十八、模块迁移把服务器搞崩：MariaDB 语法 vs MySQL（2026-10-17）
+
+### 现象
+
+加了 `modules/TortoiseBots`（`Sagiroth/TortoiseBots` v1.3.0）后重启，mangosd 起不来：
+
+```
+[DB Auto-Updater] Attempting to execute update 20260824090002_char for module TortoiseBots …
+SQL:  ALTER TABLE ai_playerbot_item_info_cache
+        ADD COLUMN IF NOT EXISTS scale_1 mediumint NOT NULL DEFAULT 0, …
+[1064] You have an error in your SQL syntax; … near 'IF NOT EXISTS scale_1 …'
+Error while parsing SQL. Core fix required.
+/root/.../DatabaseMysql.cpp:196: Error: Assertion in HandleMySQLError failed: false
+terminate called after throwing an instance of 'std::runtime_error'
+```
+
+### 原因（两层）
+
+1. **语法层**：`ALTER TABLE … ADD COLUMN IF NOT EXISTS` 是 **MariaDB 专有**语法，MySQL 直接 1064。
+   本机库是 **MySQL 8.4.11**（`SELECT @@version`），不支持；`DROP COLUMN IF EXISTS`、
+   `ADD INDEX IF NOT EXISTS`、`DROP INDEX IF EXISTS`、`CREATE OR REPLACE TABLE`、`ALTER IGNORE`
+   等同理。模块作者显然是在 MariaDB 上测的。
+2. **内核层**：迁移里的 SQL 出错不是"跳过并记录"，而是 `DatabaseMysql.cpp:196`
+   `HandleMySQLError` 的 `assert(false)` → 整个进程 terminate。
+   **一份语法错误的迁移 = 服务器启动即崩**，而且发生在 `World::SetInitialWorldSettings` 阶段。
+
+### 修法：保留幂等语义，换成 MySQL 能懂的写法
+
+这 3 个文件用 `IF NOT EXISTS` 是**刻意要幂等**（作者注释：给「已经应用过早期版本」的安装补齐列）。
+所以不能简单删掉 `IF NOT EXISTS` —— 那样一旦某个文件重复执行（hash 变了会重跑整个文件）就会
+撞 `Duplicate column name` 1060，同样崩。取代方案是按 `information_schema` 动态拼 ALTER：
+
+```sql
+SET SESSION group_concat_max_len = 65535;
+SET @missing := (
+  SELECT GROUP_CONCAT(CONCAT('ADD COLUMN `', w.col, '` mediumint NOT NULL DEFAULT 0') SEPARATOR ', ')
+  FROM ( SELECT 'scale_1' AS col UNION ALL SELECT 'scale_2' AS col /* … */ ) w
+  WHERE NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS c
+                    WHERE c.TABLE_SCHEMA = DATABASE() AND c.TABLE_NAME = 'ai_playerbot_item_info_cache'
+                      AND c.COLUMN_NAME = w.col));
+SET @sql := IF(@missing IS NULL, 'DO 0', CONCAT('ALTER TABLE `ai_playerbot_item_info_cache` ', @missing));
+PREPARE migrate_item_info_scale FROM @sql; EXECUTE migrate_item_info_scale; DEALLOCATE PREPARE migrate_item_info_scale;
+```
+
+* `DO 0` 是「什么都没缺」时的空操作 —— 故意不用 `SELECT`，因为 `Database::Execute` 不回收结果集
+* 三条语句（SET / PREPARE / EXECUTE / DEALLOCATE）在**同一个连接**上跑，会话变量有效
+* 内核的切分器不认 `;` 之外的语法，这段没有任何存储过程/DELIMITER，可以安全切分
+
+改的是模块的 3 个文件（`data/sql/character/20260824090002_char.sql` 32 列、
+`…/20260925140000_char.sql` 3 列、`data/sql/world/20260824090002_world.sql` 1 列），
+其余 39 个文件本来就是 MySQL 兼容的。
+
+### 验证（全部在 MySQL 8.4.11 上真跑）
+
+| 验证 | 结果 |
+|---|---|
+| 在复制忽略的 `335_w_test` 里建同结构表 → 跑改好的语句 | 列数 9 → **41**（+32）→ **44**（+3）；world 侧 `help_texts` 2 → 3 列、`zone_level` 建表 ✓ |
+| 同样的语句**再跑一遍**（幂等） | 列数仍是 44，无报错 ✓ |
+| 模拟"装了一半"（`DROP COLUMN scale_5, scale_17, source_tier`）再跑 | 恰好补回 3 列，44 ✓ |
+| 补丁在**干净克隆**上 `git apply --check` | 通过，应用后全量预检 0 问题 ✓ |
+| 内核切分器切出来的语句数 | char 6/6 条、world 7 条，逐条在真库上通过 ✓ |
+| 命令行测试数据清理 | 测试表已 DROP ✓ |
+
+### 新增工具：`tools/dbdiff/dryrun_migration_sql.py`（零写入预检）
+
+以后**加模块/写迁移前先跑它**：
+
+```sh
+# 模块（按 character/world 子目录自动选库）
+python3 tools/dbdiff/dryrun_migration_sql.py \
+    --mysql "$(pwd)/tools/dbdiff/mysql_local.sh" \
+    --module-root modules/TortoiseBots/data/sql --char-db tw_char --world-db tw_world
+
+# 核心迁移（只预检 DDL，几万条 INSERT 不逐条跑）
+python3 tools/dbdiff/dryrun_migration_sql.py \
+    --mysql "$(pwd)/tools/dbdiff/mysql_local.sh" \
+    --dir 'sql/database_updates/world/*.sql' --db tw_world --ddl-only
+```
+
+原理与边界：
+
+* 用 `PREPARE <名> FROM <语句文本>` —— **只解析、不执行**，所以 DDL/DML 都能安全预检；
+  语句文本用十六进制字面量（`SET @s := CONVERT(0x… USING utf8mb4)`）传入，绕开所有引号转义
+* 静态检查会先**剥掉字符串字面量**再匹配 MariaDB 关键词（否则任务文本里的 "RETURNING" 会误报
+  —— 第一次跑就是这么被自己抓出来的）
+* `1146 表不存在`：如果那张表在**本次运行里更早的文件**中 `CREATE` 过，就不算问题
+  （按内核的应用顺序预先扫一遍"谁创建了什么"）
+* 局限：`PREPARE` 对 `ALTER` 不做对象解析（表不存在也会通过），所以它主要保**语法**；
+  对象存在性靠 `--check-objects` 粗查
+* 退出码 0/1，可直接挂在重启前
+
+三个已验证结果：**核心 177 个迁移全绿**（静态 + DDL 预检）、**模块 42 个文件修好后全绿**、
+**未修的原文件被准确抓出**（3 个文件 3/6 条语句）。
+
+### 教训
+
+1. **MariaDB 与 MySQL 的 DDL 方言不同**，第三方模块很可能只测过 MariaDB；`IF NOT EXISTS`
+   系列是重灾区。核心与模块都跑 `dryrun_migration_sql.py` 再重启。
+2. 内核的失败模式是**直接崩**（`HandleMySQLError` 断言），所以这类错误没有"带病运行"的余地 ——
+   预检不是保险，是必需。
+3. 交付：`~/Desktop/tortoisebots-mysql-fix/mysql-compat.patch`（对着模块 `911adca` 生成）
+   + 三个改好的文件 + 应用说明；上游修复可以走 PR（`Sagiroth/TortoiseBots`）。
