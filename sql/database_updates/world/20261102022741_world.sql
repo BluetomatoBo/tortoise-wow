@@ -7,7 +7,9 @@ SET `emote_id1` = 0
 WHERE `entry` = 92031
 AND `emote_id1` = 55;
 
-INSERT INTO `sound_entries`
+-- 本地修复（2026-11-07）：线上 60443/60444 已存在（乌龟服服务端数据先于 base 快照），
+-- 普通 INSERT 会主键冲突导致整个迁移失败、服务器起不来。改 INSERT IGNORE 幂等。
+INSERT IGNORE INTO `sound_entries`
 (
     `id`,
     `name`
